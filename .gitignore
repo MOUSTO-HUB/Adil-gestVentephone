@@ -1,0 +1,30 @@
+node_modules/
+dist/
+build/
+web-build/
+.expo/
+coverage/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.tsbuildinfo
+.pnpm-store/
+api/src/generated/
+api/stockage/
+
+# Expo / natif
+app/android/
+app/ios/
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+
+# Production
+sauvegardes/
