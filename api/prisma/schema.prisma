@@ -1,0 +1,13 @@
+// Schéma de la base PostgreSQL. Les modèles sont ajoutés à l'étape 2
+// (voir docs/PROMPTS.md) ; après chaque modification : pnpm db:migrate.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

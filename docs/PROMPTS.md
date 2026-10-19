@@ -11,7 +11,7 @@ Référence : [Cahier des charges](CAHIER_DES_CHARGES.md).
 | #   | Phase               | Étape                                         | Fait |
 | --- | ------------------- | --------------------------------------------- | ---- |
 | M   | Préparation         | Maquettes des écrans (optionnel)              | ☐    |
-| 1   | 1 · Socle           | Initialisation du monorepo                    | ☐    |
+| 1   | 1 · Socle           | Initialisation du monorepo                    | ☑    |
 | 2   | 1 · Socle           | Schéma de base de données                     | ☐    |
 | 3   | 1 · Socle           | Authentification, rôles et appareils          | ☐    |
 | 4   | 1 · Socle           | Base locale et moteur de synchronisation      | ☐    |

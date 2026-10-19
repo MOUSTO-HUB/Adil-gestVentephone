@@ -28,3 +28,8 @@ app/ios/
 
 # Production
 sauvegardes/
+
+# Expo (généré)
+app/expo-env.d.ts
+.metro-health-check*
+.kotlin/

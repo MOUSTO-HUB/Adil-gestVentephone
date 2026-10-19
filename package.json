@@ -1,0 +1,29 @@
+{
+  "name": "adil-gestventephone",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Gestion de vente de téléphones et d'accessoires : API, application et code partagé",
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm --filter @gestvente/api db:migrate",
+    "db:seed": "pnpm --filter @gestvente/api db:seed",
+    "db:studio": "pnpm --filter @gestvente/api db:studio",
+    "dev:api": "pnpm --filter @gestvente/api start:dev",
+    "dev:app": "pnpm --filter @gestvente/app start",
+    "dev:web": "pnpm --filter @gestvente/app web",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.9"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules
+dist
+.expo
+coverage
+pnpm-lock.yaml
+app/assets
+docs/source
+api/src/generated
+api/prisma/migrations
+app/expo-env.d.ts
