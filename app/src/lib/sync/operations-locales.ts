@@ -12,6 +12,7 @@ import { ErreurOperation } from './erreurs';
 import * as achats from './operations-achats';
 import * as catalogue from './operations-catalogue';
 import * as clients from './operations-clients';
+import * as retours from './operations-retours';
 import * as ventes from './operations-ventes';
 
 export { ErreurOperation };
@@ -87,6 +88,8 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
   VENTE_ENREGISTRER: (tx, boutiqueId, contenu, _id, contexte) =>
     ventes.venteEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId),
   VENTE_ANNULER: (tx, boutiqueId, contenu) => ventes.venteAnnuler(tx, boutiqueId, contenu),
+  RETOUR_ENREGISTRER: (tx, boutiqueId, contenu, _id, contexte) =>
+    retours.retourEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId),
 };
 
 export interface NouvelleOperation<T extends TypeOperation> {

@@ -68,6 +68,11 @@ export default function Accueil() {
       ) : null}
       <Bouton titre="Vendre" onPress={() => router.push('/vente')} />
       <Bouton titre="Ventes" variante="secondaire" onPress={() => router.push('/ventes')} />
+      <Bouton
+        titre="Retours et échanges"
+        variante="secondaire"
+        onPress={() => router.push('/retours')}
+      />
       <Bouton titre="Stock" onPress={() => router.push('/stock')} />
       <Bouton titre="Fiche IMEI" variante="secondaire" onPress={() => router.push('/imei')} />
       <Bouton titre="Garantie" variante="secondaire" onPress={() => router.push('/garantie')} />

@@ -5,6 +5,7 @@ import {
   finGarantie,
   type StatutArticle,
   totauxVente,
+  type VenteEchangeSaisie,
 } from '@gestvente/commun';
 import { ecrireEntite } from '../base/depot';
 import type { BaseSql } from '../base/sql';
@@ -14,12 +15,14 @@ import { ErreurOperation } from './erreurs';
  * Vente enregistrée sur l'appareil (en moins de 2 secondes, même hors ligne) :
  * téléphones vendus, stock diminué, vente et paiements gardés pour la caisse.
  * Le serveur refait les contrôles (prix de gros, remise, IMEI vendu ailleurs).
+ * `reprise` : valeur des articles rendus d'un échange, déduite du total.
  */
 export async function venteEnregistrer(
   tx: BaseSql,
   boutiqueId: string,
-  c: ContenuOperation<'VENTE_ENREGISTRER'>,
+  c: ContenuOperation<'VENTE_ENREGISTRER'> | VenteEchangeSaisie,
   vendeurId: string,
+  reprise = 0,
 ) {
   if (
     await tx.premier('SELECT id FROM vente WHERE boutiqueId = ? AND numero = ?', [
@@ -29,10 +32,30 @@ export async function venteEnregistrer(
   ) {
     throw new ErreurOperation(`Le numéro de facture ${c.numero} est déjà utilisé.`);
   }
-  const { sousTotal, total } = totauxVente(c.lignes, c.remise);
+  const { sousTotal, total: avantReprise } = totauxVente(c.lignes, c.remise);
   if (c.remise > sousTotal) throw new ErreurOperation('La remise dépasse le montant de la vente.');
+  const total = avantReprise - reprise;
   const paiements = controlerPaiements(total, c.paiements);
   if (!paiements.ok) throw new ErreurOperation(paiements.motif);
+  const avoir = c.paiements.filter((p) => p.moyen === 'AVOIR').reduce((t, p) => t + p.montant, 0);
+  if (avoir > 0) {
+    const client = c.clientId
+      ? await tx.premier<{ nom: string; soldeAvoir: number }>(
+          'SELECT nom, soldeAvoir FROM client WHERE id = ?',
+          [c.clientId],
+        )
+      : null;
+    if (!client) throw new ErreurOperation('Un avoir se paie au nom du client : choisissez-le.');
+    if (client.soldeAvoir < avoir) {
+      throw new ErreurOperation(
+        `Avoir insuffisant : le solde de ${client.nom} est de ${client.soldeAvoir}.`,
+      );
+    }
+    await tx.executer('UPDATE client SET soldeAvoir = soldeAvoir - ? WHERE id = ?', [
+      avoir,
+      c.clientId,
+    ]);
+  }
   const dateVente = new Date(c.dateVente);
 
   for (const l of c.lignes) {
@@ -101,6 +124,7 @@ export async function venteEnregistrer(
     statut: 'VALIDEE',
     sousTotal,
     remise: c.remise,
+    reprise,
     total,
     montantPaye: total,
     renduMonnaie: paiements.rendu,
@@ -121,6 +145,25 @@ export async function venteAnnuler(
   );
   if (!vente) throw new ErreurOperation('Vente introuvable dans cette boutique.');
   if (vente.statut === 'ANNULEE') return;
+  if (
+    await tx.premier('SELECT id FROM retour WHERE venteId = ? OR venteEchangeId = ?', [
+      c.venteId,
+      c.venteId,
+    ])
+  ) {
+    throw new ErreurOperation('Cette vente a un retour ou un échange : traitez-la par un retour.');
+  }
+  const avoir = await tx.premier<{ clientId: string | null; montant: number | null }>(
+    `SELECT v.clientId, SUM(p.montant) AS montant FROM vente v
+       JOIN paiementVente p ON p.venteId = v.id AND p.moyen = 'AVOIR' WHERE v.id = ?`,
+    [c.venteId],
+  );
+  if (avoir?.clientId && avoir.montant) {
+    await tx.executer('UPDATE client SET soldeAvoir = soldeAvoir + ? WHERE id = ?', [
+      avoir.montant,
+      avoir.clientId,
+    ]);
+  }
   const lignes = await tx.tous<{ produitId: string; articleId: string | null; quantite: number }>(
     'SELECT produitId, articleId, quantite FROM ligneVente WHERE venteId = ?',
     [c.venteId],

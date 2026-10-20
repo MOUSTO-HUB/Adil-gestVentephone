@@ -4,6 +4,7 @@ import { annulerVente, enregistrerVente } from '../../ventes/ventes.ecritures.js
 import type { Tx } from '../journal.service.js';
 import {
   versArticle,
+  versClient,
   versLigneVente,
   versPaiementVente,
   versStock,
@@ -12,7 +13,7 @@ import {
 import type { Gestionnaire } from './gestionnaire.js';
 
 /** État du serveur après refus : la vente (ou son effacement), téléphones et stocks touchés. */
-async function etatVente(
+export async function etatVente(
   tx: Tx,
   boutiqueId: string,
   venteId: string,
@@ -64,14 +65,24 @@ export const venteEnregistrer: Gestionnaire<'VENTE_ENREGISTRER'> = {
   type: 'VENTE_ENREGISTRER',
   roles: [Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR],
   appliquer: (ctx, contenu) => enregistrerVente(ctx, contenu),
-  corrections: (tx, operation, contenu) =>
-    etatVente(
+  async corrections(tx, operation, contenu) {
+    const corrections = await etatVente(
       tx,
       operation.boutiqueId,
       contenu.id,
       contenu.lignes,
       contenu.paiements.map((p) => p.id),
-    ),
+    );
+    // Avoir payé : le solde du client reprend sa valeur sur le serveur.
+    const client =
+      contenu.clientId && contenu.paiements.some((p) => p.moyen === 'AVOIR')
+        ? await tx.client.findUnique({ where: { id: contenu.clientId } })
+        : null;
+    if (client) {
+      corrections.push({ seq: 0, entite: 'client', id: client.id, donnees: versClient(client) });
+    }
+    return corrections;
+  },
 };
 
 export const venteAnnuler: Gestionnaire<'VENTE_ANNULER'> = {

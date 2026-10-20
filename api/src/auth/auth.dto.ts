@@ -98,6 +98,8 @@ export class CommerceResumeDto {
   fuseau: string;
   @ApiProperty() remiseMaxVendeur: number;
   @ApiProperty() remiseMaxGerant: number;
+  @ApiProperty({ description: 'Délai de retour ou d’échange (jours après la vente).' })
+  delaiRetourJours: number;
 }
 
 export class ProfilDto {

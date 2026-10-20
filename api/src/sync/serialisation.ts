@@ -6,6 +6,8 @@ import type {
   LigneAchatSync,
   LigneVenteSync,
   PaiementVenteSync,
+  RetourSync,
+  LigneRetourSync,
   VenteSync,
   ArticleSync,
   CategorieSync,
@@ -27,6 +29,8 @@ import type {
   LigneAchat,
   LigneVente,
   Paiement,
+  Retour,
+  LigneRetour,
   Vente,
   Categorie,
   Compatibilite,
@@ -125,6 +129,7 @@ export const versClient = (c: Client): ClientSync => ({
   numeroPiece: c.numeroPiece,
   adresse: c.adresse,
   plafondCredit: nombreOuNul(c.plafondCredit),
+  soldeAvoir: nombre(c.soldeAvoir),
   archive: c.archive,
   photoPiece: c.photoPieceCle !== null,
 });
@@ -182,6 +187,7 @@ export const versVente = (v: Vente): VenteSync => ({
   statut: v.statut,
   sousTotal: nombre(v.sousTotal),
   remise: nombre(v.remise),
+  reprise: nombre(v.reprise),
   total: nombre(v.total),
   montantPaye: nombre(v.montantPaye),
   renduMonnaie: nombre(v.renduMonnaie),
@@ -212,6 +218,35 @@ export const versPaiementVente = (p: Paiement): PaiementVenteSync => ({
 });
 
 /** Les vendeurs ne reçoivent ni les prix d'achat (marges du commerce) ni les fournisseurs et achats. */
+export const versRetour = (r: Retour): RetourSync => ({
+  id: r.id,
+  boutiqueId: r.boutiqueId,
+  venteId: r.venteId,
+  type: r.type,
+  etatAppareil: r.etatAppareil,
+  motif: r.motif,
+  valeur: nombre(r.valeur),
+  montantRembourse: nombre(r.montantRembourse),
+  moyenRemboursement: r.moyenRemboursement === 'AVOIR' ? null : r.moyenRemboursement,
+  referenceRemboursement: r.referenceRemboursement,
+  avoir: nombre(r.avoir),
+  venteEchangeId: r.venteEchangeId,
+  dateRetour: r.dateRetour.toISOString(),
+  creeParId: r.creeParId,
+  valideParId: r.valideParId,
+});
+
+export const versLigneRetour = (l: LigneRetour): LigneRetourSync => ({
+  id: l.id,
+  retourId: l.retourId,
+  ligneVenteId: l.ligneVenteId,
+  articleId: l.articleId,
+  quantite: l.quantite,
+  destination: l.destination,
+  montant: nombre(l.montant),
+  prixRevente: nombreOuNul(l.prixRevente),
+});
+
 export function masquerPourRole<E extends EntiteSync>(
   entite: E,
   donnees: DonneesEntites[E] | null,

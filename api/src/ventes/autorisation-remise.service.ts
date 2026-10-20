@@ -19,6 +19,15 @@ export interface ChargeAutorisationRemise {
   plafond: number;
 }
 
+/** Contenu du jeton : un gérant a validé, en personne, le retour d'une vente. */
+export interface ChargeAutorisationRetour {
+  type: 'autorisation-retour';
+  commerceId: string;
+  boutiqueId: string;
+  gerantId: string;
+  venteId: string;
+}
+
 /** Validité du jeton : la vente doit être faite dans ce délai (elle peut être envoyée plus tard). */
 export const DUREE_AUTORISATION = '2h';
 
@@ -36,13 +45,14 @@ export class AutorisationRemiseService {
     private readonly audit: AuditService,
   ) {}
 
-  async autoriser(
+  /** Identifiant et PIN d'un gérant (ou du propriétaire) rattaché à la boutique. */
+  private async verifierGerant(
     demandeur: UtilisateurConnecte,
     boutiqueId: string,
     identifiant: string,
     pin: string,
-    pourcentage: number,
-  ): Promise<{ jeton: string; gerant: string; plafond: number }> {
+    action: string,
+  ) {
     const gerant = await this.prisma.utilisateur.findFirst({
       where: {
         identifiant: normaliserIdentifiant(identifiant),
@@ -59,7 +69,7 @@ export class AutorisationRemiseService {
     }
     await this.limiteur.reinitialiser(LIMITES.pinUtilisateur, gerant.id);
     if (gerant.role === Role.VENDEUR) {
-      throw new ForbiddenException('Seul un gérant ou le propriétaire peut valider une remise.');
+      throw new ForbiddenException(`Seul un gérant ou le propriétaire peut valider ${action}.`);
     }
     const acteur = {
       id: gerant.id,
@@ -70,6 +80,17 @@ export class AutorisationRemiseService {
     if (!peutAccederBoutique(acteur, { id: boutiqueId, commerceId: demandeur.commerceId })) {
       throw new ForbiddenException('Ce gérant n’est pas rattaché à cette boutique.');
     }
+    return gerant;
+  }
+
+  async autoriser(
+    demandeur: UtilisateurConnecte,
+    boutiqueId: string,
+    identifiant: string,
+    pin: string,
+    pourcentage: number,
+  ): Promise<{ jeton: string; gerant: string; plafond: number }> {
+    const gerant = await this.verifierGerant(demandeur, boutiqueId, identifiant, pin, 'une remise');
     const plafond = plafondRemise(gerant.role, gerant.commerce);
     if (pourcentage > plafond) {
       throw new ForbiddenException(`Ce gérant accorde au plus ${plafond} % de remise.`);
@@ -97,6 +118,75 @@ export class AutorisationRemiseService {
   }
 
   /**
+   * Retour ou échange fait par un vendeur : le gérant valide en personne avec son PIN
+   * (en ligne) ; le jeton, joint au retour, n'est valable que pour cette vente.
+   */
+  async autoriserRetour(
+    demandeur: UtilisateurConnecte,
+    boutiqueId: string,
+    identifiant: string,
+    pin: string,
+    venteId: string,
+  ): Promise<{ jeton: string; gerant: string }> {
+    const gerant = await this.verifierGerant(demandeur, boutiqueId, identifiant, pin, 'un retour');
+    const charge: ChargeAutorisationRetour = {
+      type: 'autorisation-retour',
+      commerceId: demandeur.commerceId,
+      boutiqueId,
+      gerantId: gerant.id,
+      venteId,
+    };
+    await this.audit.journaliser({
+      commerceId: demandeur.commerceId,
+      boutiqueId,
+      action: ACTIONS_AUDIT.RETOUR_AUTORISE,
+      utilisateurId: gerant.id,
+      appareilId: demandeur.appareilId,
+      entite: 'Vente',
+      entiteId: venteId,
+      details: { demandeur: demandeur.id },
+    });
+    return {
+      jeton: await this.jwt.signAsync(charge, { expiresIn: DUREE_AUTORISATION }),
+      gerant: gerant.nom,
+    };
+  }
+
+  /** Gérant qui a validé le retour de cette vente, si le jeton est valable à la date du retour. */
+  async retourAutorise(
+    jeton: string | null,
+    commerceId: string,
+    boutiqueId: string,
+    venteId: string,
+    dateRetour: Date,
+  ): Promise<string | null> {
+    const charge = await this.lire<ChargeAutorisationRetour>(jeton, dateRetour);
+    return charge?.type === 'autorisation-retour' &&
+      charge.commerceId === commerceId &&
+      charge.boutiqueId === boutiqueId &&
+      charge.venteId === venteId
+      ? charge.gerantId
+      : null;
+  }
+
+  /** Jeton authentique et valable à la date de l'opération (pas à celle de son envoi). */
+  private async lire<T>(jeton: string | null, date: Date): Promise<T | null> {
+    if (!jeton) return null;
+    try {
+      const charge = await this.jwt.verifyAsync<T & { exp: number; iat: number }>(jeton, {
+        ignoreExpiration: true,
+      });
+      const valide =
+        date.getTime() <= charge.exp * 1000 &&
+        // Une marge de 5 minutes pour l'horloge de l'appareil.
+        date.getTime() >= charge.iat * 1000 - 5 * 60 * 1000;
+      return valide ? charge : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Plafond accordé par un jeton, s'il est authentique, pour ce commerce et cette
    * boutique, et valide au moment de la vente (pas au moment de son envoi).
    */
@@ -106,23 +196,11 @@ export class AutorisationRemiseService {
     boutiqueId: string,
     dateVente: Date,
   ): Promise<{ plafond: number; gerantId: string } | null> {
-    if (!jeton) return null;
-    try {
-      const charge = await this.jwt.verifyAsync<
-        ChargeAutorisationRemise & { exp: number; iat: number }
-      >(jeton, {
-        ignoreExpiration: true,
-      });
-      const valide =
-        charge.type === 'autorisation-remise' &&
-        charge.commerceId === commerceId &&
-        charge.boutiqueId === boutiqueId &&
-        dateVente.getTime() <= charge.exp * 1000 &&
-        // Une marge de 5 minutes pour l'horloge de l'appareil.
-        dateVente.getTime() >= charge.iat * 1000 - 5 * 60 * 1000;
-      return valide ? { plafond: charge.plafond, gerantId: charge.gerantId } : null;
-    } catch {
-      return null;
-    }
+    const charge = await this.lire<ChargeAutorisationRemise>(jeton, dateVente);
+    return charge?.type === 'autorisation-remise' &&
+      charge.commerceId === commerceId &&
+      charge.boutiqueId === boutiqueId
+      ? { plafond: charge.plafond, gerantId: charge.gerantId }
+      : null;
   }
 }

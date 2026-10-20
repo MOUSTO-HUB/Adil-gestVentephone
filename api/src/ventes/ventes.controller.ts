@@ -44,6 +44,30 @@ class DemandeAutorisationDto {
   pourcentage: number;
 }
 
+class DemandeAutorisationRetourDto {
+  @ApiProperty() @IsUUID() boutiqueId: string;
+
+  @ApiProperty({ description: 'Identifiant du gérant qui valide.' })
+  @IsString()
+  @Length(1, 60)
+  identifiant: string;
+
+  @ApiProperty({ description: 'Code PIN du gérant.' })
+  @IsString()
+  @Length(4, 6)
+  pin: string;
+
+  @ApiProperty({ description: 'Vente dont des articles sont rendus.' })
+  @IsUUID()
+  venteId: string;
+}
+
+class AutorisationRetourDto {
+  @ApiProperty({ description: 'Jeton à joindre au retour (valable 2 heures, pour cette vente).' })
+  jeton: string;
+  @ApiProperty() gerant: string;
+}
+
 class AutorisationDto {
   @ApiProperty({ description: 'Jeton à joindre à la vente (valable 2 heures).' }) jeton: string;
   @ApiProperty() gerant: string;
@@ -79,6 +103,28 @@ export class VentesController {
     private readonly autorisations: AutorisationRemiseService,
     private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Un gérant valide en personne, avec son code PIN, le retour ou l'échange qu'un
+   * vendeur enregistre pour une vente ; le jeton renvoyé est joint au retour.
+   */
+  @Post('autorisations-retour')
+  @HttpCode(200)
+  @Roles(Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR)
+  @UseGuards(BoutiqueGuard)
+  @ApiOkResponse({ type: AutorisationRetourDto })
+  autoriserRetour(
+    @UtilisateurCourant() utilisateur: UtilisateurConnecte,
+    @Body() dto: DemandeAutorisationRetourDto,
+  ): Promise<AutorisationRetourDto> {
+    return this.autorisations.autoriserRetour(
+      utilisateur,
+      dto.boutiqueId,
+      dto.identifiant,
+      dto.pin,
+      dto.venteId,
+    );
+  }
 
   /** Garantie d'un téléphone vendu, retrouvé par son IMEI : produit, vente, client, temps restant. */
   @Get('garantie/:imei')

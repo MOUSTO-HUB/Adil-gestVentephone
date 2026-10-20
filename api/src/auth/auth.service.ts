@@ -169,6 +169,7 @@ export class AuthService {
         fuseau: commerce.fuseau,
         remiseMaxVendeur: commerce.remiseMaxVendeur,
         remiseMaxGerant: commerce.remiseMaxGerant,
+        delaiRetourJours: commerce.delaiRetourJours,
       },
       boutiques,
     };

@@ -6,8 +6,8 @@ import { ErreurOperation } from './erreurs';
 
 /** Client et garant sur l'appareil ; le serveur vérifie les droits (plafond, grossiste). */
 export async function clientEnregistrer(tx: BaseSql, c: ContenuOperation<'CLIENT_ENREGISTRER'>) {
-  const existant = await tx.premier<{ photoPiece: number }>(
-    'SELECT photoPiece FROM client WHERE id = ?',
+  const existant = await tx.premier<{ photoPiece: number; soldeAvoir: number }>(
+    'SELECT photoPiece, soldeAvoir FROM client WHERE id = ?',
     [c.id],
   );
   const { garant, ...champs } = c;
@@ -16,6 +16,7 @@ export async function clientEnregistrer(tx: BaseSql, c: ContenuOperation<'CLIENT
     numeroPiece: c.numeroPiece || null,
     adresse: c.adresse || null,
     photoPiece: !!existant?.photoPiece,
+    soldeAvoir: existant?.soldeAvoir ?? 0,
   });
   await tx.executer('DELETE FROM garant WHERE clientId = ? AND id <> ?', [c.id, garant?.id ?? '']);
   if (garant) {

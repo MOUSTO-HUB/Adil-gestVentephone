@@ -15,6 +15,7 @@ import {
 } from '../achats.js';
 import { schemaClient, schemaFournisseur } from '../clients.js';
 import { schemaInventaire } from '../inventaire.js';
+import { schemaRetour } from '../retours.js';
 import { schemaAnnulationVente, schemaVente } from '../ventes.js';
 import type { Changement } from './entites.js';
 
@@ -67,6 +68,8 @@ export const schemasContenus = {
   VENTE_ENREGISTRER: schemaVente,
   /** Annulation d'une vente, avec motif : gérant ou propriétaire. */
   VENTE_ANNULER: schemaAnnulationVente,
+  /** Retour (remboursement, avoir) ou échange : gérant, ou vendeur avec le PIN du gérant. */
+  RETOUR_ENREGISTRER: schemaRetour,
 } as const;
 
 export type TypeOperation = keyof typeof schemasContenus;
@@ -91,6 +94,7 @@ export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   INVENTAIRE_VALIDER: 'Inventaire',
   VENTE_ENREGISTRER: 'Vente',
   VENTE_ANNULER: 'Annulation de vente',
+  RETOUR_ENREGISTRER: 'Retour ou échange',
 };
 
 /** Enveloppe commune à toutes les opérations. */

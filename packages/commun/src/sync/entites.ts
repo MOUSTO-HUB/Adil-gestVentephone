@@ -21,6 +21,8 @@ export const ENTITES_SYNC = [
   'vente',
   'ligneVente',
   'paiementVente',
+  'retour',
+  'ligneRetour',
 ] as const;
 export type EntiteSync = (typeof ENTITES_SYNC)[number];
 
@@ -111,6 +113,8 @@ export interface ClientSync {
   numeroPiece: string | null;
   adresse: string | null;
   plafondCredit: number | null;
+  /** Avoirs non utilisés, payables comme moyen « Avoir ». */
+  soldeAvoir: number;
   archive: boolean;
   /** Une photo de la pièce d'identité existe (lue en ligne, jamais mise en cache). */
   photoPiece: boolean;
@@ -173,6 +177,8 @@ export interface VenteSync {
   statut: 'VALIDEE' | 'ANNULEE';
   sousTotal: number;
   remise: number;
+  /** Valeur des articles rendus déduite (échange, troc). */
+  reprise: number;
   total: number;
   montantPaye: number;
   renduMonnaie: number;
@@ -198,9 +204,39 @@ export interface LigneVenteSync {
 export interface PaiementVenteSync {
   id: string;
   venteId: string;
-  moyen: 'ESPECES' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'VIREMENT';
+  moyen: 'ESPECES' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'VIREMENT' | 'AVOIR';
   montant: number;
   reference: string | null;
+}
+
+/** Retour ou échange (les 60 derniers jours sur les appareils, comme les ventes). */
+export interface RetourSync {
+  id: string;
+  boutiqueId: string;
+  venteId: string;
+  type: 'REMBOURSEMENT' | 'AVOIR' | 'ECHANGE';
+  etatAppareil: 'INTACT' | 'DEFECTUEUX' | 'ENDOMMAGE';
+  motif: string;
+  valeur: number;
+  montantRembourse: number;
+  moyenRemboursement: 'ESPECES' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'VIREMENT' | null;
+  referenceRemboursement: string | null;
+  avoir: number;
+  venteEchangeId: string | null;
+  dateRetour: string;
+  creeParId: string | null;
+  valideParId: string | null;
+}
+
+export interface LigneRetourSync {
+  id: string;
+  retourId: string;
+  ligneVenteId: string;
+  articleId: string | null;
+  quantite: number;
+  destination: 'REMISE_EN_STOCK' | 'OCCASION' | 'REBUT';
+  montant: number;
+  prixRevente: number | null;
 }
 
 export interface DonneesEntites {
@@ -220,6 +256,8 @@ export interface DonneesEntites {
   vente: VenteSync;
   ligneVente: LigneVenteSync;
   paiementVente: PaiementVenteSync;
+  retour: RetourSync;
+  ligneRetour: LigneRetourSync;
 }
 
 /** Un changement du journal du serveur (descente vers les appareils). */

@@ -8,12 +8,14 @@ import {
   pourcentageRemise,
   totauxVente,
   type VenteSaisie,
+  type VenteEchangeSaisie,
 } from '@gestvente/commun';
 import { ACTIONS_AUDIT } from '../audit/audit.service.js';
 import type { NouveauChangement, Tx } from '../sync/journal.service.js';
 import type { ContexteOperation } from '../sync/operations/gestionnaire.js';
 import {
   versArticle,
+  versClient,
   versLigneVente,
   versPaiementVente,
   versStock,
@@ -53,10 +55,13 @@ export async function changementsVente(tx: Tx, venteId: string): Promise<Nouveau
  * remise dans le plafond (ou validée par un gérant), paiements suffisants, téléphones
  * encore disponibles (sinon conflit, signalé au gérant). Le prix saisi sur l'appareil
  * est celui payé par le client : s'il diffère du prix actuel, l'écart est audité.
+ * `reprise` : valeur des articles rendus lors d'un échange, déduite du total.
+ * Un paiement « Avoir » est pris sur le solde d'avoir du client.
  */
 export async function enregistrerVente(
   { tx, utilisateur, operation, journal, audit, autorisations }: ContexteOperation,
-  d: VenteSaisie,
+  d: VenteSaisie | VenteEchangeSaisie,
+  reprise = 0,
 ): Promise<Controle> {
   const { commerceId } = utilisateur;
   const boutiqueId = operation.boutiqueId;
@@ -86,6 +91,9 @@ export async function enregistrerVente(
   for (const l of d.lignes) {
     quantiteParProduit.set(l.produitId, (quantiteParProduit.get(l.produitId) ?? 0) + l.quantite);
   }
+  const articles = await tx.article.findMany({
+    where: { id: { in: d.lignes.flatMap((l) => (l.articleId ? [l.articleId] : [])) }, commerceId },
+  });
   const ecartsPrix: { produit: string; tarif: string; saisi: number; actuel: number }[] = [];
   for (const l of d.lignes) {
     const produit = produits.find((p) => p.id === l.produitId);
@@ -107,17 +115,22 @@ export async function enregistrerVente(
         `« ${produit.nom} » : prix de gros réservé aux grossistes ou à partir de ${seuil ?? '—'} pièces.`,
       );
     }
+    // Un téléphone revendu d'occasion a son propre prix.
+    const prixOccasion = articles.find((a) => a.id === l.articleId)?.prixRevente;
     const actuel = Number(
-      l.tarif === 'GROS'
-        ? (prixBoutique?.prixGros ?? produit.prixGros)
-        : (prixBoutique?.prixDetail ?? produit.prixDetail),
+      prixOccasion ??
+        (l.tarif === 'GROS'
+          ? (prixBoutique?.prixGros ?? produit.prixGros)
+          : (prixBoutique?.prixDetail ?? produit.prixDetail)),
     );
     if (actuel !== l.prixUnitaire) {
       ecartsPrix.push({ produit: produit.nom, tarif: l.tarif, saisi: l.prixUnitaire, actuel });
     }
   }
 
-  const { sousTotal, total } = totauxVente(d.lignes, d.remise);
+  const { sousTotal, total: avantReprise } = totauxVente(d.lignes, d.remise);
+  if (reprise > avantReprise) return rejet('La reprise dépasse le montant de la vente.');
+  const total = avantReprise - reprise;
   const commerce = await tx.commerce.findUniqueOrThrow({ where: { id: commerceId } });
   const dateVente = new Date(d.dateVente);
   const autorisation = await autorisations.plafondAutorise(
@@ -135,11 +148,19 @@ export async function enregistrerVente(
   if (erreur) return rejet(erreur);
   const paiements = controlerPaiements(total, d.paiements);
   if (!paiements.ok) return rejet(paiements.motif);
+  const avoirUtilise = d.paiements
+    .filter((p) => p.moyen === 'AVOIR')
+    .reduce((t, p) => t + p.montant, 0);
+  if (avoirUtilise > 0) {
+    if (!client) return rejet('Un avoir se paie au nom du client : choisissez-le.');
+    if (Number(client.soldeAvoir) < avoirUtilise) {
+      return conflit(
+        `Avoir insuffisant : le solde de ${client.nom} est de ${Number(client.soldeAvoir)}.`,
+      );
+    }
+  }
 
   // Téléphones encore disponibles dans cette boutique (premier arrivé, premier servi).
-  const articles = await tx.article.findMany({
-    where: { id: { in: d.lignes.flatMap((l) => (l.articleId ? [l.articleId] : [])) }, commerceId },
-  });
   for (const l of d.lignes) {
     if (!l.articleId) continue;
     const article = articles.find((a) => a.id === l.articleId) ?? null;
@@ -163,6 +184,7 @@ export async function enregistrerVente(
       mode: 'COMPTANT',
       sousTotal,
       remise: d.remise,
+      reprise,
       total,
       montantPaye: total,
       renduMonnaie: paiements.rendu,
@@ -226,6 +248,18 @@ export async function enregistrerVente(
   await tx.paiement.createMany({
     data: d.paiements.map((p) => ({ ...p, reference: p.reference?.trim() || null, venteId: d.id })),
   });
+  if (avoirUtilise > 0 && client) {
+    const debite = await tx.client.update({
+      where: { id: client.id },
+      data: { soldeAvoir: { decrement: avoirUtilise } },
+    });
+    changements.push({
+      entite: 'client',
+      id: debite.id,
+      boutiqueId: null,
+      donnees: versClient(debite),
+    });
+  }
   await journal.ecrire(tx, commerceId, [...changements, ...(await changementsVente(tx, d.id))]);
 
   if (d.remise > 0) {
@@ -278,13 +312,22 @@ export async function annulerVente(
   const boutiqueId = operation.boutiqueId;
   const vente = await tx.vente.findFirst({
     where: { id: d.venteId, commerceId, boutiqueId },
-    include: { lignes: { include: { article: true } }, retours: true, credit: true },
+    include: {
+      lignes: { include: { article: true } },
+      paiements: true,
+      retours: true,
+      echanges: true,
+      credit: true,
+    },
   });
   if (!vente) return rejet('Vente introuvable dans cette boutique.');
   if (vente.statut === 'ANNULEE') return OK;
   if (vente.retours.length)
     return conflit('Cette vente a déjà fait l’objet d’un retour : traitez-la par un retour.');
   if (vente.credit) return conflit('Cette vente est à crédit : annulez plutôt le crédit.');
+  if (vente.echanges.length) {
+    return conflit('Vente issue d’un échange : traitez-la par un nouveau retour.');
+  }
 
   await tx.vente.update({
     where: { id: vente.id },
@@ -328,6 +371,22 @@ export async function annulerVente(
         referenceId: vente.id,
         utilisateurId: utilisateur.id,
       },
+    });
+  }
+  // L'avoir utilisé revient au client.
+  const avoirUtilise = vente.paiements
+    .filter((p) => p.moyen === 'AVOIR')
+    .reduce((t, p) => t + Number(p.montant), 0);
+  if (avoirUtilise > 0 && vente.clientId) {
+    const credite = await tx.client.update({
+      where: { id: vente.clientId },
+      data: { soldeAvoir: { increment: avoirUtilise } },
+    });
+    changements.push({
+      entite: 'client',
+      id: credite.id,
+      boutiqueId: null,
+      donnees: versClient(credite),
     });
   }
   await journal.ecrire(tx, commerceId, [...changements, ...(await changementsVente(tx, vente.id))]);

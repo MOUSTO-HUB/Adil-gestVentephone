@@ -55,6 +55,7 @@ export async function chargerDocument(
     lignes,
     sousTotal: vente.sousTotal,
     remise: vente.remise,
+    reprise: vente.reprise ?? 0,
     total: vente.total,
     montantPaye: vente.montantPaye,
     renduMonnaie: vente.renduMonnaie,

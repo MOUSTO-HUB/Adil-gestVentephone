@@ -13,17 +13,9 @@ import * as Crypto from 'expo-crypto';
 import { router, useTheme } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Scanner, scannerDisponible } from '@/components/scanner';
-import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
+import { ChoixArticles } from '@/components/choix-articles';
+import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
-import {
-  accessoiresCompatibles,
-  articleEnStock,
-  imeisDisponibles,
-  produitPourVente,
-  versPanier,
-} from '@/lib/caisse';
-import { rechercherProduits, trouverParCode } from '@/lib/catalogue';
 import { rechercherClients } from '@/lib/clients';
 import { type ArticlePanier, prixDuPanier, prochainNumeroFacture } from '@/lib/panier';
 import { useSession } from '@/lib/session';
@@ -55,8 +47,6 @@ export default function Vente() {
   const { base, enregistrer } = useSync();
   const monnaie = profil?.commerce.monnaie;
   const [articles, setArticles] = useState<ArticlePanier[]>([]);
-  const [recherche, setRecherche] = useState('');
-  const [choixImei, setChoixImei] = useState<{ produitId: string; nom: string } | null>(null);
   const [client, setClient] = useState<ClientSync | null>(null);
   const [rechercheClient, setRechercheClient] = useState('');
   const [remise, setRemise] = useState('');
@@ -64,7 +54,6 @@ export default function Vente() {
   const [gerantId, setGerantId] = useState('');
   const [gerantPin, setGerantPin] = useState('');
   const [paiements, setPaiements] = useState<Paiements>(PAIEMENTS_VIDES);
-  const [scanner, setScanner] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [derniere, setDerniere] = useState<{
@@ -75,34 +64,6 @@ export default function Vente() {
   } | null>(null);
   const boutiqueId = boutique?.id ?? '';
 
-  const resultats = useLecture(
-    async (b) =>
-      recherche.trim() ? rechercherProduits(b, boutiqueId, recherche, { limite: 6 }) : [],
-    [recherche, boutiqueId],
-  );
-  const imeis = useLecture(
-    async (b) =>
-      choixImei
-        ? imeisDisponibles(
-            b,
-            boutiqueId,
-            choixImei.produitId,
-            articles.flatMap((a) => (a.articleId ? [a.articleId] : [])),
-          )
-        : [],
-    [choixImei?.produitId, articles.length, boutiqueId],
-  );
-  const modeles = [...new Set(articles.flatMap((a) => (a.modeleId ? [a.modeleId] : [])))];
-  const suggestions = useLecture(
-    (b) =>
-      accessoiresCompatibles(
-        b,
-        boutiqueId,
-        modeles,
-        articles.map((a) => a.produitId),
-      ),
-    [modeles.join(','), articles.length, boutiqueId],
-  );
   const clients = useLecture(
     async (b) =>
       rechercheClient.trim() ? (await rechercherClients(b, rechercheClient)).slice(0, 5) : [],
@@ -126,73 +87,15 @@ export default function Vente() {
   const pourcentage = pourcentageRemise(calcul.remise, calcul.sousTotal);
   const autorisationNecessaire =
     pourcentage > plafond && (!autorisation || pourcentage > autorisation.plafond);
-  const listePaiements = MOYENS_PAIEMENT.flatMap((moyen) => {
+  // L'avoir n'est proposé qu'à un client qui en a un.
+  const moyens = MOYENS_PAIEMENT.filter((m) => m !== 'AVOIR' || (client?.soldeAvoir ?? 0) > 0);
+  const listePaiements = moyens.flatMap((moyen) => {
     const montant = entier(paiements[moyen].montant);
     return montant > 0
       ? [{ moyen, montant, reference: paiements[moyen].reference.trim() || null }]
       : [];
   });
   const paye = listePaiements.reduce((t, p) => t + p.montant, 0);
-
-  const ajouterProduit = async (
-    produitId: string,
-    article: { id: string; imei: string } | null = null,
-  ) => {
-    setMessage(null);
-    const produit = await produitPourVente(base, boutiqueId, produitId);
-    if (!produit) return;
-    setRecherche('');
-    if (produit.type === 'TELEPHONE' && !article) {
-      setChoixImei({ produitId: produit.id, nom: produit.nom });
-      return;
-    }
-    setChoixImei(null);
-    if (produit.type === 'ACCESSOIRE') {
-      const deja = articles.find((a) => a.produitId === produit.id);
-      if ((deja?.quantite ?? 0) + 1 > produit.quantite) {
-        setMessage(`« ${produit.nom} » : ${produit.quantite} en stock.`);
-        return;
-      }
-      if (deja) {
-        setArticles((as) =>
-          as.map((a) => (a.cle === deja.cle ? { ...a, quantite: a.quantite + 1 } : a)),
-        );
-        return;
-      }
-    }
-    if (article && articles.some((a) => a.articleId === article.id)) return;
-    setArticles((as) => [...as, versPanier(produit, Crypto.randomUUID(), article)]);
-  };
-
-  /** Lecteur USB (code puis Entrée) ou caméra : code-barres ou IMEI exact. */
-  const lireCode = async (code: string) => {
-    const trouve = await trouverParCode(base, boutiqueId, code);
-    if (!trouve) {
-      setRecherche(code);
-      return;
-    }
-    if (trouve.articleId) {
-      const article = await articleEnStock(base, boutiqueId, trouve.articleId);
-      if (!article) {
-        setMessage(`Le téléphone ${code} n’est pas en stock dans cette boutique.`);
-        return;
-      }
-      await ajouterProduit(article.produitId, article);
-    } else {
-      await ajouterProduit(trouve.produitId);
-    }
-  };
-
-  const changerQuantite = (cle: string, delta: number) =>
-    setArticles((as) =>
-      as.flatMap((a) =>
-        a.cle !== cle
-          ? [a]
-          : a.quantite + delta <= 0
-            ? []
-            : [{ ...a, quantite: a.quantite + delta }],
-      ),
-    );
 
   const demanderAutorisation = async () => {
     setMessage(null);
@@ -284,119 +187,14 @@ export default function Vente() {
         </Carte>
       ) : null}
 
-      <Champ
-        libelle="Produit (nom, code-barres ou IMEI)"
-        value={recherche}
-        onChangeText={setRecherche}
-        autoCorrect={false}
-        autoFocus={!scannerDisponible}
-        returnKeyType="search"
-        onSubmitEditing={() => void lireCode(recherche)}
-      />
-      {scannerDisponible ? (
-        <Bouton titre="Scanner" variante="secondaire" onPress={() => setScanner(true)} />
-      ) : null}
-      {resultats?.map((p) => (
-        <Pressable
-          key={p.id}
-          accessibilityRole="button"
-          onPress={() => void ajouterProduit(p.id)}
-          style={[styles.resultat, { borderColor: colors.border, backgroundColor: colors.card }]}
-        >
-          <Text style={{ color: colors.text, flex: 1 }}>{p.nom}</Text>
-          <Text style={{ color: colors.text, opacity: 0.65 }}>
-            {formaterMontant(p.prixDetail, monnaie)} · {p.quantite} en stock
-          </Text>
-        </Pressable>
-      ))}
-      {choixImei ? (
-        <Carte>
-          <Texte gras>{choixImei.nom} : choisissez l’IMEI</Texte>
-          {imeis?.length === 0 ? <Texte discret>Aucun téléphone disponible.</Texte> : null}
-          <View style={styles.pastilles}>
-            {imeis?.map((a) => (
-              <Pressable
-                key={a.id}
-                accessibilityRole="button"
-                onPress={() => void ajouterProduit(choixImei.produitId, a)}
-                style={[styles.pastille, { borderColor: colors.primary }]}
-              >
-                <Text style={{ color: colors.primary }}>{a.imei}</Text>
-              </Pressable>
-            ))}
-          </View>
-          <Bouton titre="Fermer" variante="secondaire" onPress={() => setChoixImei(null)} />
-        </Carte>
-      ) : null}
       <Message texte={message} />
-
-      <Carte>
-        <Texte gras>Panier</Texte>
-        {calcul.lignes.length === 0 ? <Texte discret>Scannez ou cherchez un produit.</Texte> : null}
-        {calcul.lignes.map((l) => (
-          <View key={l.cle} style={styles.ligne}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.text, fontWeight: '600' }}>{l.nom}</Text>
-              <Text style={{ color: colors.text, opacity: 0.65 }}>
-                {l.imei ? `IMEI ${l.imei} · ` : ''}
-                {formaterMontant(l.prixUnitaire, monnaie)}
-                {l.tarif === 'GROS' ? ' (gros)' : ''}
-              </Text>
-            </View>
-            {l.type === 'ACCESSOIRE' ? (
-              <View style={styles.quantite}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Un de moins"
-                  onPress={() => changerQuantite(l.cle, -1)}
-                >
-                  <Text style={[styles.bouton, { color: colors.primary }]}>−</Text>
-                </Pressable>
-                <Text style={{ color: colors.text, fontWeight: '700' }}>{l.quantite}</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Un de plus"
-                  onPress={() => void ajouterProduit(l.produitId)}
-                >
-                  <Text style={[styles.bouton, { color: colors.primary }]}>+</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Retirer ${l.nom}`}
-                onPress={() => changerQuantite(l.cle, -1)}
-              >
-                <Text style={{ color: colors.notification, fontWeight: '700' }}>Retirer</Text>
-              </Pressable>
-            )}
-            <Text
-              style={{ color: colors.text, fontWeight: '700', minWidth: 90, textAlign: 'right' }}
-            >
-              {formaterMontant(l.total, monnaie)}
-            </Text>
-          </View>
-        ))}
-        {suggestions?.length ? (
-          <>
-            <Texte discret>Accessoires compatibles :</Texte>
-            <View style={styles.pastilles}>
-              {suggestions.map((s) => (
-                <Pressable
-                  key={s.id}
-                  accessibilityRole="button"
-                  onPress={() => void ajouterProduit(s.id)}
-                  style={[styles.pastille, { borderColor: colors.primary }]}
-                >
-                  <Text style={{ color: colors.primary }}>
-                    + {s.nom} ({formaterMontant(s.prixDetail, monnaie)})
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </>
-        ) : null}
-      </Carte>
+      <ChoixArticles
+        boutiqueId={boutiqueId}
+        monnaie={monnaie}
+        articles={articles}
+        setArticles={setArticles}
+        lignes={calcul.lignes}
+      />
 
       <Carte>
         <Texte gras>
@@ -485,9 +283,14 @@ export default function Vente() {
 
       <Carte>
         <Texte gras>Paiement</Texte>
-        {MOYENS_PAIEMENT.map((moyen) => (
+        {moyens.map((moyen) => (
           <View key={moyen} style={styles.paiement}>
-            <Text style={{ color: colors.text, width: 120 }}>{LIBELLES_MOYENS[moyen]}</Text>
+            <Text style={{ color: colors.text, width: 120 }}>
+              {LIBELLES_MOYENS[moyen]}
+              {moyen === 'AVOIR' && client
+                ? ` (solde ${formaterMontant(client.soldeAvoir, monnaie)})`
+                : ''}
+            </Text>
             <TextInput
               value={paiements[moyen].montant}
               onChangeText={(montant) =>
@@ -549,35 +352,11 @@ export default function Vente() {
         desactive={!articles.length}
       />
       <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
-      <Scanner
-        visible={scanner}
-        surCode={(code) => void lireCode(code)}
-        fermer={() => setScanner(false)}
-      />
     </Ecran>
   );
 }
 
 const styles = StyleSheet.create({
-  resultat: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-  },
-  pastilles: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  pastille: { borderWidth: 1.5, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 6 },
-  ligne: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flexWrap: 'wrap',
-    paddingVertical: 4,
-  },
-  quantite: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  bouton: { fontSize: 24, fontWeight: '700', paddingHorizontal: 6 },
   saisie: {
     borderWidth: 1,
     borderRadius: 8,

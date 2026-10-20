@@ -17,6 +17,7 @@ import {
 import { clientEnregistrer, fournisseurEnregistrer } from './clients.operations.js';
 import type { Gestionnaire } from './gestionnaire.js';
 import { articleSortir, stockAjuster } from './stock.operations.js';
+import { retourEnregistrer } from './retours.operations.js';
 import { venteAnnuler, venteEnregistrer } from './ventes.operations.js';
 
 /** Un gestionnaire par type d'opération (chaque fonctionnalité ajoute les siens). */
@@ -38,4 +39,5 @@ export const GESTIONNAIRES: { [T in TypeOperation]: Gestionnaire<T> } = {
   INVENTAIRE_VALIDER: inventaireValider,
   VENTE_ENREGISTRER: venteEnregistrer,
   VENTE_ANNULER: venteAnnuler,
+  RETOUR_ENREGISTRER: retourEnregistrer,
 };

@@ -47,6 +47,13 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Remise au-delà du plafond : un gérant valide en personne par son PIN (`POST /api/ventes/autorisations-remise`, en ligne) ; le jeton signé est joint à la vente et vérifié par rapport à sa date.
 - Prix d'achat des lignes masqué aux vendeurs ; l'instantané ne contient que les ventes des 60 derniers jours.
 
+## Retours et échanges
+
+- Règles dans `packages/commun/src/retours.ts` : `erreurConditionsRetour` (délai `Commerce.delaiRetourJours` ; appareil endommagé par le client refusé ; au-delà du délai, seul un appareil en panne sous garantie s'échange), `valeurRetour` (prix payé, remise de la vente au prorata, arrondi inférieur), `bilanRetour` (remboursement, avoir, ou échange : `reprise`, `aPayer`, `aRendre`), `erreurDestination` (neuf, occasion avec `prixRevente` pour un téléphone, rebut).
+- Opération `RETOUR_ENREGISTRER` (écritures `api/src/retours/retours.ecritures.ts`) : gérant ou propriétaire ; un vendeur joint le jeton de `POST /api/ventes/autorisations-retour` (PIN du gérant, valable pour cette vente). L'échange crée une nouvelle vente par `enregistrerVente(ctx, vente, reprise)` (`Vente.reprise` déduite du total). Chaque article rendu : `LigneRetour`, article `EN_STOCK` (prix d'occasion) ou `REBUT`, stock, `MouvementStock` RETOUR (visible dans la fiche IMEI), audit `RETOUR_ENREGISTRE`.
+- Avoir : `Client.soldeAvoir`, crédité par un retour en avoir, payé avec le moyen `AVOIR` (jamais de rendu de monnaie ; rendu au client si la vente est annulée). Une vente avec retour ou issue d'un échange ne s'annule plus.
+- App : recherche de la vente (numéro, IMEI, client) `retours.tsx`, formulaire `retour/[venteId].tsx`, articles d'une vente ou d'un échange choisis par `components/choix-articles.tsx`. L'instantané envoie aussi les téléphones vendus des ventes des 60 derniers jours.
+
 ## Factures, reçus et garantie
 
 - Documents construits sur l'appareil depuis la base locale (`app/src/lib/documents.ts` → `DocumentVente`), donc imprimables hors ligne. Mise en page dans `packages/commun/src/documents.ts` : `lignesRecu` (58 mm = 32 colonnes, 80 mm = 48), `recuHtml`, `factureHtml` (A4), `texteMessage` (WhatsApp/SMS), `etatGarantie`, `mentionGarantie` ; dates au fuseau du commerce (`profil.commerce.fuseau`).

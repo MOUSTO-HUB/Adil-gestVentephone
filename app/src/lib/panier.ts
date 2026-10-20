@@ -15,6 +15,8 @@ export interface ArticlePanier {
   prixDetail: number;
   prixGros: number;
   seuilGros: number | null;
+  /** Téléphone revendu d'occasion (prix propre). */
+  occasion?: boolean;
 }
 
 export interface LignePrix extends ArticlePanier {

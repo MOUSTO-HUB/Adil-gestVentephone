@@ -49,6 +49,7 @@ const vente: DocumentVente = {
   ],
   sousTotal: 1_560_000,
   remise: 60_000,
+  reprise: 0,
   total: 1_500_000,
   montantPaye: 1_500_000,
   renduMonnaie: 100_000,

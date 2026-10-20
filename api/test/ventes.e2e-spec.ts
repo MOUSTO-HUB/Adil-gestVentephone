@@ -220,6 +220,10 @@ describe('Ventes (e2e)', () => {
     // Le vendeur retrouve la vente sur ses appareils, sans les coûts d'achat.
     const { body } = await http().get('/api/sync/instantane').auth(vendeur.jetonAcces, bearer);
     expect(body.donnees.vente.map((v: { id: string }) => v.id)).toContain(contenu.id);
+    // Le téléphone vendu reste sur l'appareil (IMEI du reçu, retours).
+    expect(body.donnees.article).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: articles[0].id, statut: 'VENDU' })]),
+    );
     expect(body.donnees.ligneVente.every((l: { prixAchat: unknown }) => l.prixAchat === null)).toBe(
       true,
     );

@@ -35,6 +35,7 @@ export interface Profil {
     fuseau?: string;
     remiseMaxVendeur: number;
     remiseMaxGerant: number;
+    delaiRetourJours?: number;
   };
   boutiques: Boutique[];
 }

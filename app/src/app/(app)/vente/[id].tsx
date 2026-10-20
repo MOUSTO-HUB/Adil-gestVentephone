@@ -1,6 +1,8 @@
 import {
   formaterMontant,
   LIBELLES_MOYENS,
+  LIBELLES_TYPES_RETOUR,
+  type RetourSync,
   type PaiementVenteSync,
   peutGererSessions,
   type VenteSync,
@@ -60,6 +62,15 @@ export default function DetailVente() {
             })
           : null,
       reglages: await lireReglagesImpression(b),
+      retours: await b.tous<RetourSync & { numeroEchange: string | null }>(
+        `SELECT r.*, e.numero AS numeroEchange FROM retour r LEFT JOIN vente e ON e.id = r.venteEchangeId
+          WHERE r.venteId = ? ORDER BY r.dateRetour`,
+        [id],
+      ),
+      origine: await b.premier<{ venteId: string; numero: string }>(
+        'SELECT r.venteId, v.numero FROM retour r JOIN vente v ON v.id = r.venteId WHERE r.venteEchangeId = ?',
+        [id],
+      ),
     }),
     [id, profil, boutique],
   );
@@ -69,7 +80,7 @@ export default function DetailVente() {
         {null}
       </Ecran>
     );
-  const { vente, lignes, paiements, document, reglages } = donnees;
+  const { vente, lignes, paiements, document, reglages, retours, origine } = donnees;
   if (!vente || !boutique) {
     return (
       <Ecran titre="Vente" enHaut>
@@ -136,11 +147,14 @@ export default function DetailVente() {
         </Carte>
       ))}
       <Carte>
+        {vente.remise > 0 || vente.reprise > 0 ? (
+          <Texte>Sous-total : {formaterMontant(vente.sousTotal, monnaie)}</Texte>
+        ) : null}
         {vente.remise > 0 ? (
-          <>
-            <Texte>Sous-total : {formaterMontant(vente.sousTotal, monnaie)}</Texte>
-            <Texte>Remise : − {formaterMontant(vente.remise, monnaie)}</Texte>
-          </>
+          <Texte>Remise : − {formaterMontant(vente.remise, monnaie)}</Texte>
+        ) : null}
+        {vente.reprise > 0 ? (
+          <Texte>Reprise (échange) : − {formaterMontant(vente.reprise, monnaie)}</Texte>
         ) : null}
         <Texte gras>Total : {formaterMontant(vente.total, monnaie)}</Texte>
         {paiements.map((p) => (
@@ -153,9 +167,55 @@ export default function DetailVente() {
           <Texte discret>Monnaie rendue : {formaterMontant(vente.renduMonnaie, monnaie)}</Texte>
         ) : null}
       </Carte>
+      {origine ? (
+        <Carte>
+          <Texte>Échange de la facture {origine.numero}.</Texte>
+          <Bouton
+            titre="Voir la vente d’origine"
+            variante="secondaire"
+            onPress={() =>
+              router.push({ pathname: '/vente/[id]', params: { id: origine.venteId } })
+            }
+          />
+        </Carte>
+      ) : null}
+      {retours.map((r) => (
+        <Carte key={r.id}>
+          <Texte gras>
+            {LIBELLES_TYPES_RETOUR[r.type]} du {new Date(r.dateRetour).toLocaleDateString('fr-FR')}
+          </Texte>
+          <Texte discret>{r.motif}</Texte>
+          <Texte>Valeur rendue : {formaterMontant(r.valeur, monnaie)}</Texte>
+          {r.montantRembourse > 0 ? (
+            <Texte>
+              Remboursé : {formaterMontant(r.montantRembourse, monnaie)}
+              {r.moyenRemboursement ? ` (${LIBELLES_MOYENS[r.moyenRemboursement]})` : ''}
+            </Texte>
+          ) : null}
+          {r.avoir > 0 ? <Texte>Avoir : {formaterMontant(r.avoir, monnaie)}</Texte> : null}
+          {r.venteEchangeId ? (
+            <Bouton
+              titre={`Vente d’échange ${r.numeroEchange ?? ''}`}
+              variante="secondaire"
+              onPress={() =>
+                router.push({ pathname: '/vente/[id]', params: { id: r.venteEchangeId! } })
+              }
+            />
+          ) : null}
+        </Carte>
+      ))}
+      {vente.statut === 'VALIDEE' ? (
+        <Bouton
+          titre="Retour ou échange"
+          variante="secondaire"
+          onPress={() =>
+            router.push({ pathname: '/retour/[venteId]', params: { venteId: vente.id } })
+          }
+        />
+      ) : null}
       {document ? <DocumentsVente document={document} reglages={reglages} /> : null}
       <Message texte={message?.texte ?? null} type={message?.type} />
-      {gestion && vente.statut === 'VALIDEE' ? (
+      {gestion && vente.statut === 'VALIDEE' && !retours.length && !origine ? (
         <Carte>
           <Champ
             libelle="Motif de l’annulation"

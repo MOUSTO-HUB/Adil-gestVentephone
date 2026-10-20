@@ -106,6 +106,17 @@ enum MoyenPaiement {
   ORANGE_MONEY
   MTN_MOMO
   VIREMENT
+  /// Avoir du client (crédit d'un retour), déduit de son solde.
+  AVOIR
+}
+
+/// État constaté de l'appareil rendu.
+enum EtatRetour {
+  INTACT
+  /// En panne sans faute du client (couvert par la garantie).
+  DEFECTUEUX
+  /// Cassé, oxydé ou modifié par le client.
+  ENDOMMAGE
 }
 
 enum TypeRetour {
@@ -114,8 +125,10 @@ enum TypeRetour {
   ECHANGE
 }
 
+/// Devenir de l'article rendu : remis en stock comme neuf, revendu d'occasion ou mis au rebut.
 enum DestinationRetour {
   REMISE_EN_STOCK
+  OCCASION
   REBUT
 }
 
@@ -221,6 +234,8 @@ model Commerce {
   remiseMaxVendeur Int      @default(5)
   /// Remise maximale (en %) qu'un gérant peut accorder.
   remiseMaxGerant  Int      @default(15)
+  /// Délai (jours après la vente) pour un retour ou un échange ; au-delà, seul un appareil en panne sous garantie s'échange.
+  delaiRetourJours Int      @default(7)
   creeLe           DateTime @default(now())
   modifieLe        DateTime @updatedAt
 
@@ -619,6 +634,8 @@ model Client {
   adresse       String?
   /// Plafond de crédit fixé par le propriétaire (nul = pas de crédit autorisé).
   plafondCredit BigInt?
+  /// Avoirs non utilisés (retours remboursés en avoir), utilisables comme paiement.
+  soldeAvoir    BigInt     @default(0)
   archive       Boolean    @default(false)
   creeLe        DateTime   @default(now())
   modifieLe     DateTime   @updatedAt
@@ -806,21 +823,29 @@ model Paiement {
 }
 
 model Retour {
-  id                 String         @id @default(uuid())
-  commerceId         String
-  boutiqueId         String
-  venteId            String
-  type               TypeRetour
-  motif              String
-  montantRembourse   BigInt         @default(0)
-  moyenRemboursement MoyenPaiement?
+  id                     String         @id @default(uuid())
+  commerceId             String
+  boutiqueId             String
+  venteId                String
+  type                   TypeRetour
+  motif                  String
+  etatAppareil           EtatRetour     @default(INTACT)
+  /// Valeur des articles rendus (prix payé, remise déduite au prorata).
+  valeur                 BigInt         @default(0)
+  /// Montant porté au solde d'avoir du client.
+  avoir                  BigInt         @default(0)
+  referenceRemboursement String?
+  dateRetour             DateTime       @default(now())
+  appareilId             String?
+  montantRembourse       BigInt         @default(0)
+  moyenRemboursement     MoyenPaiement?
   /// Nouvelle vente en cas d'échange.
-  venteEchangeId     String?
-  caisseId           String?
-  valideParId        String?
-  creeLe             DateTime       @default(now())
-  modifieLe          DateTime       @updatedAt
-  creeParId          String?
+  venteEchangeId         String?
+  caisseId               String?
+  valideParId            String?
+  creeLe                 DateTime       @default(now())
+  modifieLe              DateTime       @updatedAt
+  creeParId              String?
 
   commerce     Commerce      @relation(fields: [commerceId], references: [id])
   boutique     Boutique      @relation(fields: [boutiqueId], references: [id])
@@ -839,6 +864,8 @@ model LigneRetour {
   articleId    String?
   quantite     Int
   destination  DestinationRetour
+  /// Prix de revente d'un téléphone remis en vente d'occasion.
+  prixRevente  BigInt?
   montant      BigInt
 
   retour     Retour     @relation(fields: [retourId], references: [id])

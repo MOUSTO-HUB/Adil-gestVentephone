@@ -3,7 +3,12 @@ import type { Role } from './roles.js';
 
 /** Ventes au détail et en gros : prix appliqués, remises, paiements, garantie. */
 
-export const MOYENS_PAIEMENT = ['ESPECES', 'ORANGE_MONEY', 'MTN_MOMO', 'VIREMENT'] as const;
+/** Moyens d'encaissement et de remboursement (argent réel). */
+export const MOYENS_REMBOURSEMENT = ['ESPECES', 'ORANGE_MONEY', 'MTN_MOMO', 'VIREMENT'] as const;
+export type MoyenRemboursement = (typeof MOYENS_REMBOURSEMENT)[number];
+
+/** Paiement d'une vente : argent réel, ou avoir du client (crédit laissé par un retour). */
+export const MOYENS_PAIEMENT = [...MOYENS_REMBOURSEMENT, 'AVOIR'] as const;
 export type MoyenPaiement = (typeof MOYENS_PAIEMENT)[number];
 
 export const LIBELLES_MOYENS: Record<MoyenPaiement, string> = {
@@ -11,10 +16,12 @@ export const LIBELLES_MOYENS: Record<MoyenPaiement, string> = {
   ORANGE_MONEY: 'Orange Money',
   MTN_MOMO: 'MTN MoMo',
   VIREMENT: 'Virement',
+  AVOIR: 'Avoir',
 };
 
 /** Ces moyens laissent une trace : la référence de la transaction est exigée. */
-export const moyenAvecReference = (moyen: MoyenPaiement) => moyen !== 'ESPECES';
+export const moyenAvecReference = (moyen: MoyenPaiement) =>
+  moyen !== 'ESPECES' && moyen !== 'AVOIR';
 
 const montant = z.number().int('Montant entier attendu.').min(0);
 

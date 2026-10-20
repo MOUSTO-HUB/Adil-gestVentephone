@@ -184,6 +184,42 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX paiement_vente_vente ON paiementVente (venteId);
   `,
+  // 6 : retours et échanges, avoir des clients, reprise déduite d'une vente.
+  `
+  ALTER TABLE client ADD COLUMN soldeAvoir INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE vente ADD COLUMN reprise INTEGER NOT NULL DEFAULT 0;
+  CREATE TABLE retour (
+    id TEXT PRIMARY KEY,
+    boutiqueId TEXT NOT NULL,
+    venteId TEXT NOT NULL,
+    type TEXT NOT NULL,
+    etatAppareil TEXT NOT NULL,
+    motif TEXT NOT NULL,
+    valeur INTEGER NOT NULL,
+    montantRembourse INTEGER NOT NULL,
+    moyenRemboursement TEXT,
+    referenceRemboursement TEXT,
+    avoir INTEGER NOT NULL,
+    venteEchangeId TEXT,
+    dateRetour TEXT NOT NULL,
+    creeParId TEXT,
+    valideParId TEXT
+  );
+  CREATE INDEX retour_vente ON retour (venteId);
+  CREATE INDEX retour_boutique_date ON retour (boutiqueId, dateRetour);
+  CREATE TABLE ligneRetour (
+    id TEXT PRIMARY KEY,
+    retourId TEXT NOT NULL,
+    ligneVenteId TEXT NOT NULL,
+    articleId TEXT,
+    quantite INTEGER NOT NULL,
+    destination TEXT NOT NULL,
+    montant INTEGER NOT NULL,
+    prixRevente INTEGER
+  );
+  CREATE INDEX ligne_retour_retour ON ligneRetour (retourId);
+  CREATE INDEX ligne_retour_ligne_vente ON ligneRetour (ligneVenteId);
+  `,
 ];
 
 /**

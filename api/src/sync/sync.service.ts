@@ -41,6 +41,8 @@ import {
   versProduit,
   versStock,
   versVente,
+  versRetour,
+  versLigneRetour,
 } from './serialisation.js';
 
 export const LIMITE_CHANGEMENTS = 500;
@@ -232,6 +234,23 @@ export class SyncService {
           where: { commerceId, boutiqueId: { in: boutiqueIds }, dateVente: { gte: depuis } },
           include: { lignes: true, paiements: true },
         });
+        const retours = await tx.retour.findMany({
+          where: { commerceId, boutiqueId: { in: boutiqueIds }, dateRetour: { gte: depuis } },
+          include: { lignes: true },
+        });
+        // Téléphones vendus de ces ventes (IMEI des reçus, retours, garantie hors ligne).
+        const enStock = new Set(articles.map((a) => a.id));
+        const vendus = await tx.article.findMany({
+          where: {
+            id: {
+              in: ventes.flatMap((v) =>
+                v.lignes.flatMap((l) =>
+                  l.articleId && !enStock.has(l.articleId) ? [l.articleId] : [],
+                ),
+              ),
+            },
+          },
+        });
         return {
           curseur: Number(dernier._max.seq ?? 0n),
           donnees: {
@@ -242,7 +261,7 @@ export class SyncService {
             prixBoutique: masquer('prixBoutique', prix.map(versPrixBoutique)),
             compatibilite: compatibilites.map(versCompatibilite),
             stock: stocks.map(versStock),
-            article: masquer('article', articles.map(versArticle)),
+            article: masquer('article', [...articles, ...vendus].map(versArticle)),
             client: clients.map(versClient),
             garant: garants.map(versGarant),
             fournisseur: fournisseurs.map((f) => versFournisseur(f, dettes.get(f.id) ?? 0)),
@@ -254,6 +273,8 @@ export class SyncService {
               ventes.flatMap((v) => v.lignes.map(versLigneVente)),
             ),
             paiementVente: ventes.flatMap((v) => v.paiements.map(versPaiementVente)),
+            retour: retours.map(versRetour),
+            ligneRetour: retours.flatMap((r) => r.lignes.map(versLigneRetour)),
           },
         };
       },

@@ -99,6 +99,7 @@ export default function Imprimante() {
           ],
           sousTotal: 0,
           remise: 0,
+          reprise: 0,
           total: 0,
           montantPaye: 0,
           renduMonnaie: 0,

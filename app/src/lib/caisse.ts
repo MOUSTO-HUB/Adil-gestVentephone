@@ -32,11 +32,19 @@ export async function produitPourVente(base: BaseSql, boutiqueId: string, produi
   ]);
 }
 
+/** Téléphone choisi ; `prixRevente` : prix propre d'un téléphone revendu d'occasion. */
+export interface ArticleChoisi {
+  id: string;
+  imei: string;
+  prixRevente: number | null;
+}
+
 export function versPanier(
   p: LigneProduit,
   cle: string,
-  article: { id: string; imei: string } | null,
+  article: ArticleChoisi | null,
 ): ArticlePanier {
+  const occasion = article?.prixRevente ?? null;
   return {
     cle,
     produitId: p.id,
@@ -46,9 +54,10 @@ export function versPanier(
     imei: article?.imei ?? null,
     modeleId: p.modeleId,
     quantite: 1,
-    prixDetail: p.prixDetail,
-    prixGros: p.prixGros,
-    seuilGros: p.seuilGros,
+    prixDetail: occasion ?? p.prixDetail,
+    prixGros: occasion ?? p.prixGros,
+    seuilGros: occasion === null ? p.seuilGros : null,
+    occasion: occasion !== null,
   };
 }
 
@@ -59,8 +68,8 @@ export function imeisDisponibles(
   produitId: string,
   exclus: string[],
 ) {
-  return base.tous<{ id: string; imei: string }>(
-    `SELECT id, imei FROM article
+  return base.tous<ArticleChoisi>(
+    `SELECT id, imei, prixRevente FROM article
       WHERE produitId = ? AND boutiqueId = ? AND statut = 'EN_STOCK'
         ${exclus.length ? `AND id NOT IN (${exclus.map(() => '?').join(', ')})` : ''}
       ORDER BY imei LIMIT 100`,
@@ -70,8 +79,8 @@ export function imeisDisponibles(
 
 /** Téléphone en stock dans la boutique, par son identifiant. */
 export function articleEnStock(base: BaseSql, boutiqueId: string, articleId: string) {
-  return base.premier<{ id: string; imei: string; produitId: string }>(
-    "SELECT id, imei, produitId FROM article WHERE id = ? AND boutiqueId = ? AND statut = 'EN_STOCK'",
+  return base.premier<ArticleChoisi & { produitId: string }>(
+    "SELECT id, imei, prixRevente, produitId FROM article WHERE id = ? AND boutiqueId = ? AND statut = 'EN_STOCK'",
     [articleId, boutiqueId],
   );
 }
