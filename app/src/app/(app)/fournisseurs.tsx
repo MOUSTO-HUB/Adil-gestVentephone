@@ -46,7 +46,6 @@ export default function Fournisseurs() {
           </Text>
         </Pressable>
       ))}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

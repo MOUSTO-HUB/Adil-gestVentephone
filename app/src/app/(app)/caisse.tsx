@@ -274,7 +274,6 @@ export default function Caisse() {
         </Pressable>
       ))}
       <Bouton titre="Dépenses" variante="secondaire" onPress={() => router.push('/depenses')} />
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

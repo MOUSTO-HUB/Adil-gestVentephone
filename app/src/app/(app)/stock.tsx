@@ -111,7 +111,6 @@ export default function Stock() {
           </Pressable>
         );
       })}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       <Scanner
         visible={scanner}
         surCode={(code) => void ouvrirCode(code)}

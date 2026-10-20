@@ -43,7 +43,6 @@ export default function Achats() {
           </Pressable>
         );
       })}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

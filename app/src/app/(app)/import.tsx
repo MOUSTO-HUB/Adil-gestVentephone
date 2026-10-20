@@ -1,5 +1,4 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Platform } from 'react-native';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
@@ -146,7 +145,6 @@ export default function ImportCatalogue() {
           chargement={envoi}
         />
       ) : null}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

@@ -1,5 +1,4 @@
 import { type LargeurRecu, lignesRecu, recuEscPos } from '@gestvente/commun';
-import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Choix } from '@/components/choix';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
@@ -174,7 +173,6 @@ export default function Imprimante() {
         </Carte>
       )}
       <Message texte={message?.texte ?? null} type={message?.type} />
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

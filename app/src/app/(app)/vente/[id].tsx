@@ -85,7 +85,6 @@ export default function DetailVente() {
     return (
       <Ecran titre="Vente" enHaut>
         <Message texte="Vente introuvable." />
-        <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       </Ecran>
     );
   }
@@ -226,7 +225,6 @@ export default function DetailVente() {
           <Bouton titre="Annuler la vente" variante="danger" onPress={() => void annuler()} />
         </Carte>
       ) : null}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

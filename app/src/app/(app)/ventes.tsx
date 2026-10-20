@@ -3,7 +3,7 @@ import { router, useTheme } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Choix } from '@/components/choix';
-import { Bouton, Carte, Ecran, Texte } from '@/components/ui';
+import { Carte, Ecran, Texte } from '@/components/ui';
 import { useSession } from '@/lib/session';
 import { useLecture } from '@/lib/sync/contexte';
 
@@ -79,7 +79,6 @@ export default function Ventes() {
           </Text>
         </Pressable>
       ))}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

@@ -1,5 +1,5 @@
 import { lignesRapportCaisse, peutGererSessions } from '@gestvente/commun';
-import { router, useLocalSearchParams, useTheme } from 'expo-router';
+import { useLocalSearchParams, useTheme } from 'expo-router';
 import { useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { ImpressionCaisse } from '@/components/impression-caisse';
@@ -51,7 +51,6 @@ export default function DetailCaisse() {
     return (
       <Ecran titre="Caisse" enHaut>
         <Message texte="Caisse introuvable." />
-        <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       </Ecran>
     );
   }
@@ -106,7 +105,6 @@ export default function DetailCaisse() {
         </Carte>
       ) : null}
       <Message texte={message?.texte ?? null} type={message?.type} />
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

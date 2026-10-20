@@ -47,7 +47,6 @@ export default function EditionAchat() {
     return (
       <Ecran titre="Bon d’achat" enHaut>
         <Message texte="Ce bon a déjà été réceptionné ou annulé : il ne peut plus être modifié." />
-        <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       </Ecran>
     );
   }

@@ -92,7 +92,6 @@ export default function FicheClient() {
     return (
       <Ecran titre="Client" enHaut>
         <Message texte="Client introuvable." />
-        <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       </Ecran>
     );
   }
@@ -253,7 +252,6 @@ export default function FicheClient() {
           )
         ) : null}
       </Carte>
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

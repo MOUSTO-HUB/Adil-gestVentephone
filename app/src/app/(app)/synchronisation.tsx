@@ -1,5 +1,4 @@
 import { LIBELLES_OPERATIONS, peutGererSessions, type TypeOperation } from '@gestvente/commun';
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
@@ -120,7 +119,6 @@ export default function Synchronisation() {
           />
         </Carte>
       ))}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

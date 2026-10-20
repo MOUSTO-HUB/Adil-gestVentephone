@@ -60,7 +60,6 @@ export default function FicheFournisseur() {
     return (
       <Ecran titre="Fournisseur" enHaut>
         <Message texte="Fournisseur introuvable." />
-        <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       </Ecran>
     );
   }
@@ -98,7 +97,6 @@ export default function FicheFournisseur() {
           </Texte>
         </Carte>
       ))}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

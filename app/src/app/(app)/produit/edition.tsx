@@ -55,7 +55,6 @@ export default function EditionProduit() {
     return (
       <Ecran titre="Fiche produit" enHaut>
         <Message texte="Produit introuvable." />
-        <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       </Ecran>
     );
   }

@@ -11,7 +11,6 @@ import {
 } from '@gestvente/commun';
 import * as Crypto from 'expo-crypto';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Choix } from '@/components/choix';
 import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
@@ -263,7 +262,6 @@ export default function Depenses() {
           ) : null}
         </Carte>
       ))}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

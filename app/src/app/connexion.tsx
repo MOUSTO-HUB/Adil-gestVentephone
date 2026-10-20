@@ -26,10 +26,7 @@ export default function Connexion() {
   };
 
   return (
-    <Ecran
-      titre="GestVente Phone"
-      sousTitre="Connectez-vous avec le compte donné par le propriétaire."
-    >
+    <Ecran titre="Connexion" sousTitre="Connectez-vous avec le compte donné par le propriétaire.">
       <Champ
         libelle="Identifiant"
         value={identifiant}

@@ -62,7 +62,6 @@ export default function Clients() {
           ) : null}
         </Pressable>
       ))}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

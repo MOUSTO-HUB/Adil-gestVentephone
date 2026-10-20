@@ -93,7 +93,6 @@ export default function FicheProduit() {
     return (
       <Ecran titre="Produit" enHaut>
         <Texte discret>{fiche === null ? 'Produit introuvable.' : 'Chargement…'}</Texte>
-        <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       </Ecran>
     );
   }
@@ -291,7 +290,6 @@ export default function FicheProduit() {
           ))}
         </>
       ) : null}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

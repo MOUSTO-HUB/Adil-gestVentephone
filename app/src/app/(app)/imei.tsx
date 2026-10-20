@@ -1,5 +1,5 @@
 import { formaterMontant, imeiValide, normaliserImei } from '@gestvente/commun';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Scanner, scannerDisponible } from '@/components/scanner';
 import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
@@ -163,7 +163,6 @@ export default function FicheImei() {
           ))}
         </>
       ) : null}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       <Scanner visible={scanner} surCode={chercher} fermer={() => setScanner(false)} />
     </Ecran>
   );

@@ -119,7 +119,6 @@ export default function Retours() {
           r.venteId,
         ),
       )}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       <Scanner visible={scanner} surCode={setRecherche} fermer={() => setScanner(false)} />
     </Ecran>
   );

@@ -50,7 +50,6 @@ export default function FicheAchat() {
     return (
       <Ecran titre="Bon d’achat" enHaut>
         <Message texte="Bon d’achat introuvable." />
-        <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       </Ecran>
     );
   }
@@ -213,7 +212,6 @@ export default function FicheAchat() {
       {actif && rienRecu ? (
         <Bouton titre="Annuler le bon" variante="danger" onPress={() => void annuler()} />
       ) : null}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

@@ -11,7 +11,6 @@ import {
   rapportHtml,
   type SectionRapport,
 } from '@gestvente/commun';
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Choix } from '@/components/choix';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
@@ -445,7 +444,6 @@ export default function Rapports() {
           />
         </>
       ) : null}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

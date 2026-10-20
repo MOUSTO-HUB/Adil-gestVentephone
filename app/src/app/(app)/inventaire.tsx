@@ -1,6 +1,6 @@
 import { ecartQuantite, ecartsTelephones, schemaInventaire } from '@gestvente/commun';
 import * as Crypto from 'expo-crypto';
-import { router, useTheme } from 'expo-router';
+import { useTheme } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SaisieImei } from '@/components/saisie-imei';
@@ -250,7 +250,6 @@ function Comptage({
       {brouillon.lignes.length ? (
         <Bouton titre="Valider l’inventaire" onPress={() => void valider()} chargement={envoi} />
       ) : null}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

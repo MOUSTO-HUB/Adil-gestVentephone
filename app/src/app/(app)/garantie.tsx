@@ -156,7 +156,6 @@ export default function ConsultationGarantie() {
           ) : null}
         </Carte>
       ) : null}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       <Scanner visible={scanner} surCode={chercher} fermer={() => setScanner(false)} />
     </Ecran>
   );

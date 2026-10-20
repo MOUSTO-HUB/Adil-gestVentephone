@@ -1,5 +1,4 @@
 import { LIBELLES_ROLES, type Role } from '@gestvente/commun';
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
@@ -91,7 +90,6 @@ export default function Appareils() {
           )}
         </Carte>
       ))}
-      <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
     </Ecran>
   );
 }

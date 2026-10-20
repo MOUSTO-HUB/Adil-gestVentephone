@@ -1,9 +1,10 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FournisseurSession, useSession } from '@/lib/session';
 import { FournisseurSync } from '@/lib/sync/contexte';
+import { THEME_CLAIR, THEME_SOMBRE } from '@/lib/theme';
 
 /** Chaque écran n'est accessible qu'à la bonne étape de la session. */
 function Navigation() {
@@ -38,7 +39,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={colorScheme === 'dark' ? THEME_SOMBRE : THEME_CLAIR}>
         <StatusBar style="auto" />
         <FournisseurSession>
           <FournisseurSync>

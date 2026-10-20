@@ -126,7 +126,6 @@ export default function NouveauRetour() {
     return (
       <Ecran titre="Retour" enHaut>
         <Message texte="Vente introuvable ou annulée." />
-        <Bouton titre="Retour" variante="secondaire" onPress={() => router.back()} />
       </Ecran>
     );
   }
