@@ -13,6 +13,13 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Code partagé : `/packages/commun` (types, schémas zod, règles métier pures)
 - Files d'envoi : Redis + BullMQ (SMS, WhatsApp, rappels)
 
+## Base de données
+
+- Prisma 7 : schéma `api/prisma/schema.prisma`, config `api/prisma.config.ts`, client généré dans `api/src/generated/prisma` (non versionné, `pnpm --filter @gestvente/api db:generate`), importé depuis `../generated/prisma/client.js` ; connexion via `PrismaService`. Modifier le schéma puis `pnpm db:migrate` ; ne jamais éditer une migration déjà poussée.
+- Identifiants UUID texte (générables sur l'appareil hors ligne) ; `commerceId`, `creeLe`, `modifieLe`, `creeParId` sur chaque table.
+- Prix communs sur `Produit`, prix propres à une boutique dans `PrixBoutique`. Téléphones = `Article` (IMEI unique par commerce) ; `Stock` tient la quantité par boutique (téléphones compris) ; chaque variation crée un `MouvementStock`.
+- Docker : PostgreSQL sur le port 5434, Redis sur 6380. Seed : `pnpm db:seed` (comptes proprietaire, gerant, vendeur1, vendeur2 ; mot de passe `SEED_MOT_DE_PASSE`, PIN 1234).
+
 ## Rôles
 
 PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (ventes, trocs, encaissements ; jamais de modification de prix).
@@ -20,7 +27,7 @@ PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (vent
 ## Règles
 
 - Interface et messages en français, textes prêts pour d'autres langues.
-- Montants entiers, monnaie GNF par défaut, paramétrable par commerce.
+- Montants entiers, monnaie GNF par défaut, paramétrable par commerce. En base : BigInt (Prisma) ; dans l'API et l'app : number (`convertirBigIntEnJson`, `api/src/common/bigint.ts`).
 - Téléphones au format E.164 (indicatif +224 par défaut).
 - Toutes les données filtrées par `commerceId` et par les boutiques de l'utilisateur, vérifié côté serveur.
 - Un téléphone = un Article identifié par son IMEI, unique par commerce ; un IMEI vendu ne peut plus être vendu.

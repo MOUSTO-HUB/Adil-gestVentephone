@@ -38,6 +38,14 @@ pnpm db:up
 ```
 
 ```bash
+pnpm db:migrate
+```
+
+```bash
+pnpm db:seed
+```
+
+```bash
 pnpm dev:api
 ```
 
@@ -45,7 +53,8 @@ pnpm dev:api
 pnpm dev:app
 ```
 
-- Base PostgreSQL sur le port **5433** et Redis sur **6380** (pour ne pas gêner un autre projet sur 5432/6379).
+- Base PostgreSQL sur le port **5434** et Redis sur **6380** (pour ne pas gêner d’autres projets sur 5432, 5433 et 6379).
+- Données de démonstration (`pnpm db:seed`) : comptes `proprietaire`, `gerant`, `vendeur1`, `vendeur2` avec le mot de passe `SEED_MOT_DE_PASSE` du `.env` (PIN 1234), 40 produits, 60 IMEI, 10 clients, 3 fournisseurs.
 - API : http://localhost:3200/api/sante — documentation OpenAPI : http://localhost:3200/api/docs
 - Application : dans le terminal Expo, `w` ouvre la version web (http://localhost:8081), `a` l'émulateur Android ; ou scanner le QR code avec Expo Go. Sur un téléphone physique, mettre l'adresse IP du PC dans `EXPO_PUBLIC_API_URL`.
 

@@ -11,7 +11,7 @@ export default defineConfig({
     env: {
       DATABASE_URL:
         process.env.DATABASE_URL ??
-        'postgresql://gestvente:gestvente_dev@localhost:5433/gestvente?schema=public',
+        'postgresql://gestvente:gestvente_dev@localhost:5434/gestvente?schema=public',
     },
   },
 });

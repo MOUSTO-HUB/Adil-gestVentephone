@@ -12,7 +12,7 @@ Référence : [Cahier des charges](CAHIER_DES_CHARGES.md).
 | --- | ------------------- | --------------------------------------------- | ---- |
 | M   | Préparation         | Maquettes des écrans (optionnel)              | ☐    |
 | 1   | 1 · Socle           | Initialisation du monorepo                    | ☑    |
-| 2   | 1 · Socle           | Schéma de base de données                     | ☐    |
+| 2   | 1 · Socle           | Schéma de base de données                     | ☑    |
 | 3   | 1 · Socle           | Authentification, rôles et appareils          | ☐    |
 | 4   | 1 · Socle           | Base locale et moteur de synchronisation      | ☐    |
 | 5   | 1 · Socle           | Catalogue produits                            | ☐    |
@@ -54,7 +54,7 @@ Crée un monorepo pnpm "adil-gestventephone" avec : /api (NestJS + Prisma + Post
 ### Prompt 2 — Schéma de base de données
 
 ```text
-Dans /api, écris le schéma Prisma d'après la section 5.2 de docs/CAHIER_DES_CHARGES.md : Commerce, Boutique, Utilisateur, UtilisateurBoutique, Appareil, Marque, Categorie, Produit (type TELEPHONE ou ACCESSOIRE, capacité, couleur, état NEUF/OCCASION, code-barres, garantie en mois, seuil de gros), Compatibilite, Prix (achat, détail, gros ; boutiqueId nul = prix commun), Article (un téléphone par IMEI, statut EN_STOCK, VENDU, RETOURNE, EN_TRANSFERT, A_REPARER, REBUT…), Stock (quantité d'accessoires par boutique, seuil minimum), MouvementStock, Fournisseur, Achat, LigneAchat, Client, Garant, Vente, LigneVente, Paiement (ESPECES, ORANGE_MONEY, MTN_MOMO, VIREMENT), Caisse, Depense, JournalAudit, OperationSync (UUID de l'appareil, type, statut, conflit). Prévois dès maintenant les tables des phases 2 et 3 (Troc, GrilleReprise, ImeiSignale, Credit, Echeance, Encaissement, Transfert, LigneTransfert, Inventaire, Message). Montants en entiers (Int ou BigInt), IMEI unique par commerce, commerceId partout, creeLe/modifieLe/creePar, index utiles (IMEI, code-barres, téléphone client). Génère la migration et un seed : 1 commerce, 1 boutique, 1 propriétaire, 1 gérant, 2 vendeurs, 40 produits (téléphones et accessoires), 60 IMEI, 10 clients, 3 fournisseurs.
+Dans /api, écris le schéma Prisma d'après la section 5.2 de docs/CAHIER_DES_CHARGES.md : Commerce, Boutique, Utilisateur, UtilisateurBoutique, Appareil, Marque, Categorie, Produit (type TELEPHONE ou ACCESSOIRE, capacité, couleur, état NEUF/OCCASION, code-barres, garantie en mois, seuil de gros), Compatibilite, prix communs (achat, détail, gros) sur le Produit et PrixBoutique pour les prix propres à une boutique, Article (un téléphone par IMEI, statut EN_STOCK, VENDU, RETOURNE, EN_TRANSFERT, A_REPARER, REBUT…), Stock (quantité d'accessoires par boutique, seuil minimum), MouvementStock, Fournisseur, Achat, LigneAchat, Client, Garant, Vente, LigneVente, Paiement (ESPECES, ORANGE_MONEY, MTN_MOMO, VIREMENT), Caisse, Depense, JournalAudit, OperationSync (UUID de l'appareil, type, statut, conflit). Prévois dès maintenant les tables des phases 2 et 3 (Troc, GrilleReprise, ImeiSignale, Credit, Echeance, Encaissement, Transfert, LigneTransfert, Inventaire, Message). Montants en entiers (Int ou BigInt), IMEI unique par commerce, commerceId partout, creeLe/modifieLe/creePar, index utiles (IMEI, code-barres, téléphone client). Génère la migration et un seed : 1 commerce, 1 boutique, 1 propriétaire, 1 gérant, 2 vendeurs, 40 produits (téléphones et accessoires), 60 IMEI, 10 clients, 3 fournisseurs.
 ```
 
 ### Prompt 3 — Authentification, rôles et appareils

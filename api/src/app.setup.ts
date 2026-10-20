@@ -3,9 +3,11 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
+import { convertirBigIntEnJson } from './common/bigint.js';
 
 /** Configuration commune à main.ts et aux tests e2e. */
 export function configurerApplication(app: INestApplication): void {
+  convertirBigIntEnJson();
   const express = app as NestExpressApplication;
   // Seuls les relais du réseau local ou privé (Caddy) sont crus pour X-Forwarded-For.
   express.set('trust proxy', 'loopback, uniquelocal');

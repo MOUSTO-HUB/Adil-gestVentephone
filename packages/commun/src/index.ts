@@ -3,4 +3,5 @@
 // Les règles métier (prix, remise, troc, échéancier, conflits) viendront ici, avec leurs tests.
 
 export * from './application.js';
+export * from './imei.js';
 export * from './monnaie.js';

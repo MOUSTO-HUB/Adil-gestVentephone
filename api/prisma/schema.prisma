@@ -1,5 +1,12 @@
-// Schéma de la base PostgreSQL. Les modèles sont ajoutés à l'étape 2
-// (voir docs/PROMPTS.md) ; après chaque modification : pnpm db:migrate.
+// Schéma de la base PostgreSQL d'Adil-gestVentephone.
+// Après chaque modification : pnpm db:migrate (ne jamais éditer une migration déjà poussée).
+//
+// Conventions :
+// - Identifiants UUID (texte) : ils peuvent être générés sur l'appareil, hors ligne.
+// - Montants en BigInt (entiers dans la monnaie du commerce, GNF par défaut) ;
+//   l'API les expose en nombres (exacts jusqu'à 9 × 10^15).
+// - Chaque table porte commerceId (le compte du propriétaire) ; creeLe, modifieLe, creeParId.
+// - Pas de suppression définitive des ventes, clients ou articles : statut, annulation ou archivage.
 
 generator client {
   provider            = "prisma-client"
@@ -10,4 +17,1158 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─── Énumérations ────────────────────────────────────────────────────────────
+
+enum Role {
+  PROPRIETAIRE
+  GERANT
+  VENDEUR
+}
+
+enum TypeProduit {
+  TELEPHONE
+  ACCESSOIRE
+}
+
+enum EtatProduit {
+  NEUF
+  OCCASION
+}
+
+/// Statut d'un téléphone suivi par son IMEI.
+enum StatutArticle {
+  EN_STOCK
+  A_REPARER
+  VENDU
+  EN_TRANSFERT
+  REBUT
+}
+
+/// Origine d'un article : acheté à un fournisseur, repris lors d'un troc ou trouvé à l'inventaire.
+enum OrigineArticle {
+  ACHAT
+  TROC
+  INVENTAIRE
+}
+
+enum TypeMouvement {
+  ACHAT
+  VENTE
+  ANNULATION_VENTE
+  RETOUR
+  TROC_ENTREE
+  TRANSFERT_SORTIE
+  TRANSFERT_ENTREE
+  AJUSTEMENT
+  REBUT
+}
+
+enum TypeClient {
+  DETAIL
+  GROSSISTE
+}
+
+enum TypePiece {
+  CNI
+  PASSEPORT
+  PERMIS
+  CARTE_CONSULAIRE
+  AUTRE
+}
+
+enum StatutAchat {
+  BROUILLON
+  PARTIEL
+  RECU
+  ANNULE
+}
+
+enum ModeVente {
+  COMPTANT
+  CREDIT
+}
+
+enum StatutVente {
+  VALIDEE
+  ANNULEE
+}
+
+/// Prix appliqué à une ligne de vente.
+enum Tarif {
+  DETAIL
+  GROS
+}
+
+enum MoyenPaiement {
+  ESPECES
+  ORANGE_MONEY
+  MTN_MOMO
+  VIREMENT
+}
+
+enum TypeRetour {
+  REMBOURSEMENT
+  AVOIR
+  ECHANGE
+}
+
+enum DestinationRetour {
+  REMISE_EN_STOCK
+  REBUT
+}
+
+enum StatutCaisse {
+  OUVERTE
+  CLOTUREE
+  VALIDEE
+}
+
+enum CategorieDepense {
+  LOYER
+  ELECTRICITE
+  TRANSPORT
+  SALAIRE
+  ENTRETIEN
+  AUTRE
+}
+
+/// État d'un composant de l'appareil repris lors d'un troc.
+enum EtatComposant {
+  BON
+  MOYEN
+  MAUVAIS
+}
+
+/// État global d'un appareil repris, utilisé par la grille de reprise.
+enum EtatReprise {
+  EXCELLENT
+  BON
+  MOYEN
+  MAUVAIS
+}
+
+enum MotifImeiSignale {
+  VOLE
+  BLOQUE
+}
+
+enum FrequenceCredit {
+  HEBDOMADAIRE
+  MENSUELLE
+}
+
+enum StatutCredit {
+  EN_COURS
+  SOLDE
+  ANNULE
+}
+
+enum StatutTransfert {
+  DEMANDE
+  ENVOYE
+  RECU
+  ANNULE
+}
+
+enum StatutInventaire {
+  EN_COURS
+  VALIDE
+  ANNULE
+}
+
+enum CanalMessage {
+  SMS
+  WHATSAPP
+}
+
+enum TypeMessage {
+  FACTURE
+  RECU
+  RAPPEL_ECHEANCE
+  RETARD_ECHEANCE
+  AUTRE
+}
+
+enum StatutMessage {
+  EN_ATTENTE
+  ENVOYE
+  DELIVRE
+  ECHEC
+}
+
+enum StatutOperationSync {
+  APPLIQUEE
+  REJETEE
+  CONFLIT
+}
+
+// ─── Comptes, boutiques et appareils ─────────────────────────────────────────
+
+/// Compte du propriétaire : regroupe ses boutiques, employés et données.
+model Commerce {
+  id               String   @id @default(uuid())
+  nom              String
+  telephone        String?
+  adresse          String?
+  /// Code de la monnaie des montants (GNF par défaut).
+  monnaie          String   @default("GNF")
+  /// Indicatif ajouté aux numéros saisis sans indicatif.
+  indicatif        String   @default("+224")
+  fuseau           String   @default("Africa/Conakry")
+  /// Remise maximale (en %) qu'un vendeur peut accorder sans le gérant.
+  remiseMaxVendeur Int      @default(5)
+  /// Remise maximale (en %) qu'un gérant peut accorder.
+  remiseMaxGerant  Int      @default(15)
+  creeLe           DateTime @default(now())
+  modifieLe        DateTime @updatedAt
+
+  boutiques       Boutique[]
+  utilisateurs    Utilisateur[]
+  appareils       Appareil[]
+  marques         Marque[]
+  modeles         Modele[]
+  categories      Categorie[]
+  produits        Produit[]
+  articles        Article[]
+  clients         Client[]
+  fournisseurs    Fournisseur[]
+  achats          Achat[]
+  ventes          Vente[]
+  retours         Retour[]
+  caisses         Caisse[]
+  depenses        Depense[]
+  trocs           Troc[]
+  grillesReprise  GrilleReprise[]
+  imeiSignales    ImeiSignale[]
+  credits         Credit[]
+  encaissements   Encaissement[]
+  transferts      Transfert[]
+  inventaires     Inventaire[]
+  mouvementsStock MouvementStock[]
+  messages        Message[]
+  journalAudit    JournalAudit[]
+  operationsSync  OperationSync[]
+}
+
+model Boutique {
+  id         String   @id @default(uuid())
+  commerceId String
+  nom        String
+  adresse    String?
+  telephone  String?
+  /// Préfixe des numéros de facture de la boutique (ex. KAL).
+  prefixe    String
+  actif      Boolean  @default(true)
+  creeLe     DateTime @default(now())
+  modifieLe  DateTime @updatedAt
+  creeParId  String?
+
+  commerce          Commerce              @relation(fields: [commerceId], references: [id])
+  utilisateurs      UtilisateurBoutique[]
+  prix              PrixBoutique[]
+  stocks            Stock[]
+  articles          Article[]
+  achats            Achat[]
+  ventes            Vente[]
+  retours           Retour[]
+  caisses           Caisse[]
+  depenses          Depense[]
+  trocs             Troc[]
+  credits           Credit[]
+  transfertsDepart  Transfert[]           @relation("TransfertDepart")
+  transfertsArrivee Transfert[]           @relation("TransfertArrivee")
+  inventaires       Inventaire[]
+  mouvementsStock   MouvementStock[]
+
+  @@unique([commerceId, prefixe])
+  @@index([commerceId])
+}
+
+model Utilisateur {
+  id                String    @id @default(uuid())
+  commerceId        String
+  nom               String
+  /// Identifiant de connexion, unique sur toute la plateforme.
+  identifiant       String    @unique
+  telephone         String?
+  motDePasseHash    String
+  /// Code PIN de déverrouillage sur un appareil déjà connecté.
+  pinHash           String?
+  role              Role
+  actif             Boolean   @default(true)
+  derniereConnexion DateTime?
+  creeLe            DateTime  @default(now())
+  modifieLe         DateTime  @updatedAt
+  creeParId         String?
+
+  commerce  Commerce              @relation(fields: [commerceId], references: [id])
+  boutiques UtilisateurBoutique[]
+  appareils Appareil[]
+  ventes    Vente[]
+  caisses   Caisse[]
+
+  @@index([commerceId])
+}
+
+/// Rattachement d'un employé à une ou plusieurs boutiques.
+model UtilisateurBoutique {
+  utilisateurId String
+  boutiqueId    String
+  creeLe        DateTime @default(now())
+
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id])
+  boutique    Boutique    @relation(fields: [boutiqueId], references: [id])
+
+  @@id([utilisateurId, boutiqueId])
+  @@index([boutiqueId])
+}
+
+/// Téléphone, tablette ou navigateur sur lequel un utilisateur s'est connecté.
+model Appareil {
+  id            String    @id @default(uuid())
+  commerceId    String
+  utilisateurId String
+  nom           String
+  plateforme    String
+  /// Empreinte du jeton de rafraîchissement en cours (jamais le jeton lui-même).
+  jetonHash     String?
+  dernierAcces  DateTime?
+  /// Dernier curseur de synchronisation reçu par l'appareil.
+  curseurSync   BigInt?
+  revoqueLe     DateTime?
+  revoqueParId  String?
+  creeLe        DateTime  @default(now())
+  modifieLe     DateTime  @updatedAt
+
+  commerce       Commerce        @relation(fields: [commerceId], references: [id])
+  utilisateur    Utilisateur     @relation(fields: [utilisateurId], references: [id])
+  operationsSync OperationSync[]
+
+  @@index([commerceId])
+  @@index([utilisateurId])
+}
+
+// ─── Catalogue ───────────────────────────────────────────────────────────────
+
+model Marque {
+  id         String   @id @default(uuid())
+  commerceId String
+  nom        String
+  creeLe     DateTime @default(now())
+  modifieLe  DateTime @updatedAt
+  creeParId  String?
+
+  commerce Commerce  @relation(fields: [commerceId], references: [id])
+  modeles  Modele[]
+  produits Produit[]
+
+  @@unique([commerceId, nom])
+}
+
+/// Modèle de téléphone (ex. iPhone 13) : relie ses variantes, les accessoires
+/// compatibles et la grille de reprise.
+model Modele {
+  id         String   @id @default(uuid())
+  commerceId String
+  marqueId   String
+  nom        String
+  creeLe     DateTime @default(now())
+  modifieLe  DateTime @updatedAt
+  creeParId  String?
+
+  commerce       Commerce        @relation(fields: [commerceId], references: [id])
+  marque         Marque          @relation(fields: [marqueId], references: [id])
+  produits       Produit[]
+  compatibilites Compatibilite[]
+  grillesReprise GrilleReprise[]
+  trocs          Troc[]
+
+  @@unique([marqueId, nom])
+  @@index([commerceId])
+}
+
+model Categorie {
+  id         String      @id @default(uuid())
+  commerceId String
+  nom        String
+  type       TypeProduit
+  creeLe     DateTime    @default(now())
+  modifieLe  DateTime    @updatedAt
+  creeParId  String?
+
+  commerce Commerce  @relation(fields: [commerceId], references: [id])
+  produits Produit[]
+
+  @@unique([commerceId, nom])
+}
+
+/// Article du catalogue : une variante de téléphone (modèle, capacité, couleur,
+/// état) suivie par IMEI, ou un accessoire suivi en quantité.
+/// Les prix ici sont les prix communs ; PrixBoutique les remplace pour une boutique.
+model Produit {
+  id           String      @id @default(uuid())
+  commerceId   String
+  type         TypeProduit
+  categorieId  String
+  marqueId     String?
+  /// Modèle de téléphone (variantes de téléphone uniquement).
+  modeleId     String?
+  nom          String
+  capacite     String?
+  couleur      String?
+  etat         EtatProduit @default(NEUF)
+  codeBarres   String?
+  /// Clé de la photo dans le stockage (jamais exposée telle quelle).
+  photoCle     String?
+  garantieMois Int         @default(0)
+  prixAchat    BigInt
+  prixDetail   BigInt
+  prixGros     BigInt
+  /// Quantité à partir de laquelle le prix de gros s'applique (nul = jamais automatiquement).
+  seuilGros    Int?
+  archive      Boolean     @default(false)
+  creeLe       DateTime    @default(now())
+  modifieLe    DateTime    @updatedAt
+  creeParId    String?
+
+  commerce         Commerce          @relation(fields: [commerceId], references: [id])
+  categorie        Categorie         @relation(fields: [categorieId], references: [id])
+  marque           Marque?           @relation(fields: [marqueId], references: [id])
+  modele           Modele?           @relation(fields: [modeleId], references: [id])
+  prixBoutiques    PrixBoutique[]
+  compatibilites   Compatibilite[]
+  stocks           Stock[]
+  articles         Article[]
+  lignesAchat      LigneAchat[]
+  lignesVente      LigneVente[]
+  lignesTransfert  LigneTransfert[]
+  lignesInventaire LigneInventaire[]
+  mouvementsStock  MouvementStock[]
+
+  @@unique([commerceId, codeBarres])
+  @@index([commerceId, nom])
+  @@index([modeleId])
+}
+
+/// Prix propres à une boutique, qui remplacent les prix communs du produit.
+model PrixBoutique {
+  id         String   @id @default(uuid())
+  produitId  String
+  boutiqueId String
+  prixAchat  BigInt?
+  prixDetail BigInt?
+  prixGros   BigInt?
+  creeLe     DateTime @default(now())
+  modifieLe  DateTime @updatedAt
+  creeParId  String?
+
+  produit  Produit  @relation(fields: [produitId], references: [id])
+  boutique Boutique @relation(fields: [boutiqueId], references: [id])
+
+  @@unique([produitId, boutiqueId])
+}
+
+/// Un accessoire va avec un modèle de téléphone (proposé pendant la vente).
+model Compatibilite {
+  accessoireId String
+  modeleId     String
+  creeLe       DateTime @default(now())
+
+  accessoire Produit @relation(fields: [accessoireId], references: [id])
+  modele     Modele  @relation(fields: [modeleId], references: [id])
+
+  @@id([accessoireId, modeleId])
+  @@index([modeleId])
+}
+
+// ─── Stock ───────────────────────────────────────────────────────────────────
+
+/// Quantité d'un produit dans une boutique. Pour un téléphone, la quantité est
+/// le nombre d'articles EN_STOCK, tenue à jour avec eux.
+model Stock {
+  id           String   @id @default(uuid())
+  produitId    String
+  boutiqueId   String
+  quantite     Int      @default(0)
+  /// Seuil d'alerte de stock minimum (0 = pas d'alerte).
+  seuilMinimum Int      @default(0)
+  modifieLe    DateTime @updatedAt
+
+  produit  Produit  @relation(fields: [produitId], references: [id])
+  boutique Boutique @relation(fields: [boutiqueId], references: [id])
+
+  @@unique([produitId, boutiqueId])
+  @@index([boutiqueId])
+}
+
+/// Téléphone suivi individuellement par son IMEI (ou numéro de série).
+model Article {
+  id           String         @id @default(uuid())
+  commerceId   String
+  produitId    String
+  boutiqueId   String
+  imei         String
+  imei2        String?
+  numeroSerie  String?
+  statut       StatutArticle  @default(EN_STOCK)
+  origine      OrigineArticle @default(ACHAT)
+  /// Coût réel de l'article (prix d'achat ou valeur de reprise).
+  prixAchat    BigInt
+  /// Prix de revente propre (appareils d'occasion) ; sinon prix du produit.
+  prixRevente  BigInt?
+  ligneAchatId String?
+  creeLe       DateTime       @default(now())
+  modifieLe    DateTime       @updatedAt
+  creeParId    String?
+
+  commerce         Commerce          @relation(fields: [commerceId], references: [id])
+  produit          Produit           @relation(fields: [produitId], references: [id])
+  boutique         Boutique          @relation(fields: [boutiqueId], references: [id])
+  ligneAchat       LigneAchat?       @relation(fields: [ligneAchatId], references: [id])
+  lignesVente      LigneVente[]
+  lignesRetour     LigneRetour[]
+  troc             Troc?
+  lignesTransfert  LigneTransfert[]
+  lignesInventaire LigneInventaire[]
+  mouvementsStock  MouvementStock[]
+
+  @@unique([commerceId, imei])
+  @@index([boutiqueId, statut])
+  @@index([produitId])
+}
+
+/// Toute variation de stock, pour l'historique et les rapports.
+model MouvementStock {
+  id            String        @id @default(uuid())
+  commerceId    String
+  boutiqueId    String
+  produitId     String
+  articleId     String?
+  type          TypeMouvement
+  /// Positif = entrée, négatif = sortie.
+  quantite      Int
+  /// Opération à l'origine du mouvement (vente, achat, transfert…).
+  referenceType String?
+  referenceId   String?
+  motif         String?
+  utilisateurId String?
+  creeLe        DateTime      @default(now())
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+  boutique Boutique @relation(fields: [boutiqueId], references: [id])
+  produit  Produit  @relation(fields: [produitId], references: [id])
+  article  Article? @relation(fields: [articleId], references: [id])
+
+  @@index([boutiqueId, creeLe])
+  @@index([produitId])
+  @@index([articleId])
+}
+
+model Inventaire {
+  id          String           @id @default(uuid())
+  commerceId  String
+  boutiqueId  String
+  statut      StatutInventaire @default(EN_COURS)
+  motif       String?
+  valideLe    DateTime?
+  valideParId String?
+  creeLe      DateTime         @default(now())
+  modifieLe   DateTime         @updatedAt
+  creeParId   String?
+
+  commerce Commerce          @relation(fields: [commerceId], references: [id])
+  boutique Boutique          @relation(fields: [boutiqueId], references: [id])
+  lignes   LigneInventaire[]
+
+  @@index([boutiqueId])
+}
+
+model LigneInventaire {
+  id                String   @id @default(uuid())
+  inventaireId      String
+  produitId         String
+  articleId         String?
+  quantiteTheorique Int
+  quantiteComptee   Int?
+  motifEcart        String?
+  modifieLe         DateTime @updatedAt
+
+  inventaire Inventaire @relation(fields: [inventaireId], references: [id])
+  produit    Produit    @relation(fields: [produitId], references: [id])
+  article    Article?   @relation(fields: [articleId], references: [id])
+
+  @@index([inventaireId])
+}
+
+// ─── Clients et fournisseurs ─────────────────────────────────────────────────
+
+model Client {
+  id            String     @id @default(uuid())
+  commerceId    String
+  nom           String
+  /// Format E.164.
+  telephone     String
+  type          TypeClient @default(DETAIL)
+  typePiece     TypePiece?
+  numeroPiece   String?
+  photoPieceCle String?
+  adresse       String?
+  /// Plafond de crédit fixé par le propriétaire (nul = pas de crédit autorisé).
+  plafondCredit BigInt?
+  archive       Boolean    @default(false)
+  creeLe        DateTime   @default(now())
+  modifieLe     DateTime   @updatedAt
+  creeParId     String?
+
+  commerce Commerce  @relation(fields: [commerceId], references: [id])
+  garants  Garant[]
+  ventes   Vente[]
+  trocs    Troc[]
+  credits  Credit[]
+  messages Message[]
+
+  @@index([commerceId, telephone])
+  @@index([commerceId, nom])
+}
+
+/// Personne qui se porte garante d'un client pour ses crédits.
+model Garant {
+  id          String     @id @default(uuid())
+  clientId    String
+  nom         String
+  telephone   String
+  typePiece   TypePiece?
+  numeroPiece String?
+  adresse     String?
+  lien        String?
+  creeLe      DateTime   @default(now())
+  modifieLe   DateTime   @updatedAt
+  creeParId   String?
+
+  client  Client   @relation(fields: [clientId], references: [id])
+  credits Credit[]
+
+  @@index([clientId])
+}
+
+model Fournisseur {
+  id         String   @id @default(uuid())
+  commerceId String
+  nom        String
+  telephone  String?
+  adresse    String?
+  note       String?
+  archive    Boolean  @default(false)
+  creeLe     DateTime @default(now())
+  modifieLe  DateTime @updatedAt
+  creeParId  String?
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+  achats   Achat[]
+
+  @@index([commerceId, nom])
+}
+
+// ─── Achats ──────────────────────────────────────────────────────────────────
+
+/// Bon d'achat fournisseur ; la dette envers le fournisseur = montantTotal - montantPaye.
+model Achat {
+  id            String      @id @default(uuid())
+  commerceId    String
+  boutiqueId    String
+  fournisseurId String
+  numero        String
+  statut        StatutAchat @default(BROUILLON)
+  dateAchat     DateTime    @default(now())
+  montantTotal  BigInt      @default(0)
+  montantPaye   BigInt      @default(0)
+  note          String?
+  creeLe        DateTime    @default(now())
+  modifieLe     DateTime    @updatedAt
+  creeParId     String?
+
+  commerce    Commerce     @relation(fields: [commerceId], references: [id])
+  boutique    Boutique     @relation(fields: [boutiqueId], references: [id])
+  fournisseur Fournisseur  @relation(fields: [fournisseurId], references: [id])
+  lignes      LigneAchat[]
+
+  @@unique([commerceId, numero])
+  @@index([fournisseurId])
+}
+
+model LigneAchat {
+  id            String   @id @default(uuid())
+  achatId       String
+  produitId     String
+  quantite      Int
+  quantiteRecue Int      @default(0)
+  prixAchat     BigInt
+  modifieLe     DateTime @updatedAt
+
+  achat    Achat     @relation(fields: [achatId], references: [id])
+  produit  Produit   @relation(fields: [produitId], references: [id])
+  articles Article[]
+
+  @@index([achatId])
+}
+
+// ─── Ventes, paiements et retours ────────────────────────────────────────────
+
+model Vente {
+  id              String      @id @default(uuid())
+  commerceId      String
+  boutiqueId      String
+  /// Numéro de facture, unique dans la boutique.
+  numero          String
+  clientId        String?
+  vendeurId       String
+  caisseId        String?
+  /// Appareil sur lequel la vente a été faite (synchronisation).
+  appareilId      String?
+  mode            ModeVente   @default(COMPTANT)
+  statut          StatutVente @default(VALIDEE)
+  sousTotal       BigInt
+  remise          BigInt      @default(0)
+  /// Valeur de reprise déduite (troc).
+  reprise         BigInt      @default(0)
+  total           BigInt
+  montantPaye     BigInt
+  renduMonnaie    BigInt      @default(0)
+  dateVente       DateTime    @default(now())
+  annuleLe        DateTime?
+  annuleParId     String?
+  motifAnnulation String?
+  creeLe          DateTime    @default(now())
+  modifieLe       DateTime    @updatedAt
+  creeParId       String?
+
+  commerce  Commerce     @relation(fields: [commerceId], references: [id])
+  boutique  Boutique     @relation(fields: [boutiqueId], references: [id])
+  client    Client?      @relation(fields: [clientId], references: [id])
+  vendeur   Utilisateur  @relation(fields: [vendeurId], references: [id])
+  caisse    Caisse?      @relation(fields: [caisseId], references: [id])
+  lignes    LigneVente[]
+  paiements Paiement[]
+  retours   Retour[]     @relation("RetourVente")
+  echanges  Retour[]     @relation("RetourEchange")
+  troc      Troc?
+  credit    Credit?
+
+  @@unique([boutiqueId, numero])
+  @@index([commerceId, dateVente])
+  @@index([clientId])
+  @@index([vendeurId])
+}
+
+model LigneVente {
+  id           String    @id @default(uuid())
+  venteId      String
+  produitId    String
+  /// Téléphone vendu (nul pour un accessoire).
+  articleId    String?
+  quantite     Int
+  tarif        Tarif     @default(DETAIL)
+  prixUnitaire BigInt
+  remise       BigInt    @default(0)
+  total        BigInt
+  /// Coût d'achat au moment de la vente (bénéfice brut).
+  prixAchat    BigInt
+  /// Fin de garantie (nul = sans garantie).
+  finGarantie  DateTime?
+
+  vente        Vente         @relation(fields: [venteId], references: [id])
+  produit      Produit       @relation(fields: [produitId], references: [id])
+  article      Article?      @relation(fields: [articleId], references: [id])
+  lignesRetour LigneRetour[]
+
+  @@index([venteId])
+  @@index([articleId])
+  @@index([produitId])
+}
+
+/// Un des paiements d'une vente (paiement mixte possible).
+model Paiement {
+  id        String        @id @default(uuid())
+  venteId   String
+  moyen     MoyenPaiement
+  montant   BigInt
+  /// Référence de la transaction mobile money ou du virement.
+  reference String?
+  creeLe    DateTime      @default(now())
+
+  vente Vente @relation(fields: [venteId], references: [id])
+
+  @@index([venteId])
+}
+
+model Retour {
+  id                 String         @id @default(uuid())
+  commerceId         String
+  boutiqueId         String
+  venteId            String
+  type               TypeRetour
+  motif              String
+  montantRembourse   BigInt         @default(0)
+  moyenRemboursement MoyenPaiement?
+  /// Nouvelle vente en cas d'échange.
+  venteEchangeId     String?
+  caisseId           String?
+  valideParId        String?
+  creeLe             DateTime       @default(now())
+  modifieLe          DateTime       @updatedAt
+  creeParId          String?
+
+  commerce     Commerce      @relation(fields: [commerceId], references: [id])
+  boutique     Boutique      @relation(fields: [boutiqueId], references: [id])
+  vente        Vente         @relation("RetourVente", fields: [venteId], references: [id])
+  venteEchange Vente?        @relation("RetourEchange", fields: [venteEchangeId], references: [id])
+  caisse       Caisse?       @relation(fields: [caisseId], references: [id])
+  lignes       LigneRetour[]
+
+  @@index([venteId])
+}
+
+model LigneRetour {
+  id           String            @id @default(uuid())
+  retourId     String
+  ligneVenteId String
+  articleId    String?
+  quantite     Int
+  destination  DestinationRetour
+  montant      BigInt
+
+  retour     Retour     @relation(fields: [retourId], references: [id])
+  ligneVente LigneVente @relation(fields: [ligneVenteId], references: [id])
+  article    Article?   @relation(fields: [articleId], references: [id])
+
+  @@index([retourId])
+}
+
+// ─── Caisse et dépenses ──────────────────────────────────────────────────────
+
+/// Session de caisse journalière d'un vendeur.
+model Caisse {
+  id            String       @id @default(uuid())
+  commerceId    String
+  boutiqueId    String
+  utilisateurId String
+  statut        StatutCaisse @default(OUVERTE)
+  ouverteLe     DateTime     @default(now())
+  fondInitial   BigInt
+  clotureeLe    DateTime?
+  /// Montants comptés à la clôture, par moyen de paiement : { "ESPECES": 150000, … }.
+  comptage      Json?
+  /// Montants attendus à la clôture, par moyen de paiement.
+  theorique     Json?
+  ecart         BigInt?
+  commentaire   String?
+  valideParId   String?
+  valideLe      DateTime?
+  creeLe        DateTime     @default(now())
+  modifieLe     DateTime     @updatedAt
+
+  commerce      Commerce       @relation(fields: [commerceId], references: [id])
+  boutique      Boutique       @relation(fields: [boutiqueId], references: [id])
+  utilisateur   Utilisateur    @relation(fields: [utilisateurId], references: [id])
+  ventes        Vente[]
+  retours       Retour[]
+  depenses      Depense[]
+  encaissements Encaissement[]
+
+  @@index([boutiqueId, ouverteLe])
+  @@index([utilisateurId])
+}
+
+model Depense {
+  id              String           @id @default(uuid())
+  commerceId      String
+  boutiqueId      String
+  /// Caisse d'où l'argent est sorti (nul = payée hors caisse).
+  caisseId        String?
+  categorie       CategorieDepense
+  libelle         String
+  montant         BigInt
+  dateDepense     DateTime         @default(now())
+  justificatifCle String?
+  creeLe          DateTime         @default(now())
+  modifieLe       DateTime         @updatedAt
+  creeParId       String?
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+  boutique Boutique @relation(fields: [boutiqueId], references: [id])
+  caisse   Caisse?  @relation(fields: [caisseId], references: [id])
+
+  @@index([boutiqueId, dateDepense])
+}
+
+// ─── Troc (phase 2) ──────────────────────────────────────────────────────────
+
+/// Reprise d'un ancien téléphone du client, déduite d'une vente.
+model Troc {
+  id              String        @id @default(uuid())
+  commerceId      String
+  boutiqueId      String
+  clientId        String
+  venteId         String?       @unique
+  /// Article créé en stock occasion pour l'appareil repris.
+  articleId       String?       @unique
+  modeleId        String?
+  description     String
+  imei            String
+  etatEcran       EtatComposant
+  etatBatterie    EtatComposant
+  etatBoitier     EtatComposant
+  fonctionne      Boolean
+  etatGlobal      EtatReprise
+  photoCles       String[]
+  valeurProposee  BigInt
+  valeurRetenue   BigInt
+  /// Gérant qui a validé un ajustement au-delà de la limite du vendeur.
+  ajustementParId String?
+  creeLe          DateTime      @default(now())
+  modifieLe       DateTime      @updatedAt
+  creeParId       String?
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+  boutique Boutique @relation(fields: [boutiqueId], references: [id])
+  client   Client   @relation(fields: [clientId], references: [id])
+  vente    Vente?   @relation(fields: [venteId], references: [id])
+  article  Article? @relation(fields: [articleId], references: [id])
+  modele   Modele?  @relation(fields: [modeleId], references: [id])
+
+  @@index([commerceId, imei])
+}
+
+/// Valeur de reprise d'un modèle selon son état, modifiable par le propriétaire.
+model GrilleReprise {
+  id         String      @id @default(uuid())
+  commerceId String
+  modeleId   String
+  capacite   String?
+  etat       EtatReprise
+  valeur     BigInt
+  creeLe     DateTime    @default(now())
+  modifieLe  DateTime    @updatedAt
+  creeParId  String?
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+  modele   Modele   @relation(fields: [modeleId], references: [id])
+
+  @@index([modeleId])
+}
+
+/// IMEI connu comme volé ou bloqué : signalé à la reprise.
+model ImeiSignale {
+  id         String           @id @default(uuid())
+  commerceId String
+  imei       String
+  motif      MotifImeiSignale
+  note       String?
+  actif      Boolean          @default(true)
+  creeLe     DateTime         @default(now())
+  modifieLe  DateTime         @updatedAt
+  creeParId  String?
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+
+  @@unique([commerceId, imei])
+}
+
+// ─── Crédit (phase 2) ────────────────────────────────────────────────────────
+
+model Credit {
+  id               String          @id @default(uuid())
+  commerceId       String
+  boutiqueId       String
+  venteId          String          @unique
+  clientId         String
+  garantId         String?
+  montantTotal     BigInt
+  apport           BigInt
+  /// Montant à rembourser par tranches (montantTotal - apport).
+  montantFinance   BigInt
+  /// Reste dû, pénalités comprises.
+  montantRestant   BigInt
+  nombreTranches   Int
+  frequence        FrequenceCredit
+  premiereEcheance DateTime
+  statut           StatutCredit    @default(EN_COURS)
+  penaliteActive   Boolean         @default(false)
+  soldeLe          DateTime?
+  creeLe           DateTime        @default(now())
+  modifieLe        DateTime        @updatedAt
+  creeParId        String?
+
+  commerce      Commerce       @relation(fields: [commerceId], references: [id])
+  boutique      Boutique       @relation(fields: [boutiqueId], references: [id])
+  vente         Vente          @relation(fields: [venteId], references: [id])
+  client        Client         @relation(fields: [clientId], references: [id])
+  garant        Garant?        @relation(fields: [garantId], references: [id])
+  echeances     Echeance[]
+  encaissements Encaissement[]
+
+  @@index([commerceId, statut])
+  @@index([clientId])
+}
+
+model Echeance {
+  id              String    @id @default(uuid())
+  creditId        String
+  numero          Int
+  dateEcheance    DateTime
+  montant         BigInt
+  montantPaye     BigInt    @default(0)
+  penalite        BigInt    @default(0)
+  soldeeLe        DateTime?
+  dernierRappelLe DateTime?
+  nombreRappels   Int       @default(0)
+  modifieLe       DateTime  @updatedAt
+
+  credit Credit @relation(fields: [creditId], references: [id])
+
+  @@unique([creditId, numero])
+  @@index([dateEcheance])
+}
+
+/// Encaissement d'une tranche (totale ou partielle).
+model Encaissement {
+  id         String        @id @default(uuid())
+  commerceId String
+  creditId   String
+  caisseId   String?
+  moyen      MoyenPaiement
+  montant    BigInt
+  reference  String?
+  appareilId String?
+  creeLe     DateTime      @default(now())
+  creeParId  String?
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+  credit   Credit   @relation(fields: [creditId], references: [id])
+  caisse   Caisse?  @relation(fields: [caisseId], references: [id])
+
+  @@index([creditId])
+}
+
+// ─── Transferts (phase 3) ────────────────────────────────────────────────────
+
+model Transfert {
+  id                String          @id @default(uuid())
+  commerceId        String
+  numero            String
+  boutiqueDepartId  String
+  boutiqueArriveeId String
+  statut            StatutTransfert @default(DEMANDE)
+  note              String?
+  envoyeLe          DateTime?
+  envoyeParId       String?
+  recuLe            DateTime?
+  recuParId         String?
+  creeLe            DateTime        @default(now())
+  modifieLe         DateTime        @updatedAt
+  creeParId         String?
+
+  commerce        Commerce         @relation(fields: [commerceId], references: [id])
+  boutiqueDepart  Boutique         @relation("TransfertDepart", fields: [boutiqueDepartId], references: [id])
+  boutiqueArrivee Boutique         @relation("TransfertArrivee", fields: [boutiqueArriveeId], references: [id])
+  lignes          LigneTransfert[]
+
+  @@unique([commerceId, numero])
+  @@index([boutiqueDepartId])
+  @@index([boutiqueArriveeId])
+}
+
+model LigneTransfert {
+  id            String  @id @default(uuid())
+  transfertId   String
+  produitId     String
+  articleId     String?
+  quantite      Int
+  quantiteRecue Int?
+
+  transfert Transfert @relation(fields: [transfertId], references: [id])
+  produit   Produit   @relation(fields: [produitId], references: [id])
+  article   Article?  @relation(fields: [articleId], references: [id])
+
+  @@index([transfertId])
+}
+
+// ─── Messages, audit et synchronisation ──────────────────────────────────────
+
+/// SMS ou message WhatsApp envoyé à un client (file BullMQ).
+model Message {
+  id                   String        @id @default(uuid())
+  commerceId           String
+  clientId             String?
+  canal                CanalMessage
+  type                 TypeMessage
+  destinataire         String
+  contenu              String
+  statut               StatutMessage @default(EN_ATTENTE)
+  essais               Int           @default(0)
+  cout                 BigInt?
+  referenceFournisseur String?
+  erreur               String?
+  /// Opération à l'origine du message (vente, échéance…).
+  referenceType        String?
+  referenceId          String?
+  envoyeLe             DateTime?
+  creeLe               DateTime      @default(now())
+  modifieLe            DateTime      @updatedAt
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+  client   Client?  @relation(fields: [clientId], references: [id])
+
+  @@index([commerceId, creeLe])
+  @@index([statut])
+}
+
+/// Opérations sensibles : remise, prix, annulation, suppression, ajustement, connexion.
+model JournalAudit {
+  id            String   @id @default(uuid())
+  commerceId    String
+  boutiqueId    String?
+  utilisateurId String?
+  appareilId    String?
+  action        String
+  entite        String?
+  entiteId      String?
+  details       Json?
+  ip            String?
+  creeLe        DateTime @default(now())
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+
+  @@index([commerceId, creeLe])
+  @@index([utilisateurId])
+}
+
+/// Opération faite sur un appareil (souvent hors ligne) et reçue par le serveur.
+/// L'identifiant est l'UUID généré sur l'appareil : une opération déjà reçue
+/// n'est jamais rejouée.
+model OperationSync {
+  id            String              @id
+  commerceId    String
+  appareilId    String
+  utilisateurId String
+  boutiqueId    String?
+  type          String
+  contenu       Json
+  statut        StatutOperationSync
+  /// Raison d'un rejet ou d'un conflit.
+  motif         String?
+  /// Date de l'opération sur l'appareil.
+  faiteLe       DateTime
+  recueLe       DateTime            @default(now())
+  /// Conflit traité par le gérant.
+  resoluLe      DateTime?
+  resoluParId   String?
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+  appareil Appareil @relation(fields: [appareilId], references: [id])
+
+  @@index([commerceId, statut])
+  @@index([appareilId])
 }
