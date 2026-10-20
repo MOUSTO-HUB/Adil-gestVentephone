@@ -1,4 +1,10 @@
-import { numeroFacture, tarifApplicable, totauxVente } from '@gestvente/commun';
+import {
+  codeAppareil,
+  numeroFacture,
+  ordreFacture,
+  tarifApplicable,
+  totauxVente,
+} from '@gestvente/commun';
 import { ecrireMeta, lireMeta } from './base/depot';
 import type { BaseSql } from './base/sql';
 
@@ -43,15 +49,27 @@ export function prixDuPanier(articles: ArticlePanier[], clientGrossiste: boolean
 
 /**
  * Prochain numéro de facture de cet appareil (compteur gardé dans la base locale) :
- * aucun échange avec le serveur, aucune collision entre appareils.
+ * aucun échange avec le serveur, aucune collision entre appareils. Après une base
+ * locale recréée (reconnexion), le compteur reprend après le plus grand numéro connu :
+ * celui donné par le serveur à la connexion et ceux des ventes synchronisées.
  */
 export async function prochainNumeroFacture(
   base: BaseSql,
   prefixeBoutique: string,
   appareilId: string,
+  dernierConnu = 0,
 ): Promise<string> {
   const cle = `ordre-facture:${appareilId}`;
-  const ordre = Number((await lireMeta(base, cle)) ?? '0') + 1;
+  const ventes = await base.tous<{ numero: string }>(
+    'SELECT numero FROM vente WHERE numero LIKE ?',
+    [`%-${codeAppareil(appareilId)}-%`],
+  );
+  const ordre =
+    Math.max(
+      Number((await lireMeta(base, cle)) ?? '0'),
+      dernierConnu,
+      ...ventes.map((v) => ordreFacture(v.numero) ?? 0),
+    ) + 1;
   await ecrireMeta(base, cle, String(ordre));
   return numeroFacture(prefixeBoutique, appareilId, ordre);
 }

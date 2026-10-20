@@ -23,6 +23,8 @@ export const ENTITES_SYNC = [
   'paiementVente',
   'retour',
   'ligneRetour',
+  'caisse',
+  'depense',
 ] as const;
 export type EntiteSync = (typeof ENTITES_SYNC)[number];
 
@@ -180,6 +182,7 @@ export interface VenteSync {
   /** Valeur des articles rendus déduite (échange, troc). */
   reprise: number;
   total: number;
+  caisseId: string | null;
   montantPaye: number;
   renduMonnaie: number;
   dateVente: string;
@@ -223,6 +226,7 @@ export interface RetourSync {
   referenceRemboursement: string | null;
   avoir: number;
   venteEchangeId: string | null;
+  caisseId: string | null;
   dateRetour: string;
   creeParId: string | null;
   valideParId: string | null;
@@ -237,6 +241,40 @@ export interface LigneRetourSync {
   destination: 'REMISE_EN_STOCK' | 'OCCASION' | 'REBUT';
   montant: number;
   prixRevente: number | null;
+}
+
+/** Session de caisse d'un vendeur (60 derniers jours, et toute caisse encore ouverte). */
+export interface CaisseSync {
+  id: string;
+  boutiqueId: string;
+  utilisateurId: string;
+  /** Nom du vendeur (rapport de clôture). */
+  vendeur: string;
+  statut: 'OUVERTE' | 'CLOTUREE' | 'VALIDEE';
+  ouverteLe: string;
+  fondInitial: number;
+  clotureeLe: string | null;
+  comptage: Record<'ESPECES' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'VIREMENT', number> | null;
+  theorique: Record<'ESPECES' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'VIREMENT', number> | null;
+  ecart: number | null;
+  commentaire: string | null;
+  validePar: string | null;
+  valideLe: string | null;
+  commentaireValidation: string | null;
+}
+
+export interface DepenseSync {
+  id: string;
+  boutiqueId: string;
+  caisseId: string | null;
+  categorie: 'LOYER' | 'ELECTRICITE' | 'TRANSPORT' | 'SALAIRE' | 'ENTRETIEN' | 'AUTRE';
+  libelle: string;
+  montant: number;
+  moyen: 'ESPECES' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'VIREMENT';
+  dateDepense: string;
+  /** Une photo du justificatif existe (lue en ligne). */
+  justificatif: boolean;
+  creeParId: string | null;
 }
 
 export interface DonneesEntites {
@@ -258,6 +296,8 @@ export interface DonneesEntites {
   paiementVente: PaiementVenteSync;
   retour: RetourSync;
   ligneRetour: LigneRetourSync;
+  caisse: CaisseSync;
+  depense: DepenseSync;
 }
 
 /** Un changement du journal du serveur (descente vers les appareils). */

@@ -53,6 +53,20 @@ describe('panier', () => {
     expect(await prochainNumeroFacture(base, 'MAD', appareil)).toBe('MAD-3F2A9C-000002');
     expect(await prochainNumeroFacture(base, 'MAD', 'abcdef12-0000')).toBe('MAD-ABCDEF-000001');
   });
+
+  it('base recréée : le compteur reprend après les numéros connus de l’appareil', async () => {
+    const base = baseEnMemoire();
+    await migrer(base);
+    const appareil = '8f577b00-0000-4000-8000-000000000000';
+    await base.executer(
+      `INSERT INTO vente (id, boutiqueId, numero, vendeurId, mode, statut, sousTotal, remise, total,
+         montantPaye, renduMonnaie, dateVente) VALUES ('v', 'b', 'MAD-8F577B-000005', 'u', 'COMPTANT',
+         'VALIDEE', 0, 0, 0, 0, 0, '2026-10-20T10:00:00.000Z')`,
+    );
+    expect(await prochainNumeroFacture(base, 'MAD', appareil)).toBe('MAD-8F577B-000006');
+    // Le serveur connaît un numéro plus grand (vente plus ancienne que l'instantané).
+    expect(await prochainNumeroFacture(base, 'MAD', appareil, 41)).toBe('MAD-8F577B-000042');
+  });
 });
 
 describe('vente (base locale)', () => {

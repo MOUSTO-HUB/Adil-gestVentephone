@@ -12,6 +12,7 @@ import {
   valeurRetour,
 } from '@gestvente/commun';
 import { ACTIONS_AUDIT } from '../audit/audit.service.js';
+import { caisseDeRattachement } from '../caisse/caisse.ecritures.js';
 import { Role } from '../generated/prisma/enums.js';
 import type { NouveauChangement, Tx } from '../sync/journal.service.js';
 import type { ContexteOperation } from '../sync/operations/gestionnaire.js';
@@ -165,8 +166,10 @@ export async function enregistrerRetour(ctx: ContexteOperation, d: RetourSaisi):
     if (!resultat.ok) return { ...resultat, motif: `Échange : ${resultat.motif}` };
   }
 
+  const caisseId = await caisseDeRattachement(tx, d.caisseId, utilisateur, boutiqueId);
   await tx.retour.create({
     data: {
+      caisseId,
       id: d.id,
       commerceId,
       boutiqueId,

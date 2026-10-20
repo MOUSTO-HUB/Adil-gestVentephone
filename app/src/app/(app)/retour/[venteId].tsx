@@ -27,6 +27,7 @@ import { ChoixArticles } from '@/components/choix-articles';
 import { Choix } from '@/components/choix';
 import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
+import { caisseOuverte } from '@/lib/caisse-session';
 import { type ArticlePanier, prixDuPanier, prochainNumeroFacture } from '@/lib/panier';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
@@ -101,6 +102,7 @@ export default function NouveauRetour() {
            FROM vente v LEFT JOIN client c ON c.id = v.clientId WHERE v.id = ?`,
         [venteId],
       ),
+      caisse: profil ? await caisseOuverte(b, boutiqueId, profil.id) : null,
       lignes: await b.tous<LigneVendue>(
         `SELECT l.id, p.nom, p.type, a.imei, l.quantite, l.prixUnitaire, l.finGarantie,
                 (SELECT COALESCE(SUM(r.quantite), 0) FROM ligneRetour r WHERE r.ligneVenteId = l.id) AS dejaRendu
@@ -109,7 +111,7 @@ export default function NouveauRetour() {
         [venteId],
       ),
     }),
-    [venteId],
+    [venteId, boutiqueId, profil?.id],
   );
 
   if (!profil || !boutique || !base || !donnees) {
@@ -119,7 +121,7 @@ export default function NouveauRetour() {
       </Ecran>
     );
   }
-  const { vente, lignes } = donnees;
+  const { vente, lignes, caisse } = donnees;
   if (!vente || vente.statut !== 'VALIDEE') {
     return (
       <Ecran titre="Retour" enHaut>
@@ -186,6 +188,7 @@ export default function NouveauRetour() {
   const valider = async () => {
     setMessage(null);
     if (!choisies.length) return setMessage('Choisissez les articles rendus.');
+    if (!caisse) return setMessage('Ouvrez votre caisse avant un retour ou un échange.');
     if (condition) return setMessage(condition);
     if (motif.trim().length < 3) return setMessage('Indiquez le motif du retour.');
     for (const l of choisies) {
@@ -224,7 +227,12 @@ export default function NouveauRetour() {
         type === 'ECHANGE'
           ? {
               id: Crypto.randomUUID(),
-              numero: await prochainNumeroFacture(base, boutique.prefixe, profil.appareilId),
+              numero: await prochainNumeroFacture(
+                base,
+                boutique.prefixe,
+                profil.appareilId,
+                profil.dernierOrdreFacture,
+              ),
               dateVente: maintenant.toISOString(),
               clientId: vente.clientId,
               lignes: echange.lignes.map((l) => ({
@@ -238,6 +246,7 @@ export default function NouveauRetour() {
               remise: 0,
               paiements: paiements.map((p) => ({ ...p, id: Crypto.randomUUID() })),
               autorisationRemise: null,
+              caisseId: caisse.id,
             }
           : null;
       await enregistrer({
@@ -263,6 +272,7 @@ export default function NouveauRetour() {
           remboursement: bilan.aRendre > 0 ? { moyen, reference: reference.trim() || null } : null,
           echange: echangeContenu,
           autorisation: validation?.jeton ?? null,
+          caisseId: caisse.id,
         },
       });
       router.replace({
@@ -507,6 +517,12 @@ export default function NouveauRetour() {
         </Carte>
       ) : null}
 
+      {!caisse ? (
+        <Carte>
+          <Texte gras>Caisse fermée</Texte>
+          <Bouton titre="Ouvrir la caisse" onPress={() => router.push('/caisse')} />
+        </Carte>
+      ) : null}
       <Message texte={message} />
       <Bouton
         titre="Valider le retour"

@@ -35,6 +35,13 @@ async function cleBase(): Promise<string> {
   return cle;
 }
 
+/**
+ * Fermeture et effacement se font en arrière-plan à la déconnexion : une reconnexion
+ * rapide attend qu'ils soient finis, sinon la nouvelle base serait effacée sous ses pieds.
+ */
+let fermetureEnCours: Promise<void> = Promise.resolve();
+let effacementEnCours: Promise<void> = Promise.resolve();
+
 export interface BaseOuverte {
   base: BaseSql;
   fermer: () => Promise<void>;
@@ -45,6 +52,7 @@ export interface BaseOuverte {
  * chiffrée (SQLCipher, version de développement ou de production : pas Expo Go).
  */
 export async function ouvrirBase(): Promise<BaseOuverte> {
+  await effacementEnCours;
   const db = await SQLite.openDatabaseAsync(NOM_BASE);
   if (Platform.OS !== 'web') {
     await db.execAsync(`PRAGMA key = '${await cleBase()}'`);
@@ -53,12 +61,23 @@ export async function ouvrirBase(): Promise<BaseOuverte> {
   const base = adapter(db);
   await migrer(base);
   await completerRecherche(base);
-  return { base, fermer: () => db.closeAsync() };
+  return {
+    base,
+    fermer: () => {
+      fermetureEnCours = db.closeAsync().catch(() => undefined);
+      return fermetureEnCours;
+    },
+  };
 }
 
 /** Efface la base locale (déconnexion) : rien ne reste sur l'appareil. */
-export async function effacerBase(ouverte: BaseOuverte | null): Promise<void> {
-  await ouverte?.fermer().catch(() => undefined);
-  await SQLite.deleteDatabaseAsync(NOM_BASE).catch(() => undefined);
-  await effacer(CLES.cleBase);
+export function effacerBase(ouverte: BaseOuverte | null): Promise<void> {
+  effacementEnCours = (async () => {
+    await effacementEnCours;
+    await ouverte?.fermer().catch(() => undefined);
+    await fermetureEnCours;
+    await SQLite.deleteDatabaseAsync(NOM_BASE).catch(() => undefined);
+    await effacer(CLES.cleBase);
+  })();
+  return effacementEnCours;
 }

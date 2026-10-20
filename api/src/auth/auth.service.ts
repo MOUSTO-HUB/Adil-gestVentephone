@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { erreurNouveauPin } from '@gestvente/commun';
+import { erreurNouveauPin, ordreFacture } from '@gestvente/commun';
 import { hash, verify } from '@node-rs/argon2';
 import { ACTIONS_AUDIT, AuditService } from '../audit/audit.service.js';
 import { Role } from '../generated/prisma/enums.js';
@@ -154,6 +154,12 @@ export class AuthService {
       orderBy: { nom: 'asc' },
     });
     const { commerce } = compte;
+    // Les numéros d'ordre croissent : la dernière vente de l'appareil porte le plus grand.
+    const derniere = await this.prisma.vente.findFirst({
+      where: { appareilId: utilisateur.appareilId },
+      orderBy: { creeLe: 'desc' },
+      select: { numero: true },
+    });
     return {
       id: compte.id,
       nom: compte.nom,
@@ -161,6 +167,7 @@ export class AuthService {
       role: compte.role,
       appareilId: utilisateur.appareilId,
       pinDefini: compte.pinHash !== null,
+      dernierOrdreFacture: derniere ? (ordreFacture(derniere.numero) ?? 0) : 0,
       commerce: {
         id: commerce.id,
         nom: commerce.nom,

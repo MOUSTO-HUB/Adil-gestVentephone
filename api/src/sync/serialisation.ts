@@ -7,6 +7,8 @@ import type {
   LigneVenteSync,
   PaiementVenteSync,
   RetourSync,
+  CaisseSync,
+  DepenseSync,
   LigneRetourSync,
   VenteSync,
   ArticleSync,
@@ -30,6 +32,8 @@ import type {
   LigneVente,
   Paiement,
   Retour,
+  Caisse,
+  Depense,
   LigneRetour,
   Vente,
   Categorie,
@@ -189,6 +193,7 @@ export const versVente = (v: Vente): VenteSync => ({
   remise: nombre(v.remise),
   reprise: nombre(v.reprise),
   total: nombre(v.total),
+  caisseId: v.caisseId,
   montantPaye: nombre(v.montantPaye),
   renduMonnaie: nombre(v.renduMonnaie),
   dateVente: v.dateVente.toISOString(),
@@ -231,6 +236,7 @@ export const versRetour = (r: Retour): RetourSync => ({
   referenceRemboursement: r.referenceRemboursement,
   avoir: nombre(r.avoir),
   venteEchangeId: r.venteEchangeId,
+  caisseId: r.caisseId,
   dateRetour: r.dateRetour.toISOString(),
   creeParId: r.creeParId,
   valideParId: r.valideParId,
@@ -245,6 +251,39 @@ export const versLigneRetour = (l: LigneRetour): LigneRetourSync => ({
   destination: l.destination,
   montant: nombre(l.montant),
   prixRevente: nombreOuNul(l.prixRevente),
+});
+
+type MontantsJson = CaisseSync['comptage'];
+
+export const versCaisse = (c: Caisse, vendeur: string, validePar: string | null): CaisseSync => ({
+  id: c.id,
+  boutiqueId: c.boutiqueId,
+  utilisateurId: c.utilisateurId,
+  vendeur,
+  statut: c.statut,
+  ouverteLe: c.ouverteLe.toISOString(),
+  fondInitial: nombre(c.fondInitial),
+  clotureeLe: c.clotureeLe?.toISOString() ?? null,
+  comptage: (c.comptage as MontantsJson) ?? null,
+  theorique: (c.theorique as MontantsJson) ?? null,
+  ecart: nombreOuNul(c.ecart),
+  commentaire: c.commentaire,
+  validePar,
+  valideLe: c.valideLe?.toISOString() ?? null,
+  commentaireValidation: c.commentaireValidation,
+});
+
+export const versDepense = (d: Depense): DepenseSync => ({
+  id: d.id,
+  boutiqueId: d.boutiqueId,
+  caisseId: d.caisseId,
+  categorie: d.categorie,
+  libelle: d.libelle,
+  montant: nombre(d.montant),
+  moyen: d.moyen === 'AVOIR' ? 'ESPECES' : d.moyen,
+  dateDepense: d.dateDepense.toISOString(),
+  justificatif: d.justificatifCle !== null,
+  creeParId: d.creeParId,
 });
 
 export function masquerPourRole<E extends EntiteSync>(

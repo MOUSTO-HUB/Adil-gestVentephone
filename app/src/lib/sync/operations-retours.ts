@@ -135,6 +135,7 @@ export async function retourEnregistrer(
     referenceRemboursement: bilan.aRendre > 0 ? c.remboursement?.reference?.trim() || null : null,
     avoir: bilan.avoir,
     venteEchangeId: c.echange?.id ?? null,
+    caisseId: c.caisseId ?? null,
     dateRetour: new Date(c.dateRetour).toISOString(),
     creeParId: utilisateurId,
     valideParId: null,

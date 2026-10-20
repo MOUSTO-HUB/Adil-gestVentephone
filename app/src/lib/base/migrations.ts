@@ -220,6 +220,44 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX ligne_retour_retour ON ligneRetour (retourId);
   CREATE INDEX ligne_retour_ligne_vente ON ligneRetour (ligneVenteId);
   `,
+  // 7 : caisses et dépenses.
+  `
+  ALTER TABLE vente ADD COLUMN caisseId TEXT;
+  ALTER TABLE retour ADD COLUMN caisseId TEXT;
+  CREATE INDEX vente_caisse ON vente (caisseId);
+  CREATE TABLE caisse (
+    id TEXT PRIMARY KEY,
+    boutiqueId TEXT NOT NULL,
+    utilisateurId TEXT NOT NULL,
+    vendeur TEXT NOT NULL,
+    statut TEXT NOT NULL,
+    ouverteLe TEXT NOT NULL,
+    fondInitial INTEGER NOT NULL,
+    clotureeLe TEXT,
+    comptage TEXT,
+    theorique TEXT,
+    ecart INTEGER,
+    commentaire TEXT,
+    validePar TEXT,
+    valideLe TEXT,
+    commentaireValidation TEXT
+  );
+  CREATE INDEX caisse_boutique ON caisse (boutiqueId, ouverteLe);
+  CREATE TABLE depense (
+    id TEXT PRIMARY KEY,
+    boutiqueId TEXT NOT NULL,
+    caisseId TEXT,
+    categorie TEXT NOT NULL,
+    libelle TEXT NOT NULL,
+    montant INTEGER NOT NULL,
+    moyen TEXT NOT NULL,
+    dateDepense TEXT NOT NULL,
+    justificatif INTEGER NOT NULL,
+    creeParId TEXT
+  );
+  CREATE INDEX depense_boutique ON depense (boutiqueId, dateDepense);
+  CREATE INDEX depense_caisse ON depense (caisseId);
+  `,
 ];
 
 /**

@@ -10,6 +10,7 @@ import {
 import type { BaseSql } from '../base/sql';
 import { ErreurOperation } from './erreurs';
 import * as achats from './operations-achats';
+import * as caisse from './operations-caisse';
 import * as catalogue from './operations-catalogue';
 import * as clients from './operations-clients';
 import * as retours from './operations-retours';
@@ -22,7 +23,7 @@ type AppliquerLocal<T extends TypeOperation> = (
   boutiqueId: string,
   contenu: ContenuOperation<T>,
   idProvisoire: () => string,
-  contexte: { utilisateurId: string },
+  contexte: { utilisateurId: string; utilisateurNom: string },
 ) => Promise<void>;
 
 /**
@@ -90,6 +91,16 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
   VENTE_ANNULER: (tx, boutiqueId, contenu) => ventes.venteAnnuler(tx, boutiqueId, contenu),
   RETOUR_ENREGISTRER: (tx, boutiqueId, contenu, _id, contexte) =>
     retours.retourEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId),
+  CAISSE_OUVRIR: (tx, boutiqueId, contenu, _id, contexte) =>
+    caisse.caisseOuvrir(tx, boutiqueId, contenu, {
+      id: contexte.utilisateurId,
+      nom: contexte.utilisateurNom,
+    }),
+  CAISSE_CLOTURER: (tx, _boutiqueId, contenu) => caisse.caisseCloturer(tx, contenu),
+  CAISSE_VALIDER: (tx, _boutiqueId, contenu, _id, contexte) =>
+    caisse.caisseValider(tx, contenu, contexte.utilisateurNom),
+  DEPENSE_ENREGISTRER: (tx, boutiqueId, contenu, _id, contexte) =>
+    caisse.depenseEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId),
 };
 
 export interface NouvelleOperation<T extends TypeOperation> {
@@ -98,6 +109,8 @@ export interface NouvelleOperation<T extends TypeOperation> {
   contenu: ContenuOperation<T>;
   /** Auteur (vendeur d'une vente) ; le serveur retient l'utilisateur connecté. */
   utilisateurId?: string;
+  /** Son nom (caisse : vendeur, validation). */
+  utilisateurNom?: string;
 }
 
 /**
@@ -125,7 +138,10 @@ export async function enregistrerOperation<T extends TypeOperation>(
       nouvelle.boutiqueId,
       nouvelle.contenu,
       () => `provisoire:${creerId()}`,
-      { utilisateurId: nouvelle.utilisateurId ?? '' },
+      {
+        utilisateurId: nouvelle.utilisateurId ?? '',
+        utilisateurNom: nouvelle.utilisateurNom ?? '',
+      },
     );
     await tx.executer(
       'INSERT INTO operation (id, type, boutiqueId, faiteLe, contenu) VALUES (?, ?, ?, ?, ?)',

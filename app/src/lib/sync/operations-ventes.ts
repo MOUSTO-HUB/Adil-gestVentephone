@@ -126,6 +126,7 @@ export async function venteEnregistrer(
     remise: c.remise,
     reprise,
     total,
+    caisseId: c.caisseId ?? null,
     montantPaye: total,
     renduMonnaie: paiements.rendu,
     dateVente: dateVente.toISOString(),

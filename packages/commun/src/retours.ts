@@ -79,6 +79,8 @@ export const schemaRetour = z.object({
   echange: schemaVenteEchange.nullable(),
   /** Jeton signé par le serveur quand un gérant a validé le retour d'un vendeur. */
   autorisation: z.string().max(2000).nullable(),
+  /** Session de caisse d'où sort le remboursement. */
+  caisseId: z.uuid().nullable().optional(),
 });
 export type RetourSaisi = z.infer<typeof schemaRetour>;
 

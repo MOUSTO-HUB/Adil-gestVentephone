@@ -879,24 +879,28 @@ model LigneRetour {
 
 /// Session de caisse journalière d'un vendeur.
 model Caisse {
-  id            String       @id @default(uuid())
-  commerceId    String
-  boutiqueId    String
-  utilisateurId String
-  statut        StatutCaisse @default(OUVERTE)
-  ouverteLe     DateTime     @default(now())
-  fondInitial   BigInt
-  clotureeLe    DateTime?
+  id                    String       @id @default(uuid())
+  commerceId            String
+  boutiqueId            String
+  utilisateurId         String
+  statut                StatutCaisse @default(OUVERTE)
+  ouverteLe             DateTime     @default(now())
+  fondInitial           BigInt
+  clotureeLe            DateTime?
   /// Montants comptés à la clôture, par moyen de paiement : { "ESPECES": 150000, … }.
-  comptage      Json?
+  comptage              Json?
   /// Montants attendus à la clôture, par moyen de paiement.
-  theorique     Json?
-  ecart         BigInt?
-  commentaire   String?
-  valideParId   String?
-  valideLe      DateTime?
-  creeLe        DateTime     @default(now())
-  modifieLe     DateTime     @updatedAt
+  theorique             Json?
+  ecart                 BigInt?
+  commentaire           String?
+  valideParId           String?
+  valideLe              DateTime?
+  /// Remarque du gérant à la validation.
+  commentaireValidation String?
+  /// Appareil sur lequel la caisse a été ouverte.
+  appareilId            String?
+  creeLe                DateTime     @default(now())
+  modifieLe             DateTime     @updatedAt
 
   commerce      Commerce       @relation(fields: [commerceId], references: [id])
   boutique      Boutique       @relation(fields: [boutiqueId], references: [id])
@@ -919,6 +923,9 @@ model Depense {
   categorie       CategorieDepense
   libelle         String
   montant         BigInt
+  /// Moyen de paiement de la dépense (sort de ce compte de la caisse).
+  moyen           MoyenPaiement    @default(ESPECES)
+  appareilId      String?
   dateDepense     DateTime         @default(now())
   justificatifCle String?
   creeLe          DateTime         @default(now())

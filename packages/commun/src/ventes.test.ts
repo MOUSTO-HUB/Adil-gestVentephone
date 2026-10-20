@@ -3,6 +3,8 @@ import {
   erreurRemise,
   finGarantie,
   numeroFacture,
+  ordreFacture,
+  codeAppareil,
   plafondRemise,
   pourcentageRemise,
   tarifApplicable,
@@ -111,5 +113,14 @@ describe('garantie et numéro de facture', () => {
     expect(numeroFacture('MAD', '3f2a9c1e-0000-4000-8000-000000000000', 42)).toBe(
       'MAD-3F2A9C-000042',
     );
+  });
+});
+
+describe('numéro d’ordre des factures', () => {
+  it('lit le numéro d’ordre en fin de numéro', () => {
+    expect(ordreFacture('MAD-3F2A9C-000042')).toBe(42);
+    expect(ordreFacture('MAD-3F2A9C-1234567')).toBe(1_234_567);
+    expect(ordreFacture('FACTURE-ANCIENNE')).toBeNull();
+    expect(codeAppareil('3f2a9c1e-0000-4000-8000-000000000000')).toBe('3F2A9C');
   });
 });

@@ -28,10 +28,11 @@ export function formatImage(octets: Buffer): FormatImage | null {
 export const nomPhotoValide = (nom: string) => NOM_VALIDE.test(nom);
 
 /**
- * Dossiers de STOCKAGE_DIR : « photos » (produits, servies publiquement) et
- * « pieces » (pièces d'identité des clients, servies au seul personnel connecté).
+ * Dossiers de STOCKAGE_DIR : « photos » (produits, servies publiquement),
+ * « pieces » (pièces d'identité des clients, servies au seul personnel connecté) et
+ * « justificatifs » (photos des dépenses, servies à la gestion).
  */
-export type DossierStockage = 'photos' | 'pieces';
+export type DossierStockage = 'photos' | 'pieces' | 'justificatifs';
 
 /** Images enregistrées dans le dossier STOCKAGE_DIR. */
 @Injectable()

@@ -14,6 +14,12 @@ import {
   prixBoutiqueEnregistrer,
   produitEnregistrer,
 } from './catalogue.operations.js';
+import {
+  caisseCloturer,
+  caisseOuvrir,
+  caisseValider,
+  depenseEnregistrer,
+} from './caisse.operations.js';
 import { clientEnregistrer, fournisseurEnregistrer } from './clients.operations.js';
 import type { Gestionnaire } from './gestionnaire.js';
 import { articleSortir, stockAjuster } from './stock.operations.js';
@@ -40,4 +46,8 @@ export const GESTIONNAIRES: { [T in TypeOperation]: Gestionnaire<T> } = {
   VENTE_ENREGISTRER: venteEnregistrer,
   VENTE_ANNULER: venteAnnuler,
   RETOUR_ENREGISTRER: retourEnregistrer,
+  CAISSE_OUVRIR: caisseOuvrir,
+  CAISSE_CLOTURER: caisseCloturer,
+  CAISSE_VALIDER: caisseValider,
+  DEPENSE_ENREGISTRER: depenseEnregistrer,
 };

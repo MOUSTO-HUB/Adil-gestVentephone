@@ -109,6 +109,10 @@ export class ProfilDto {
   @ApiProperty({ enum: Role }) role: Role;
   @ApiProperty() appareilId: string;
   @ApiProperty({ description: 'Un code PIN est défini pour ce compte.' }) pinDefini: boolean;
+  @ApiProperty({
+    description: 'Plus grand numéro d’ordre de facture de cet appareil (reprise du compteur).',
+  })
+  dernierOrdreFacture: number;
   @ApiProperty({ type: CommerceResumeDto }) commerce: CommerceResumeDto;
   @ApiProperty({ type: [BoutiqueResumeDto] }) boutiques: BoutiqueResumeDto[];
 }

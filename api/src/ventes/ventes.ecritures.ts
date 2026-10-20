@@ -11,6 +11,7 @@ import {
   type VenteEchangeSaisie,
 } from '@gestvente/commun';
 import { ACTIONS_AUDIT } from '../audit/audit.service.js';
+import { caisseDeRattachement } from '../caisse/caisse.ecritures.js';
 import type { NouveauChangement, Tx } from '../sync/journal.service.js';
 import type { ContexteOperation } from '../sync/operations/gestionnaire.js';
 import {
@@ -171,7 +172,8 @@ export async function enregistrerVente(
       return { ...controle, motif: `IMEI ${article?.imei ?? '?'} : ${controle.motif}` };
   }
 
-  // Écritures.
+  // Écritures (rattachées à la caisse ouverte du vendeur).
+  const caisseId = await caisseDeRattachement(tx, d.caisseId, utilisateur, boutiqueId);
   await tx.vente.create({
     data: {
       id: d.id,
@@ -181,6 +183,7 @@ export async function enregistrerVente(
       clientId: d.clientId,
       vendeurId: utilisateur.id,
       appareilId: utilisateur.appareilId,
+      caisseId,
       mode: 'COMPTANT',
       sousTotal,
       remise: d.remise,

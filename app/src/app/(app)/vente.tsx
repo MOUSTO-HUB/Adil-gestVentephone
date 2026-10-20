@@ -16,6 +16,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ChoixArticles } from '@/components/choix-articles';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
+import { caisseOuverte } from '@/lib/caisse-session';
 import { rechercherClients } from '@/lib/clients';
 import { type ArticlePanier, prixDuPanier, prochainNumeroFacture } from '@/lib/panier';
 import { useSession } from '@/lib/session';
@@ -64,6 +65,10 @@ export default function Vente() {
   } | null>(null);
   const boutiqueId = boutique?.id ?? '';
 
+  const caisse = useLecture(
+    (b) => (profil ? caisseOuverte(b, boutiqueId, profil.id) : Promise.resolve(null)),
+    [boutiqueId, profil?.id],
+  );
   const clients = useLecture(
     async (b) =>
       rechercheClient.trim() ? (await rechercherClients(b, rechercheClient)).slice(0, 5) : [],
@@ -114,6 +119,7 @@ export default function Vente() {
   const encaisser = async () => {
     setMessage(null);
     if (!articles.length) return setMessage('Le panier est vide.');
+    if (!caisse) return setMessage('Ouvrez votre caisse avant d’encaisser.');
     if (Number.isNaN(montantRemise)) return setMessage('Remise : nombre entier attendu.');
     if (calcul.remise > calcul.sousTotal)
       return setMessage('La remise dépasse le montant de la vente.');
@@ -128,7 +134,12 @@ export default function Vente() {
     if (!controle.ok) return setMessage(controle.motif);
     setEnvoi(true);
     try {
-      const numero = await prochainNumeroFacture(base, boutique.prefixe, profil.appareilId);
+      const numero = await prochainNumeroFacture(
+        base,
+        boutique.prefixe,
+        profil.appareilId,
+        profil.dernierOrdreFacture,
+      );
       const venteId = Crypto.randomUUID();
       await enregistrer({
         type: 'VENTE_ENREGISTRER',
@@ -150,6 +161,7 @@ export default function Vente() {
           paiements: listePaiements.map((p) => ({ ...p, id: Crypto.randomUUID() })),
           autorisationRemise:
             calcul.remise && pourcentage > plafond ? (autorisation?.jeton ?? null) : null,
+          caisseId: caisse.id,
         },
       });
       setDerniere({ id: venteId, numero, total: calcul.total, rendu: controle.rendu });
@@ -187,6 +199,13 @@ export default function Vente() {
         </Carte>
       ) : null}
 
+      {caisse === null ? (
+        <Carte>
+          <Texte gras>Caisse fermée</Texte>
+          <Texte discret>Ouvrez votre caisse (fond de caisse) avant la première vente.</Texte>
+          <Bouton titre="Ouvrir la caisse" onPress={() => router.push('/caisse')} />
+        </Carte>
+      ) : null}
       <Message texte={message} />
       <ChoixArticles
         boutiqueId={boutiqueId}

@@ -15,6 +15,12 @@ import {
 } from '../achats.js';
 import { schemaClient, schemaFournisseur } from '../clients.js';
 import { schemaInventaire } from '../inventaire.js';
+import {
+  schemaClotureCaisse,
+  schemaDepense,
+  schemaOuvertureCaisse,
+  schemaValidationCaisse,
+} from '../caisse.js';
 import { schemaRetour } from '../retours.js';
 import { schemaAnnulationVente, schemaVente } from '../ventes.js';
 import type { Changement } from './entites.js';
@@ -70,6 +76,14 @@ export const schemasContenus = {
   VENTE_ANNULER: schemaAnnulationVente,
   /** Retour (remboursement, avoir) ou échange : gérant, ou vendeur avec le PIN du gérant. */
   RETOUR_ENREGISTRER: schemaRetour,
+  /** Ouverture de la caisse du jour (fond de caisse) : tout le personnel. */
+  CAISSE_OUVRIR: schemaOuvertureCaisse,
+  /** Clôture : comptage par moyen de paiement, écart expliqué. */
+  CAISSE_CLOTURER: schemaClotureCaisse,
+  /** Validation d'une caisse clôturée : gérant ou propriétaire. */
+  CAISSE_VALIDER: schemaValidationCaisse,
+  /** Dépense de la boutique, payée depuis la caisse ou non. */
+  DEPENSE_ENREGISTRER: schemaDepense,
 } as const;
 
 export type TypeOperation = keyof typeof schemasContenus;
@@ -95,6 +109,10 @@ export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   VENTE_ENREGISTRER: 'Vente',
   VENTE_ANNULER: 'Annulation de vente',
   RETOUR_ENREGISTRER: 'Retour ou échange',
+  CAISSE_OUVRIR: 'Ouverture de caisse',
+  CAISSE_CLOTURER: 'Clôture de caisse',
+  CAISSE_VALIDER: 'Validation de caisse',
+  DEPENSE_ENREGISTRER: 'Dépense',
 };
 
 /** Enveloppe commune à toutes les opérations. */

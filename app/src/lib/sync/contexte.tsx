@@ -127,8 +127,10 @@ export function FournisseurSync({ children }: { children: ReactNode }) {
       synchroniser,
       async enregistrer(operation) {
         if (!ouverte || !moteur) throw new Error('Base locale pas encore prête.');
-        await enregistrerOperation(ouverte.base, { ...operation, utilisateurId: profil?.id }, () =>
-          Crypto.randomUUID(),
+        await enregistrerOperation(
+          ouverte.base,
+          { ...operation, utilisateurId: profil?.id, utilisateurNom: profil?.nom },
+          () => Crypto.randomUUID(),
         );
         setVersion((v) => v + 1);
         await moteur.actualiserCompteurs();
@@ -138,7 +140,7 @@ export function FournisseurSync({ children }: { children: ReactNode }) {
         await moteur?.effacerRefusees();
       },
     }),
-    [ouverte, moteur, etat, conflits, version, synchroniser, profil?.id],
+    [ouverte, moteur, etat, conflits, version, synchroniser, profil?.id, profil?.nom],
   );
 
   return <Contexte.Provider value={valeur}>{children}</Contexte.Provider>;
@@ -162,7 +164,10 @@ export function useLecture<T>(
     let actif = true;
     lire(base)
       .then((r) => actif && setResultat(r))
-      .catch(() => undefined);
+      .catch((e: unknown) => {
+        // Lecture impossible (base fermée pendant une déconnexion) : visible en développement.
+        if (__DEV__) console.error('Lecture de la base locale :', e);
+      });
     return () => {
       actif = false;
     };

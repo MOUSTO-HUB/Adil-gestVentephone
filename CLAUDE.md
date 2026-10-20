@@ -54,6 +54,13 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Avoir : `Client.soldeAvoir`, crédité par un retour en avoir, payé avec le moyen `AVOIR` (jamais de rendu de monnaie ; rendu au client si la vente est annulée). Une vente avec retour ou issue d'un échange ne s'annule plus.
 - App : recherche de la vente (numéro, IMEI, client) `retours.tsx`, formulaire `retour/[venteId].tsx`, articles d'une vente ou d'un échange choisis par `components/choix-articles.tsx`. L'instantané envoie aussi les téléphones vendus des ventes des 60 derniers jours.
 
+## Caisse et dépenses
+
+- Règles dans `packages/commun/src/caisse.ts` : `bilanCaisse` (attendu par moyen = fond en espèces + encaissé − monnaie rendue − remboursé − dépensé ; l'avoir n'est pas de l'argent), `ecartsCaisse` (compté − attendu), `erreurCloture` (tout écart, même compensé, se commente). Rapport : `rapport-caisse.ts` (`lignesRapportCaisse` pour le ticket ESC/POS, `rapportCaisseHtml` pour le PDF).
+- Opérations : `CAISSE_OUVRIR` (une caisse ouverte par vendeur et boutique), `CAISSE_CLOTURER` (le serveur recalcule l'attendu : `api/src/caisse/caisse.ecritures.ts`), `CAISSE_VALIDER` (gestion), `DEPENSE_ENREGISTRER` (un vendeur paie depuis sa caisse ; la gestion aussi hors caisse). Ventes, retours et dépenses portent `caisseId` : rattachés seulement à la caisse ouverte de leur auteur (`caisseDeRattachement`), sinon la vente reste valable sans caisse.
+- L'app exige une caisse ouverte pour vendre ou faire un retour (`lib/caisse-session.ts`, écrans `caisse`, `caisse/[id]`, `depenses`). Justificatif photo : `PUT/GET /api/depenses/:id/justificatif` (dossier privé `justificatifs`, `no-store`), envoyé après la synchronisation de la dépense.
+- Numéros de facture : après une base locale recréée, le compteur reprend au plus grand numéro connu de l'appareil (ventes locales, `profil.dernierOrdreFacture`). La déconnexion efface la base en arrière-plan ; `ouvrirBase` attend la fin de cet effacement.
+
 ## Factures, reçus et garantie
 
 - Documents construits sur l'appareil depuis la base locale (`app/src/lib/documents.ts` → `DocumentVente`), donc imprimables hors ligne. Mise en page dans `packages/commun/src/documents.ts` : `lignesRecu` (58 mm = 32 colonnes, 80 mm = 48), `recuHtml`, `factureHtml` (A4), `texteMessage` (WhatsApp/SMS), `etatGarantie`, `mentionGarantie` ; dates au fuseau du commerce (`profil.commerce.fuseau`).

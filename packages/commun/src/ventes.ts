@@ -60,6 +60,8 @@ export const schemaVente = z.object({
     .max(4),
   /** Jeton signé par le serveur quand un gérant a validé une remise au-delà du plafond. */
   autorisationRemise: z.string().max(2000).nullable(),
+  /** Session de caisse du vendeur où l'argent est encaissé. */
+  caisseId: z.uuid().nullable().optional(),
 });
 export type VenteSaisie = z.infer<typeof schemaVente>;
 
@@ -174,6 +176,15 @@ export function finGarantie(dateVente: Date, garantieMois: number): Date | null 
  * code de l'appareil, numéro d'ordre propre à l'appareil (MAD-3F2A9C-000042).
  */
 export function numeroFacture(prefixeBoutique: string, appareilId: string, ordre: number): string {
-  const appareil = appareilId.replace(/-/g, '').slice(0, 6).toUpperCase();
-  return `${prefixeBoutique}-${appareil}-${String(ordre).padStart(6, '0')}`;
+  return `${prefixeBoutique}-${codeAppareil(appareilId)}-${String(ordre).padStart(6, '0')}`;
+}
+
+/** Code de l'appareil dans les numéros de facture (6 premiers caractères de son identifiant). */
+export const codeAppareil = (appareilId: string) =>
+  appareilId.replace(/-/g, '').slice(0, 6).toUpperCase();
+
+/** Numéro d'ordre d'une facture (null si le numéro n'a pas ce format). */
+export function ordreFacture(numero: string): number | null {
+  const trouve = /-(\d{6,})$/.exec(numero);
+  return trouve ? Number(trouve[1]) : null;
 }

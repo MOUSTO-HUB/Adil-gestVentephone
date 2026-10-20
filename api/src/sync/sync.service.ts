@@ -42,6 +42,8 @@ import {
   versStock,
   versVente,
   versRetour,
+  versCaisse,
+  versDepense,
   versLigneRetour,
 } from './serialisation.js';
 
@@ -238,6 +240,26 @@ export class SyncService {
           where: { commerceId, boutiqueId: { in: boutiqueIds }, dateRetour: { gte: depuis } },
           include: { lignes: true },
         });
+        // Caisses récentes (et toute caisse restée ouverte), dépenses récentes.
+        const caisses = await tx.caisse.findMany({
+          where: {
+            commerceId,
+            boutiqueId: { in: boutiqueIds },
+            OR: [{ ouverteLe: { gte: depuis } }, { statut: 'OUVERTE' }],
+          },
+          include: { utilisateur: { select: { nom: true } } },
+        });
+        const valideurs = new Map(
+          (
+            await tx.utilisateur.findMany({
+              where: { id: { in: caisses.flatMap((c) => (c.valideParId ? [c.valideParId] : [])) } },
+              select: { id: true, nom: true },
+            })
+          ).map((u) => [u.id, u.nom]),
+        );
+        const depenses = await tx.depense.findMany({
+          where: { commerceId, boutiqueId: { in: boutiqueIds }, dateDepense: { gte: depuis } },
+        });
         // Téléphones vendus de ces ventes (IMEI des reçus, retours, garantie hors ligne).
         const enStock = new Set(articles.map((a) => a.id));
         const vendus = await tx.article.findMany({
@@ -275,6 +297,14 @@ export class SyncService {
             paiementVente: ventes.flatMap((v) => v.paiements.map(versPaiementVente)),
             retour: retours.map(versRetour),
             ligneRetour: retours.flatMap((r) => r.lignes.map(versLigneRetour)),
+            caisse: caisses.map((c) =>
+              versCaisse(
+                c,
+                c.utilisateur.nom,
+                c.valideParId ? (valideurs.get(c.valideParId) ?? null) : null,
+              ),
+            ),
+            depense: depenses.map(versDepense),
           },
         };
       },

@@ -27,6 +27,8 @@ export interface Profil {
   role: Role;
   appareilId: string;
   pinDefini: boolean;
+  /** Plus grand numéro d'ordre de facture de cet appareil sur le serveur. */
+  dernierOrdreFacture?: number;
   commerce: {
     id: string;
     nom: string;
