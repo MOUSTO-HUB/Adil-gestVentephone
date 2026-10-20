@@ -8,9 +8,10 @@ import {
   type TypeOperation,
 } from '@gestvente/commun';
 import type { BaseSql } from '../base/sql';
+import { ErreurOperation } from './erreurs';
+import * as catalogue from './operations-catalogue';
 
-/** Refus immédiat sur l'appareil (contenu invalide, règle déjà enfreinte localement). */
-export class ErreurOperation extends Error {}
+export { ErreurOperation };
 
 type AppliquerLocal<T extends TypeOperation> = (
   tx: BaseSql,
@@ -61,6 +62,13 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
       [article.produitId, article.boutiqueId],
     );
   },
+
+  MARQUE_ENREGISTRER: (tx, _boutiqueId, contenu) => catalogue.marqueEnregistrer(tx, contenu),
+  MODELE_ENREGISTRER: (tx, _boutiqueId, contenu) => catalogue.modeleEnregistrer(tx, contenu),
+  CATEGORIE_ENREGISTRER: (tx, _boutiqueId, contenu) => catalogue.categorieEnregistrer(tx, contenu),
+  PRODUIT_ENREGISTRER: (tx, _boutiqueId, contenu) => catalogue.produitEnregistrer(tx, contenu),
+  PRIX_BOUTIQUE_ENREGISTRER: (tx, boutiqueId, contenu) =>
+    catalogue.prixBoutiqueEnregistrer(tx, boutiqueId, contenu),
 };
 
 export interface NouvelleOperation<T extends TypeOperation> {

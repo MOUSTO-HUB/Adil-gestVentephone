@@ -39,6 +39,7 @@ const produit: ProduitSync = {
   prixGros: 40_000,
   seuilGros: 10,
   archive: false,
+  photo: null,
 };
 const stock = (quantite: number): StockSync => ({
   id: STOCK,

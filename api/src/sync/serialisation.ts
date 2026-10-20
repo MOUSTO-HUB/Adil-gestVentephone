@@ -58,6 +58,7 @@ export const versProduit = (p: Produit): ProduitSync => ({
   prixGros: nombre(p.prixGros),
   seuilGros: p.seuilGros,
   archive: p.archive,
+  photo: p.photoCle,
 });
 
 export const versPrixBoutique = (p: PrixBoutique): PrixBoutiqueSync => ({

@@ -2,6 +2,7 @@ import * as Crypto from 'expo-crypto';
 import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 import { CLES, effacer, ecrire, lire } from '../stockage';
+import { completerRecherche } from './depot';
 import { migrer } from './migrations';
 import type { BaseSql, ValeurSql } from './sql';
 
@@ -51,6 +52,7 @@ export async function ouvrirBase(): Promise<BaseOuverte> {
   await db.execAsync('PRAGMA foreign_keys = OFF');
   const base = adapter(db);
   await migrer(base);
+  await completerRecherche(base);
   return { base, fermer: () => db.closeAsync() };
 }
 

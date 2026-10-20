@@ -50,6 +50,8 @@ export interface ProduitSync {
   prixGros: number;
   seuilGros: number | null;
   archive: boolean;
+  /** Nom du fichier photo (servi par GET /api/photos/:photo), nul sans photo. */
+  photo: string | null;
 }
 
 export interface PrixBoutiqueSync {

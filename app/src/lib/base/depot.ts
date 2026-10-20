@@ -1,4 +1,5 @@
 import {
+  texteRecherche,
   type Changement,
   type DonneesEntites,
   type EntiteSync,
@@ -29,6 +30,7 @@ const COLONNES: { [E in EntiteSync]: (keyof DonneesEntites[E] & string)[] } = {
     'prixGros',
     'seuilGros',
     'archive',
+    'photo',
   ],
   prixBoutique: ['id', 'produitId', 'boutiqueId', 'prixAchat', 'prixDetail', 'prixGros'],
   compatibilite: ['id', 'accessoireId', 'modeleId'],
@@ -75,6 +77,25 @@ export async function ecrireEntite<E extends EntiteSync>(
     `INSERT OR REPLACE INTO ${entite} (${colonnes.join(', ')}) VALUES (${colonnes.map(() => '?').join(', ')})`,
     colonnes.map((c) => versSql((donnees as unknown as Record<string, unknown>)[c])),
   );
+  if (entite === 'produit') {
+    await tx.executer('UPDATE produit SET recherche = ? WHERE id = ?', [
+      texteRecherche(donnees as DonneesEntites['produit']),
+      id,
+    ]);
+  }
+}
+
+/** Remplit le texte de recherche des produits reçus avant la migration 2. */
+export async function completerRecherche(base: BaseSql): Promise<void> {
+  const produits = await base.tous<DonneesEntites['produit']>(
+    'SELECT id, nom, capacite, couleur, codeBarres FROM produit WHERE recherche IS NULL',
+  );
+  if (produits.length === 0) return;
+  await base.transaction(async (tx) => {
+    for (const p of produits) {
+      await tx.executer('UPDATE produit SET recherche = ? WHERE id = ?', [texteRecherche(p), p.id]);
+    }
+  });
 }
 
 export async function appliquerChangements(tx: BaseSql, changements: Changement[]): Promise<void> {

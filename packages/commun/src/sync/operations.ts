@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import {
+  schemaCategorie,
+  schemaMarque,
+  schemaModele,
+  schemaPrixBoutique,
+  schemaProduit,
+} from '../catalogue.js';
 import type { Changement } from './entites.js';
 
 /**
@@ -20,6 +27,16 @@ export const schemasContenus = {
     articleId: z.uuid(),
     motif: z.string().trim().min(3).max(200),
   }),
+  /** Création ou modification d'une marque (catalogue commun) ; gérant ou propriétaire. */
+  MARQUE_ENREGISTRER: schemaMarque,
+  /** Création ou modification d'un modèle de téléphone. */
+  MODELE_ENREGISTRER: schemaModele,
+  /** Création ou modification d'une catégorie. */
+  CATEGORIE_ENREGISTRER: schemaCategorie,
+  /** Création ou modification d'un produit, de ses prix communs et de ses compatibilités. */
+  PRODUIT_ENREGISTRER: schemaProduit,
+  /** Prix propres à la boutique de l'opération (tous nuls : retour aux prix communs). */
+  PRIX_BOUTIQUE_ENREGISTRER: schemaPrixBoutique,
 } as const;
 
 export type TypeOperation = keyof typeof schemasContenus;
@@ -29,6 +46,11 @@ export type ContenuOperation<T extends TypeOperation> = z.infer<(typeof schemasC
 export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   STOCK_AJUSTER: 'Ajustement de stock',
   ARTICLE_SORTIR: 'Sortie d’un téléphone',
+  MARQUE_ENREGISTRER: 'Marque',
+  MODELE_ENREGISTRER: 'Modèle',
+  CATEGORIE_ENREGISTRER: 'Catégorie',
+  PRODUIT_ENREGISTRER: 'Fiche produit',
+  PRIX_BOUTIQUE_ENREGISTRER: 'Prix de la boutique',
 };
 
 /** Enveloppe commune à toutes les opérations. */

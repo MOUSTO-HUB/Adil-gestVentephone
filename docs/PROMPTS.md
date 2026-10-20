@@ -15,7 +15,7 @@ Référence : [Cahier des charges](CAHIER_DES_CHARGES.md).
 | 2   | 1 · Socle           | Schéma de base de données                     | ☑    |
 | 3   | 1 · Socle           | Authentification, rôles et appareils          | ☑    |
 | 4   | 1 · Socle           | Base locale et moteur de synchronisation      | ☑    |
-| 5   | 1 · Socle           | Catalogue produits                            | ☐    |
+| 5   | 1 · Socle           | Catalogue produits                            | ☑    |
 | 6   | 1 · Socle           | Clients et fournisseurs                       | ☐    |
 | 7   | 1 · Socle           | Achats, stock, IMEI et inventaire             | ☐    |
 | 8   | 1 · Socle           | Ventes au détail et en gros                   | ☐    |

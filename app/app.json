@@ -50,6 +50,24 @@
         {
           "useSQLCipher": true
         }
+      ],
+      "expo-image",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "La caméra sert à scanner les codes-barres et les IMEI des produits.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Les photos servent à illustrer les fiches produits.",
+          "cameraPermission": "La caméra sert à photographier les produits.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

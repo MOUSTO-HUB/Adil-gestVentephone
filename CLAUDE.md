@@ -20,6 +20,12 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Prix communs sur `Produit`, prix propres à une boutique dans `PrixBoutique`. Téléphones = `Article` (IMEI unique par commerce) ; `Stock` tient la quantité par boutique (téléphones compris) ; chaque variation crée un `MouvementStock`.
 - Docker : PostgreSQL sur le port 5434, Redis sur 6380. Seed : `pnpm db:seed` (comptes proprietaire, gerant, vendeur1, vendeur2 ; mot de passe `SEED_MOT_DE_PASSE`, PIN 2580).
 
+## Catalogue
+
+- Règles et schémas zod dans `packages/commun/src/catalogue.ts` (produit, prix de boutique, nom proposé, texte de recherche). Écritures serveur dans `api/src/catalogue/catalogue.ecritures.ts`, communes aux opérations des appareils (`MARQUE_/MODELE_/CATEGORIE_/PRODUIT_/PRIX_BOUTIQUE_ENREGISTRER`) et à l'import Excel (`import.service.ts`, simulation puis import) ; changement de prix ⇒ `PRIX_MODIFIE` au journal d'audit avec avant/après.
+- Photos : `StockageService` (dossier `STOCKAGE_DIR/photos`, nom aléatoire, format vérifié aux premiers octets), envoyées compressées par l'app (`app/src/lib/photo.ts`), servies publiquement par `GET /api/photos/:nom` (images sans donnée personnelle, en cache).
+- App : recherche locale `rechercherProduits` / `trouverParCode` (`app/src/lib/catalogue.ts`, colonne `recherche` normalisée), scan caméra (`components/scanner.tsx`, téléphone) ou lecteur USB (le code tapé puis Entrée dans le champ de recherche ouvre la fiche).
+
 ## Rôles
 
 PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (ventes, trocs, encaissements ; jamais de modification de prix).

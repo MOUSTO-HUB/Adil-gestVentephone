@@ -13,6 +13,7 @@ const ROUTES_PUBLIQUES: Record<string, string> = {
   'GET /api/sante': 'supervision et test de connexion de l’application',
   'POST /api/auth/connexion': 'connexion (limitée par IP et par identifiant)',
   'POST /api/auth/rafraichir': 'renouvellement par jeton de rafraichissement',
+  'GET /api/photos/{nom}': 'photos du catalogue (sans donnée personnelle), nom aléatoire',
 };
 
 describe('Sécurité des routes (e2e)', () => {

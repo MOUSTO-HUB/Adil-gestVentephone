@@ -75,6 +75,12 @@ export const MIGRATIONS: string[] = [
   );
   CREATE TABLE meta (cle TEXT PRIMARY KEY, valeur TEXT);
   `,
+  // 2 : photo des produits et texte de recherche (minuscules, sans accents ; rempli par depot.ts).
+  `
+  ALTER TABLE produit ADD COLUMN photo TEXT;
+  ALTER TABLE produit ADD COLUMN recherche TEXT;
+  CREATE INDEX article_boutique_imei ON article (boutiqueId, imei);
+  `,
 ];
 
 /** Applique les migrations manquantes, chacune dans une transaction. */

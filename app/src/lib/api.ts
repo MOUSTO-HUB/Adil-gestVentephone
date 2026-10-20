@@ -55,7 +55,10 @@ export class ErreurReseau extends Error {
 
 interface Options {
   methode?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  /** JSON, ou FormData pour envoyer un fichier (photo, classeur Excel). */
   corps?: unknown;
+  /** Réponse brute (fichier à télécharger) au lieu de JSON. */
+  fichier?: boolean;
 }
 
 interface Branchements {
@@ -67,20 +70,29 @@ interface Branchements {
 
 async function appeler<T>(chemin: string, options: Options, jeton?: string): Promise<T> {
   let reponse: Response;
+  const formulaire = options.corps instanceof FormData;
   try {
     reponse = await fetch(`${API_URL}${chemin}`, {
       method: options.methode ?? 'GET',
       headers: {
         Accept: 'application/json',
-        ...(options.corps !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        // FormData : le navigateur ou React Native pose lui-même l'en-tête multipart.
+        ...(options.corps !== undefined && !formulaire
+          ? { 'Content-Type': 'application/json' }
+          : {}),
         ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}),
       },
-      body: options.corps !== undefined ? JSON.stringify(options.corps) : undefined,
+      body: formulaire
+        ? (options.corps as FormData)
+        : options.corps !== undefined
+          ? JSON.stringify(options.corps)
+          : undefined,
     });
   } catch {
     throw new ErreurReseau();
   }
   if (reponse.status === 204) return undefined as T;
+  if (options.fichier && reponse.ok) return (await reponse.blob()) as T;
   const donnees: unknown = await reponse.json().catch(() => null);
   if (!reponse.ok) {
     const message = (donnees as { message?: string | string[] } | null)?.message;
@@ -141,6 +153,6 @@ export type ClientApi = ReturnType<typeof creerClientApi>;
 
 /** Message lisible pour l'utilisateur, quelle que soit l'erreur. */
 export function messageErreur(erreur: unknown): string {
-  if (erreur instanceof ErreurApi || erreur instanceof ErreurReseau) return erreur.message;
+  if (erreur instanceof Error && erreur.message) return erreur.message;
   return 'Une erreur inattendue est survenue.';
 }
