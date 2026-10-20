@@ -2,10 +2,12 @@
 // Uniquement du TypeScript pur : ni NestJS, ni React Native, ni accès réseau.
 // Les règles métier (prix, remise, troc, échéancier, conflits) viennent ici, avec leurs tests.
 
+export * from './achats.js';
 export * from './application.js';
 export * from './catalogue.js';
 export * from './clients.js';
 export * from './imei.js';
+export * from './inventaire.js';
 export * from './monnaie.js';
 export * from './pin.js';
 export * from './roles.js';

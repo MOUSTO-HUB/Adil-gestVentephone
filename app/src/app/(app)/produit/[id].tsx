@@ -7,7 +7,7 @@ import {
 } from '@gestvente/commun';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { PhotoProduit } from '@/components/photo-produit';
 import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
@@ -21,6 +21,7 @@ interface Fiche {
   prixBoutique: PrixBoutiqueSync | null;
   categorie: string | null;
   quantite: number;
+  seuilMinimum: number;
   articles: { id: string; imei: string; statut: string }[];
   /** Accessoire : modèles compatibles ; téléphone : accessoires compatibles avec son modèle. */
   compatibles: { id: string; nom: string }[];
@@ -52,8 +53,8 @@ export default function FicheProduit() {
         'SELECT nom FROM categorie WHERE id = ?',
         [produit.categorieId],
       );
-      const stock = await base.premier<{ quantite: number }>(
-        'SELECT quantite FROM stock WHERE produitId = ? AND boutiqueId = ?',
+      const stock = await base.premier<{ quantite: number; seuilMinimum: number }>(
+        'SELECT quantite, seuilMinimum FROM stock WHERE produitId = ? AND boutiqueId = ?',
         [id, boutique.id],
       );
       const articles = await base.tous<Fiche['articles'][number]>(
@@ -80,6 +81,7 @@ export default function FicheProduit() {
         prixBoutique,
         categorie: categorie?.nom ?? null,
         quantite: stock?.quantite ?? 0,
+        seuilMinimum: stock?.seuilMinimum ?? 0,
         articles,
         compatibles,
       };
@@ -228,6 +230,16 @@ export default function FicheProduit() {
       ) : null}
 
       {gestion ? (
+        <SeuilStock
+          key={`seuil-${fiche.seuilMinimum}`}
+          produitId={produit.id}
+          boutiqueId={boutique.id}
+          actuel={fiche.seuilMinimum}
+          quantite={fiche.quantite}
+          surMessage={setMessage}
+        />
+      ) : null}
+      {gestion ? (
         <PrixDeLaBoutique
           key={JSON.stringify(fiche.prixBoutique)}
           produit={produit}
@@ -265,7 +277,12 @@ export default function FicheProduit() {
           <Texte gras>Téléphones en stock ({fiche.articles.length})</Texte>
           {fiche.articles.map((a) => (
             <Carte key={a.id}>
-              <Texte>IMEI {a.imei}</Texte>
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => router.push({ pathname: '/imei', params: { imei: a.imei } })}
+              >
+                <Texte>IMEI {a.imei} ›</Texte>
+              </Pressable>
               {a.statut === 'A_REPARER' ? <Texte discret>À réparer</Texte> : null}
               {gestion ? (
                 <Bouton titre="Sortir du stock" variante="danger" onPress={() => void sortir(a)} />
@@ -284,6 +301,65 @@ const lire = (texte: string): number | null => {
   if (!propre) return null;
   return /^\d+$/.test(propre) ? Number(propre) : Number.NaN;
 };
+
+/** Seuil d'alerte : à ce niveau ou en dessous, le produit apparaît en « stock bas ». */
+function SeuilStock({
+  produitId,
+  boutiqueId,
+  actuel,
+  quantite,
+  surMessage,
+}: {
+  produitId: string;
+  boutiqueId: string;
+  actuel: number;
+  quantite: number;
+  surMessage: (m: MessageFiche) => void;
+}) {
+  const { enregistrer } = useSync();
+  const [seuil, setSeuil] = useState(String(actuel));
+  const enregistrerSeuil = async () => {
+    const valeur = Number(seuil.trim());
+    if (!Number.isInteger(valeur) || valeur < 0) {
+      surMessage({ texte: 'Seuil : nombre entier positif ou zéro.', type: 'erreur' });
+      return;
+    }
+    try {
+      await enregistrer({
+        type: 'STOCK_SEUIL',
+        boutiqueId,
+        contenu: { produitId, seuilMinimum: valeur },
+      });
+      surMessage({
+        texte: valeur ? `Alerte à ${valeur} en stock.` : 'Alerte de stock désactivée.',
+        type: 'info',
+      });
+    } catch (e) {
+      surMessage({ texte: (e as Error).message, type: 'erreur' });
+    }
+  };
+  return (
+    <Carte>
+      <Texte gras>Alerte de stock bas</Texte>
+      <Texte discret>
+        {actuel > 0
+          ? `Alerte à ${actuel} ou moins${quantite <= actuel ? ' : stock bas en ce moment.' : '.'}`
+          : 'Aucune alerte.'}
+      </Texte>
+      <Champ
+        libelle="Seuil (0 : pas d’alerte)"
+        value={seuil}
+        onChangeText={setSeuil}
+        keyboardType="number-pad"
+      />
+      <Bouton
+        titre="Enregistrer le seuil"
+        variante="secondaire"
+        onPress={() => void enregistrerSeuil()}
+      />
+    </Carte>
+  );
+}
 
 /** Prix propres à la boutique ; vides : les prix communs s'appliquent. */
 function PrixDeLaBoutique({

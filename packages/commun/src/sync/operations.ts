@@ -6,7 +6,15 @@ import {
   schemaPrixBoutique,
   schemaProduit,
 } from '../catalogue.js';
+import {
+  schemaAchat,
+  schemaAnnulationAchat,
+  schemaPaiementAchat,
+  schemaReception,
+  schemaSeuil,
+} from '../achats.js';
 import { schemaClient, schemaFournisseur } from '../clients.js';
+import { schemaInventaire } from '../inventaire.js';
 import type { Changement } from './entites.js';
 
 /**
@@ -42,6 +50,18 @@ export const schemasContenus = {
   CLIENT_ENREGISTRER: schemaClient,
   /** Création ou modification d'un fournisseur ; gérant ou propriétaire. */
   FOURNISSEUR_ENREGISTRER: schemaFournisseur,
+  /** Bon d'achat (brouillon tant que rien n'est reçu) ; gérant ou propriétaire. */
+  ACHAT_ENREGISTRER: schemaAchat,
+  /** Réception totale ou partielle : IMEI des téléphones, quantités des accessoires. */
+  ACHAT_RECEVOIR: schemaReception,
+  /** Paiement au fournisseur sur un bon. */
+  ACHAT_PAYER: schemaPaiementAchat,
+  /** Annulation d'un bon dont rien n'a été reçu. */
+  ACHAT_ANNULER: schemaAnnulationAchat,
+  /** Seuil d'alerte de stock d'un produit dans la boutique. */
+  STOCK_SEUIL: schemaSeuil,
+  /** Inventaire physique validé : le stock est ajusté aux quantités comptées. */
+  INVENTAIRE_VALIDER: schemaInventaire,
 } as const;
 
 export type TypeOperation = keyof typeof schemasContenus;
@@ -58,6 +78,12 @@ export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   PRIX_BOUTIQUE_ENREGISTRER: 'Prix de la boutique',
   CLIENT_ENREGISTRER: 'Fiche client',
   FOURNISSEUR_ENREGISTRER: 'Fiche fournisseur',
+  ACHAT_ENREGISTRER: 'Bon d’achat',
+  ACHAT_RECEVOIR: 'Réception d’achat',
+  ACHAT_PAYER: 'Paiement fournisseur',
+  ACHAT_ANNULER: 'Annulation d’un bon d’achat',
+  STOCK_SEUIL: 'Seuil de stock',
+  INVENTAIRE_VALIDER: 'Inventaire',
 };
 
 /** Enveloppe commune à toutes les opérations. */

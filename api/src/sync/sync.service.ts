@@ -24,12 +24,14 @@ import { GESTIONNAIRES } from './operations/index.js';
 import type { Gestionnaire } from './operations/gestionnaire.js';
 import {
   masquerPourRole,
+  versAchat,
   versArticle,
   versCategorie,
   versClient,
   versCompatibilite,
   versFournisseur,
   versGarant,
+  versLigneAchat,
   versMarque,
   versModele,
   versPrixBoutique,
@@ -202,6 +204,14 @@ export class SyncService {
         const fournisseurs =
           role === Role.VENDEUR ? [] : await tx.fournisseur.findMany({ where: { commerceId } });
         const dettes = fournisseurs.length ? await dettesFournisseurs(tx, commerceId) : new Map();
+        // Bons d'achat des boutiques de l'utilisateur : propriétaire et gérants.
+        const achats =
+          role === Role.VENDEUR
+            ? []
+            : await tx.achat.findMany({
+                where: { commerceId, boutiqueId: { in: boutiqueIds } },
+                include: { lignes: true },
+              });
         return {
           curseur: Number(dernier._max.seq ?? 0n),
           donnees: {
@@ -216,6 +226,8 @@ export class SyncService {
             client: clients.map(versClient),
             garant: garants.map(versGarant),
             fournisseur: fournisseurs.map((f) => versFournisseur(f, dettes.get(f.id) ?? 0)),
+            achat: achats.map(versAchat),
+            ligneAchat: achats.flatMap((a) => a.lignes.map(versLigneAchat)),
           },
         };
       },

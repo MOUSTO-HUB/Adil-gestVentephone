@@ -9,6 +9,7 @@ import {
 } from '@gestvente/commun';
 import type { BaseSql } from '../base/sql';
 import { ErreurOperation } from './erreurs';
+import * as achats from './operations-achats';
 import * as catalogue from './operations-catalogue';
 import * as clients from './operations-clients';
 
@@ -73,6 +74,14 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
   CLIENT_ENREGISTRER: (tx, _boutiqueId, contenu) => clients.clientEnregistrer(tx, contenu),
   FOURNISSEUR_ENREGISTRER: (tx, _boutiqueId, contenu) =>
     clients.fournisseurEnregistrer(tx, contenu),
+  ACHAT_ENREGISTRER: (tx, boutiqueId, contenu) => achats.achatEnregistrer(tx, boutiqueId, contenu),
+  ACHAT_RECEVOIR: (tx, boutiqueId, contenu, id) =>
+    achats.achatRecevoir(tx, boutiqueId, contenu, id),
+  ACHAT_PAYER: (tx, boutiqueId, contenu) => achats.achatPayer(tx, boutiqueId, contenu),
+  ACHAT_ANNULER: (tx, boutiqueId, contenu) => achats.achatAnnuler(tx, boutiqueId, contenu),
+  STOCK_SEUIL: (tx, boutiqueId, contenu, id) => achats.stockSeuil(tx, boutiqueId, contenu, id),
+  INVENTAIRE_VALIDER: (tx, boutiqueId, contenu, id) =>
+    achats.inventaireValider(tx, boutiqueId, contenu, id),
 };
 
 export interface NouvelleOperation<T extends TypeOperation> {

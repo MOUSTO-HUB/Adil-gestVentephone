@@ -33,6 +33,13 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Pièce d'identité : fichier dans `STOCKAGE_DIR/pieces`, servi par `GET /api/clients/:id/piece` au personnel connecté, `Cache-Control: no-store`, chaque consultation auditée ; l'app l'affiche depuis la mémoire (`lireImagePrivee`), jamais en cache. Historique du client et achats du fournisseur : en ligne.
 - Doublons de téléphone signalés à la saisie (non bloquants). Toute migration locale efface le curseur : l'appareil reprend un instantané complet (les nouvelles tables se remplissent).
 
+## Achats, stock et inventaire
+
+- Règles dans `packages/commun/src/achats.ts` (total, statut après réception, `controlerImeis` : Luhn, doublons, déjà connus ; `erreurReception`, `erreurPaiementAchat`) et `inventaire.ts` (`ecartQuantite`, `ecartsTelephones`).
+- Opérations (propriétaire et gérants) : `ACHAT_ENREGISTRER` (brouillon modifiable tant que rien n'est reçu ; numéro donné par l'appareil `PREFIXE-AAMMJJ-XXXX`), `ACHAT_RECEVOIR` (identifiants des téléphones donnés par l'appareil ; un IMEI déjà connu ⇒ CONFLIT de toute la réception), `ACHAT_PAYER`, `ACHAT_ANNULER`, `STOCK_SEUIL`, `INVENTAIRE_VALIDER` (le stock suit le comptage ; téléphones non scannés sortis du stock). Écritures serveur dans `api/src/achats/achats.ecritures.ts` ; chaque entrée crée un `MouvementStock` ; dette du fournisseur journalisée avec le bon.
+- Bons d'achat synchronisés (`achat`, `ligneAchat`, jamais aux vendeurs) pour réceptionner hors ligne ; comptage d'inventaire en cours gardé dans `meta` de la base locale.
+- Fiche IMEI : `GET /api/articles/imei/:imei` (achat, ventes, retours, troc, mouvements ; fournisseur et prix d'achat réservés à la gestion). Saisie des IMEI en rafale : `components/saisie-imei.tsx`.
+
 ## Rôles
 
 PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (ventes, trocs, encaissements ; jamais de modification de prix).

@@ -1,5 +1,13 @@
 import type { TypeOperation } from '@gestvente/commun';
 import {
+  achatAnnuler,
+  achatEnregistrer,
+  achatPayer,
+  achatRecevoir,
+  inventaireValider,
+  stockSeuil,
+} from './achats.operations.js';
+import {
   categorieEnregistrer,
   marqueEnregistrer,
   modeleEnregistrer,
@@ -21,4 +29,10 @@ export const GESTIONNAIRES: { [T in TypeOperation]: Gestionnaire<T> } = {
   PRIX_BOUTIQUE_ENREGISTRER: prixBoutiqueEnregistrer,
   CLIENT_ENREGISTRER: clientEnregistrer,
   FOURNISSEUR_ENREGISTRER: fournisseurEnregistrer,
+  ACHAT_ENREGISTRER: achatEnregistrer,
+  ACHAT_RECEVOIR: achatRecevoir,
+  ACHAT_PAYER: achatPayer,
+  ACHAT_ANNULER: achatAnnuler,
+  STOCK_SEUIL: stockSeuil,
+  INVENTAIRE_VALIDER: inventaireValider,
 };

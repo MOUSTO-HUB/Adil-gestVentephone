@@ -62,6 +62,18 @@ const COLONNES: { [E in EntiteSync]: (keyof DonneesEntites[E] & string)[] } = {
   ],
   garant: ['id', 'clientId', 'nom', 'telephone', 'typePiece', 'numeroPiece', 'adresse', 'lien'],
   fournisseur: ['id', 'nom', 'telephone', 'adresse', 'note', 'archive', 'dette'],
+  achat: [
+    'id',
+    'boutiqueId',
+    'fournisseurId',
+    'numero',
+    'statut',
+    'dateAchat',
+    'montantTotal',
+    'montantPaye',
+    'note',
+  ],
+  ligneAchat: ['id', 'achatId', 'produitId', 'quantite', 'quantiteRecue', 'prixAchat'],
 };
 
 const versSql = (valeur: unknown): ValeurSql => {

@@ -118,6 +118,30 @@ export const MIGRATIONS: string[] = [
     dette INTEGER NOT NULL
   );
   `,
+  // 4 : bons d'achat fournisseur.
+  `
+  CREATE TABLE achat (
+    id TEXT PRIMARY KEY,
+    boutiqueId TEXT NOT NULL,
+    fournisseurId TEXT NOT NULL,
+    numero TEXT NOT NULL,
+    statut TEXT NOT NULL,
+    dateAchat TEXT NOT NULL,
+    montantTotal INTEGER NOT NULL,
+    montantPaye INTEGER NOT NULL,
+    note TEXT
+  );
+  CREATE INDEX achat_boutique ON achat (boutiqueId, dateAchat);
+  CREATE TABLE ligneAchat (
+    id TEXT PRIMARY KEY,
+    achatId TEXT NOT NULL,
+    produitId TEXT NOT NULL,
+    quantite INTEGER NOT NULL,
+    quantiteRecue INTEGER NOT NULL,
+    prixAchat INTEGER NOT NULL
+  );
+  CREATE INDEX ligne_achat_achat ON ligneAchat (achatId);
+  `,
 ];
 
 /**

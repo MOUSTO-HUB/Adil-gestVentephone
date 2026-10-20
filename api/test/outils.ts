@@ -61,7 +61,11 @@ export async function supprimerCommerce(prisma: PrismaService, commerceId: strin
   await prisma.operationSync.deleteMany({ where: { commerceId } });
   await prisma.changement.deleteMany({ where: { commerceId } });
   await prisma.mouvementStock.deleteMany({ where: { commerceId } });
+  await prisma.ligneInventaire.deleteMany({ where: { inventaire: { commerceId } } });
+  await prisma.inventaire.deleteMany({ where: { commerceId } });
   await prisma.article.deleteMany({ where: { commerceId } });
+  await prisma.ligneAchat.deleteMany({ where: { achat: { commerceId } } });
+  await prisma.achat.deleteMany({ where: { commerceId } });
   await prisma.stock.deleteMany({ where: { produit: { commerceId } } });
   await prisma.compatibilite.deleteMany({ where: { accessoire: { commerceId } } });
   await prisma.prixBoutique.deleteMany({ where: { produit: { commerceId } } });
@@ -71,8 +75,6 @@ export async function supprimerCommerce(prisma: PrismaService, commerceId: strin
   await prisma.categorie.deleteMany({ where: { commerceId } });
   await prisma.garant.deleteMany({ where: { client: { commerceId } } });
   await prisma.client.deleteMany({ where: { commerceId } });
-  await prisma.ligneAchat.deleteMany({ where: { achat: { commerceId } } });
-  await prisma.achat.deleteMany({ where: { commerceId } });
   await prisma.fournisseur.deleteMany({ where: { commerceId } });
   await prisma.appareil.deleteMany({ where: { commerceId } });
   await prisma.utilisateurBoutique.deleteMany({ where: { utilisateur: { commerceId } } });

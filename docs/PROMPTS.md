@@ -17,7 +17,7 @@ Référence : [Cahier des charges](CAHIER_DES_CHARGES.md).
 | 4   | 1 · Socle           | Base locale et moteur de synchronisation      | ☑    |
 | 5   | 1 · Socle           | Catalogue produits                            | ☑    |
 | 6   | 1 · Socle           | Clients et fournisseurs                       | ☑    |
-| 7   | 1 · Socle           | Achats, stock, IMEI et inventaire             | ☐    |
+| 7   | 1 · Socle           | Achats, stock, IMEI et inventaire             | ☑    |
 | 8   | 1 · Socle           | Ventes au détail et en gros                   | ☐    |
 | 9   | 1 · Socle           | Factures, reçus, impression et garantie       | ☐    |
 | 10  | 1 · Socle           | Retours et échanges                           | ☐    |

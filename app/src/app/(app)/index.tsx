@@ -1,12 +1,13 @@
 import { LIBELLES_ROLES, peutGererSessions } from '@gestvente/commun';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
-import { Bouton, Carte, Ecran, Texte } from '@/components/ui';
+import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
+import { produitsSousSeuil } from '@/lib/achats';
 import { confirmer } from '@/lib/confirmer';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
 
-/** Accueil : la caisse et les ventes viendront aux étapes suivantes. */
+/** Accueil : alertes de stock et accès aux écrans ; la caisse et les ventes viendront ensuite. */
 export default function Accueil() {
   const { profil, boutique, choisirBoutique, verrouiller, deconnexion, rafraichirProfil } =
     useSession();
@@ -23,6 +24,11 @@ export default function Accueil() {
                 (SELECT COUNT(*) FROM article WHERE boutiqueId = ? AND statut = 'EN_STOCK') AS telephones`,
         [boutique?.id ?? ''],
       ),
+    [boutique?.id],
+  );
+
+  const sousSeuil = useLecture(
+    (base) => produitsSousSeuil(base, boutique?.id ?? ''),
     [boutique?.id],
   );
 
@@ -52,10 +58,27 @@ export default function Accueil() {
           </Texte>
         ) : null}
       </Carte>
+      {sousSeuil?.length ? (
+        <Message
+          texte={`Stock bas (${sousSeuil.length}) : ${sousSeuil
+            .slice(0, 5)
+            .map((p) => `${p.nom} (${p.quantite})`)
+            .join(', ')}${sousSeuil.length > 5 ? '…' : ''}`}
+        />
+      ) : null}
       <Bouton titre="Stock" onPress={() => router.push('/stock')} />
+      <Bouton titre="Fiche IMEI" variante="secondaire" onPress={() => router.push('/imei')} />
       <Bouton titre="Clients" onPress={() => router.push('/clients')} />
       {peutGererSessions(profil.role) ? (
-        <Bouton titre="Fournisseurs" onPress={() => router.push('/fournisseurs')} />
+        <>
+          <Bouton titre="Achats" onPress={() => router.push('/achats')} />
+          <Bouton
+            titre="Inventaire"
+            variante="secondaire"
+            onPress={() => router.push('/inventaire')}
+          />
+          <Bouton titre="Fournisseurs" onPress={() => router.push('/fournisseurs')} />
+        </>
       ) : null}
       {profil.boutiques.length > 1 ? (
         <Bouton

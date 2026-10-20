@@ -9,6 +9,7 @@ import { ClientsModule } from './clients/clients.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SanteModule } from './sante/sante.module.js';
 import { SecuriteModule } from './securite/securite.module.js';
+import { StockModule } from './stock/stock.module.js';
 import { SyncModule } from './sync/sync.module.js';
 
 @Module({
@@ -25,6 +26,7 @@ import { SyncModule } from './sync/sync.module.js';
     SyncModule,
     CatalogueModule,
     ClientsModule,
+    StockModule,
   ],
 })
 export class AppModule {}

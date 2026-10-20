@@ -16,6 +16,8 @@ export const ENTITES_SYNC = [
   'client',
   'garant',
   'fournisseur',
+  'achat',
+  'ligneAchat',
 ] as const;
 export type EntiteSync = (typeof ENTITES_SYNC)[number];
 
@@ -134,6 +136,29 @@ export interface FournisseurSync {
   dette: number;
 }
 
+/** Bon d'achat fournisseur (propriétaire et gérants seulement). */
+export interface AchatSync {
+  id: string;
+  boutiqueId: string;
+  fournisseurId: string;
+  numero: string;
+  statut: 'BROUILLON' | 'PARTIEL' | 'RECU' | 'ANNULE';
+  /** Date du bon (AAAA-MM-JJ). */
+  dateAchat: string;
+  montantTotal: number;
+  montantPaye: number;
+  note: string | null;
+}
+
+export interface LigneAchatSync {
+  id: string;
+  achatId: string;
+  produitId: string;
+  quantite: number;
+  quantiteRecue: number;
+  prixAchat: number;
+}
+
 export interface DonneesEntites {
   marque: MarqueSync;
   modele: ModeleSync;
@@ -146,6 +171,8 @@ export interface DonneesEntites {
   client: ClientSync;
   garant: GarantSync;
   fournisseur: FournisseurSync;
+  achat: AchatSync;
+  ligneAchat: LigneAchatSync;
 }
 
 /** Un changement du journal du serveur (descente vers les appareils). */
