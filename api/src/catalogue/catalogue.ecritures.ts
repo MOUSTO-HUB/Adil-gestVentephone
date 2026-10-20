@@ -244,6 +244,20 @@ export async function enregistrerProduit(
         tx,
       );
     }
+    if (existant.archive !== produit.archive) {
+      await audit.journaliser(
+        {
+          commerceId,
+          action: produit.archive ? ACTIONS_AUDIT.PRODUIT_ARCHIVE : ACTIONS_AUDIT.PRODUIT_RESTAURE,
+          utilisateurId: utilisateur.id,
+          appareilId: utilisateur.appareilId,
+          entite: 'Produit',
+          entiteId: produit.id,
+          details: { nom: produit.nom },
+        },
+        tx,
+      );
+    }
   }
   return { ok: true, cree: !existant };
 }

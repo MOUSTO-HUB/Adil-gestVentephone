@@ -88,6 +88,12 @@ export default function Accueil() {
             onPress={() => router.push('/inventaire')}
           />
           <Bouton titre="Fournisseurs" onPress={() => router.push('/fournisseurs')} />
+          <Bouton titre="Rapports" onPress={() => router.push('/rapports')} />
+          <Bouton
+            titre="Journal d’audit"
+            variante="secondaire"
+            onPress={() => router.push('/journal')}
+          />
         </>
       ) : null}
       {profil.boutiques.length > 1 ? (

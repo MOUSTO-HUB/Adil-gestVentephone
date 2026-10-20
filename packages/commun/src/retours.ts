@@ -116,7 +116,7 @@ export function erreurConditionsRetour(c: {
 
 /**
  * Valeur rendue pour `quantite` articles d'une ligne : le prix payé, remise de la
- * vente déduite au prorata (arrondi à l'unité inférieure).
+ * vente déduite au prorata (arrondie comme dans les rapports : un article rendu en entier annule exactement sa part de la vente).
  */
 export function valeurRetour(
   ligne: { prixUnitaire: number },
@@ -124,7 +124,7 @@ export function valeurRetour(
   vente: { sousTotal: number; remise: number },
 ): number {
   if (vente.sousTotal <= 0) return 0;
-  return Math.floor(
+  return Math.round(
     (ligne.prixUnitaire * quantite * (vente.sousTotal - vente.remise)) / vente.sousTotal,
   );
 }

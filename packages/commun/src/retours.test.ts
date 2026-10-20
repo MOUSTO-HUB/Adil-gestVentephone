@@ -52,14 +52,14 @@ describe('conditions de retour', () => {
 });
 
 describe('valeur rendue et différence', () => {
-  it('prix payé, remise déduite au prorata, arrondi en faveur de la boutique', () => {
+  it('prix payé, remise déduite au prorata, arrondi comme dans les rapports', () => {
     expect(valeurRetour({ prixUnitaire: 30_000 }, 2, { sousTotal: 60_000, remise: 0 })).toBe(
       60_000,
     );
-    // Vente : 1 530 000, remise 120 000 → le téléphone de 1 500 000 vaut 1 382 352.
+    // Vente : 1 530 000, remise 120 000 → le téléphone de 1 500 000 vaut 1 382 353.
     expect(
       valeurRetour({ prixUnitaire: 1_500_000 }, 1, { sousTotal: 1_530_000, remise: 120_000 }),
-    ).toBe(1_382_352);
+    ).toBe(1_382_353);
     expect(valeurRetour({ prixUnitaire: 100 }, 1, { sousTotal: 0, remise: 0 })).toBe(0);
   });
 

@@ -12,6 +12,7 @@ import { SecuriteModule } from './securite/securite.module.js';
 import { StockModule } from './stock/stock.module.js';
 import { SyncModule } from './sync/sync.module.js';
 import { CaisseModule } from './caisse/caisse.module.js';
+import { RapportsModule } from './rapports/rapports.module.js';
 import { VentesModule } from './ventes/ventes.module.js';
 
 @Module({
@@ -27,6 +28,7 @@ import { VentesModule } from './ventes/ventes.module.js';
     AppareilsModule,
     VentesModule,
     CaisseModule,
+    RapportsModule,
     SyncModule,
     CatalogueModule,
     ClientsModule,

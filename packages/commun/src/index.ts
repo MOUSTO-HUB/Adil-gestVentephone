@@ -14,6 +14,7 @@ export * from './inventaire.js';
 export * from './monnaie.js';
 export * from './pin.js';
 export * from './rapport-caisse.js';
+export * from './rapports.js';
 export * from './retours.js';
 export * from './roles.js';
 export * from './sync/conflits.js';
