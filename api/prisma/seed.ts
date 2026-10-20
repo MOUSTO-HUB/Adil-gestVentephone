@@ -467,7 +467,7 @@ async function main() {
     throw new Error('SEED_MOT_DE_PASSE manquant (voir .env.example).');
   }
   const motDePasseHash = await hash(motDePasse);
-  const pinHash = await hash('1234');
+  const pinHash = await hash('2580');
 
   const commerce = await prisma.commerce.create({
     data: { nom: 'Adil Phone', telephone: '+224620000000', adresse: 'Madina, Conakry' },
@@ -691,7 +691,7 @@ async function main() {
   });
 
   console.log(
-    `Données de démonstration créées : ${comptes.length} comptes (${comptes.map((c) => c.identifiant).join(', ')}, PIN 1234), ` +
+    `Données de démonstration créées : ${comptes.length} comptes (${comptes.map((c) => c.identifiant).join(', ')}, PIN 2580), ` +
       `${TELEPHONES.length + ACCESSOIRES.length} produits, ${numeroImei} IMEI, ${CLIENTS.length} clients, ${FOURNISSEURS.length} fournisseurs.`,
   );
 }

@@ -334,6 +334,7 @@ model Appareil {
   plateforme    String
   /// Empreinte du jeton de rafraîchissement en cours (jamais le jeton lui-même).
   jetonHash     String?
+  jetonExpireLe DateTime?
   dernierAcces  DateTime?
   /// Dernier curseur de synchronisation reçu par l'appareil.
   curseurSync   BigInt?

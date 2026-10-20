@@ -18,11 +18,20 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Prisma 7 : schéma `api/prisma/schema.prisma`, config `api/prisma.config.ts`, client généré dans `api/src/generated/prisma` (non versionné, `pnpm --filter @gestvente/api db:generate`), importé depuis `../generated/prisma/client.js` ; connexion via `PrismaService`. Modifier le schéma puis `pnpm db:migrate` ; ne jamais éditer une migration déjà poussée.
 - Identifiants UUID texte (générables sur l'appareil hors ligne) ; `commerceId`, `creeLe`, `modifieLe`, `creeParId` sur chaque table.
 - Prix communs sur `Produit`, prix propres à une boutique dans `PrixBoutique`. Téléphones = `Article` (IMEI unique par commerce) ; `Stock` tient la quantité par boutique (téléphones compris) ; chaque variation crée un `MouvementStock`.
-- Docker : PostgreSQL sur le port 5434, Redis sur 6380. Seed : `pnpm db:seed` (comptes proprietaire, gerant, vendeur1, vendeur2 ; mot de passe `SEED_MOT_DE_PASSE`, PIN 1234).
+- Docker : PostgreSQL sur le port 5434, Redis sur 6380. Seed : `pnpm db:seed` (comptes proprietaire, gerant, vendeur1, vendeur2 ; mot de passe `SEED_MOT_DE_PASSE`, PIN 2580).
 
 ## Rôles
 
 PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (ventes, trocs, encaissements ; jamais de modification de prix).
+
+## Authentification et sécurité
+
+- `api/src/auth` : toutes les routes exigent un jeton, sauf celles marquées `@Public()`. Restreindre par rôle avec `@Roles(Role.X)`. Toute route qui prend un identifiant de boutique porte `@UseGuards(BoutiqueGuard)` (+ `@ParamBoutique('id')` si le paramètre ne s'appelle pas `boutiqueId`). Utilisateur courant : `@UtilisateurCourant()` (`id`, `role`, `commerceId`, `appareilId`, `boutiqueIds`) ; toujours filtrer par `commerceId`.
+- Une session = un `Appareil` : jeton d'accès 15 min, jeton de rafraîchissement 30 jours à usage unique (`appareilId.secret`, empreinte en base) ; un ancien jeton réutilisé ferme la session. `JwtAuthGuard` relit l'appareil et le compte à chaque requête : la déconnexion à distance (`/appareils/:id/deconnexion`, `/utilisateurs/:id/deconnexion`) s'applique aussitôt. Qui gère les sessions de qui : `acces.regles.ts`.
+- Code PIN (règles dans `packages/commun/src/pin.ts`) : empreinte argon2 sur le serveur, PBKDF2 sur l'appareil (`app/src/lib/pin-local.ts`) pour déverrouiller hors ligne ; 5 erreurs ramènent à la connexion.
+- Essais limités par `LimiteurService` (Redis). Opérations sensibles : `AuditService.journaliser` (IP ajoutée automatiquement).
+- `api/test/securite.e2e-spec.ts` inventorie les routes : une nouvelle route publique doit être ajoutée à `ROUTES_PUBLIQUES` avec sa justification.
+- App : session dans `app/src/lib/session.tsx` (jetons dans expo-secure-store), appels par `api.requete()` qui renouvelle le jeton ; écrans protégés par `Stack.Protected` dans `app/src/app/_layout.tsx`.
 
 ## Règles
 

@@ -1,7 +1,37 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
+import { ActivityIndicator, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { FournisseurSession, useSession } from '@/lib/session';
+
+/** Chaque écran n'est accessible qu'à la bonne étape de la session. */
+function Navigation() {
+  const { statut, boutique } = useSession();
+  if (statut === 'chargement') {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+  const pinRequis = statut === 'pin-a-definir' || statut === 'verrouille';
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={statut === 'deconnecte'}>
+        <Stack.Screen name="connexion" />
+      </Stack.Protected>
+      <Stack.Protected guard={pinRequis}>
+        <Stack.Screen name="pin" />
+      </Stack.Protected>
+      <Stack.Protected guard={statut === 'pret' && !boutique}>
+        <Stack.Screen name="boutique" />
+      </Stack.Protected>
+      <Stack.Protected guard={statut === 'pret' && !!boutique}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -9,7 +39,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <StatusBar style="auto" />
-        <Stack screenOptions={{ headerShown: false }} />
+        <FournisseurSession>
+          <Navigation />
+        </FournisseurSession>
       </ThemeProvider>
     </SafeAreaProvider>
   );
