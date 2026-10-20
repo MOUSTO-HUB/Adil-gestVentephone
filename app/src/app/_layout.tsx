@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { FournisseurSession, useSession } from '@/lib/session';
+import { FournisseurSync } from '@/lib/sync/contexte';
 
 /** Chaque écran n'est accessible qu'à la bonne étape de la session. */
 function Navigation() {
@@ -40,7 +41,9 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <StatusBar style="auto" />
         <FournisseurSession>
-          <Navigation />
+          <FournisseurSync>
+            <Navigation />
+          </FournisseurSync>
         </FournisseurSession>
       </ThemeProvider>
     </SafeAreaProvider>

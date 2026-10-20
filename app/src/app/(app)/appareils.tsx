@@ -1,9 +1,9 @@
 import { LIBELLES_ROLES, type Role } from '@gestvente/commun';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Platform } from 'react-native';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
+import { confirmer } from '@/lib/confirmer';
 import { useSession } from '@/lib/session';
 
 interface Appareil {
@@ -13,17 +13,6 @@ interface Appareil {
   dernierAcces: string | null;
   courant: boolean;
   utilisateur: { id: string; nom: string; role: Role };
-}
-
-/** Confirmation avant une action irréversible (boîte native, ou du navigateur sur le web). */
-function confirmer(message: string): Promise<boolean> {
-  if (Platform.OS === 'web') return Promise.resolve(window.confirm(message));
-  return new Promise((resoudre) =>
-    Alert.alert('Confirmation', message, [
-      { text: 'Annuler', style: 'cancel', onPress: () => resoudre(false) },
-      { text: 'Déconnecter', style: 'destructive', onPress: () => resoudre(true) },
-    ]),
-  );
 }
 
 const formatDate = (iso: string | null) =>
@@ -56,7 +45,12 @@ export default function Appareils() {
   }, [api, version]);
 
   const deconnecter = async (appareil: Appareil) => {
-    if (!(await confirmer(`Déconnecter « ${appareil.nom} » de ${appareil.utilisateur.nom} ?`)))
+    if (
+      !(await confirmer(
+        `Déconnecter « ${appareil.nom} » de ${appareil.utilisateur.nom} ?`,
+        'Déconnecter',
+      ))
+    )
       return;
     setEnCours(appareil.id);
     try {
@@ -71,6 +65,7 @@ export default function Appareils() {
 
   return (
     <Ecran
+      enHaut
       titre="Appareils connectés"
       sousTitre="Déconnectez un appareil perdu, volé ou d’un employé parti."
     >

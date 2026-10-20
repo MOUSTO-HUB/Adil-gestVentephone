@@ -58,6 +58,17 @@ export async function creerCommerce(prisma: PrismaService) {
 /** Supprime un commerce de test et tout ce qui en dépend. */
 export async function supprimerCommerce(prisma: PrismaService, commerceId: string) {
   await prisma.journalAudit.deleteMany({ where: { commerceId } });
+  await prisma.operationSync.deleteMany({ where: { commerceId } });
+  await prisma.changement.deleteMany({ where: { commerceId } });
+  await prisma.mouvementStock.deleteMany({ where: { commerceId } });
+  await prisma.article.deleteMany({ where: { commerceId } });
+  await prisma.stock.deleteMany({ where: { produit: { commerceId } } });
+  await prisma.compatibilite.deleteMany({ where: { accessoire: { commerceId } } });
+  await prisma.prixBoutique.deleteMany({ where: { produit: { commerceId } } });
+  await prisma.produit.deleteMany({ where: { commerceId } });
+  await prisma.modele.deleteMany({ where: { commerceId } });
+  await prisma.marque.deleteMany({ where: { commerceId } });
+  await prisma.categorie.deleteMany({ where: { commerceId } });
   await prisma.appareil.deleteMany({ where: { commerceId } });
   await prisma.utilisateurBoutique.deleteMany({ where: { utilisateur: { commerceId } } });
   await prisma.utilisateur.deleteMany({ where: { commerceId } });

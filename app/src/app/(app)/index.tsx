@@ -1,39 +1,58 @@
 import { LIBELLES_ROLES, peutGererSessions } from '@gestvente/commun';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Bouton, Carte, Ecran, Texte } from '@/components/ui';
-import { ErreurReseau } from '@/lib/api';
+import { confirmer } from '@/lib/confirmer';
 import { useSession } from '@/lib/session';
+import { useLecture, useSync } from '@/lib/sync/contexte';
 
-type EtatServeur = 'verification' | 'joignable' | 'injoignable';
-
-const LIBELLES_SERVEUR: Record<EtatServeur, string> = {
-  verification: 'Vérification du serveur…',
-  joignable: 'En ligne',
-  injoignable: 'Hors ligne',
-};
-
-/** Accueil provisoire : la caisse et le stock viendront aux étapes suivantes. */
+/** Accueil : la caisse et les ventes viendront aux étapes suivantes. */
 export default function Accueil() {
   const { profil, boutique, choisirBoutique, verrouiller, deconnexion, rafraichirProfil } =
     useSession();
-  const [serveur, setServeur] = useState<EtatServeur>('verification');
+  const { etat } = useSync();
 
   useEffect(() => {
-    rafraichirProfil()
-      .then((enLigne) => setServeur(enLigne ? 'joignable' : 'injoignable'))
-      .catch((e: unknown) => setServeur(e instanceof ErreurReseau ? 'injoignable' : 'joignable'));
+    rafraichirProfil().catch(() => undefined);
   }, [rafraichirProfil]);
+
+  const resume = useLecture(
+    async (base) =>
+      base.premier<{ produits: number; telephones: number }>(
+        `SELECT (SELECT COUNT(*) FROM produit WHERE archive = 0) AS produits,
+                (SELECT COUNT(*) FROM article WHERE boutiqueId = ? AND statut = 'EN_STOCK') AS telephones`,
+        [boutique?.id ?? ''],
+      ),
+    [boutique?.id],
+  );
 
   if (!profil || !boutique) return null;
 
+  const seDeconnecter = async () => {
+    if (
+      etat.enAttente > 0 &&
+      !(await confirmer(
+        `${etat.enAttente} opération(s) ne sont pas encore envoyées au serveur et seront perdues. Se déconnecter quand même ?`,
+        'Se déconnecter',
+      ))
+    ) {
+      return;
+    }
+    await deconnexion();
+  };
+
   return (
-    <Ecran titre={boutique.nom} sousTitre={profil.commerce.nom}>
+    <Ecran titre={boutique.nom} sousTitre={profil.commerce.nom} enHaut>
       <Carte>
         <Texte gras>{profil.nom}</Texte>
         <Texte discret>{LIBELLES_ROLES[profil.role]}</Texte>
-        <Texte discret>Serveur : {LIBELLES_SERVEUR[serveur]}</Texte>
+        {resume ? (
+          <Texte discret>
+            Catalogue : {resume.produits} produits · {resume.telephones} téléphones en stock
+          </Texte>
+        ) : null}
       </Carte>
+      <Bouton titre="Stock" onPress={() => router.push('/stock')} />
       {profil.boutiques.length > 1 ? (
         <Bouton
           titre="Changer de boutique"
@@ -49,7 +68,7 @@ export default function Accueil() {
         />
       ) : null}
       <Bouton titre="Verrouiller" variante="secondaire" onPress={verrouiller} />
-      <Bouton titre="Se déconnecter" variante="danger" onPress={() => void deconnexion()} />
+      <Bouton titre="Se déconnecter" variante="danger" onPress={() => void seDeconnecter()} />
     </Ecran>
   );
 }

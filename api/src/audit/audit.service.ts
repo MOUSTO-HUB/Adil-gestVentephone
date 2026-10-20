@@ -11,6 +11,9 @@ export const ACTIONS_AUDIT = {
   DECONNEXION_A_DISTANCE: 'DECONNEXION_A_DISTANCE',
   JETON_REUTILISE: 'JETON_REUTILISE',
   PIN_DEFINI: 'PIN_DEFINI',
+  AJUSTEMENT_STOCK: 'AJUSTEMENT_STOCK',
+  SORTIE_ARTICLE: 'SORTIE_ARTICLE',
+  CONFLIT_TRAITE: 'CONFLIT_TRAITE',
 } as const;
 export type ActionAudit = (typeof ACTIONS_AUDIT)[keyof typeof ACTIONS_AUDIT];
 
@@ -30,7 +33,8 @@ export interface EntreeAudit {
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async journaliser(entree: EntreeAudit): Promise<void> {
-    await this.prisma.journalAudit.create({ data: { ...entree, ip: ipRequete() } });
+  /** `tx` : inscrit l'entrée dans la transaction en cours (annulée avec elle). */
+  async journaliser(entree: EntreeAudit, tx?: Prisma.TransactionClient): Promise<void> {
+    await (tx ?? this.prisma).journalAudit.create({ data: { ...entree, ip: ipRequete() } });
   }
 }

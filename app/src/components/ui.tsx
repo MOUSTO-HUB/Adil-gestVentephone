@@ -14,24 +14,36 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-/** Écran centré, limité en largeur sur ordinateur, qui remonte au-dessus du clavier. */
+/**
+ * Écran limité en largeur sur ordinateur, qui remonte au-dessus du clavier.
+ * `enHaut` : écran de l'application, sous le bandeau de synchronisation (contenu
+ * aligné en haut) ; sinon contenu centré (connexion, code PIN).
+ */
 export function Ecran({
   titre,
   sousTitre,
+  enHaut = false,
   children,
 }: {
   titre: string;
   sousTitre?: string;
+  enHaut?: boolean;
   children: ReactNode;
 }) {
   const { colors } = useTheme();
   return (
-    <SafeAreaView style={[styles.ecran, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={enHaut ? ['left', 'right', 'bottom'] : undefined}
+      style={[styles.ecran, { backgroundColor: colors.background }]}
+    >
       <KeyboardAvoidingView
         style={styles.ecran}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.defilement} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={[styles.defilement, enHaut && styles.defilementHaut]}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.colonne}>
             <Text style={[styles.titre, { color: colors.text }]}>{titre}</Text>
             {sousTitre ? (
@@ -164,6 +176,7 @@ export function Texte({
 const styles = StyleSheet.create({
   ecran: { flex: 1 },
   defilement: { flexGrow: 1, justifyContent: 'center', padding: 16 },
+  defilementHaut: { justifyContent: 'flex-start' },
   colonne: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 16 },
   titre: { fontSize: 26, fontWeight: '700' },
   sousTitre: { fontSize: 16, opacity: 0.75 },

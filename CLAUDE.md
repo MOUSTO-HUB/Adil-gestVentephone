@@ -33,6 +33,13 @@ PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (vent
 - `api/test/securite.e2e-spec.ts` inventorie les routes : une nouvelle route publique doit être ajoutée à `ROUTES_PUBLIQUES` avec sa justification.
 - App : session dans `app/src/lib/session.tsx` (jetons dans expo-secure-store), appels par `api.requete()` qui renouvelle le jeton ; écrans protégés par `Stack.Protected` dans `app/src/app/_layout.tsx`.
 
+## Hors ligne et synchronisation
+
+- Formats partagés dans `packages/commun/src/sync` : entités synchronisées (`entites.ts`), opérations et schémas zod de leur contenu (`operations.ts`), règles de conflit (`conflits.ts`, ex. `controlerSortieArticle` : un IMEI déjà vendu ou sorti ⇒ CONFLIT).
+- Nouveau type d'opération : schéma dans `schemasContenus` + libellé, gestionnaire serveur dans `api/src/sync/operations/` (rôles, contrôle avant écriture, écritures, `journal.ecrire`, audit, `corrections`), effet local dans `app/src/lib/sync/operations-locales.ts` (même contrôle), tests des deux côtés.
+- Serveur : `POST /sync/operations` idempotent (UUID de l'appareil), une transaction par opération sous verrou du commerce (`JournalService.verrouiller`) ; rejet ou conflit ⇒ rien n'est écrit, l'opération est enregistrée avec son motif et l'état du serveur est renvoyé (`corrections`). Toute modification d'une donnée synchronisée (y compris hors /sync, ex. catalogue) passe par `JournalService.ecrire` dans la même transaction. `GET /sync/instantane` (premier remplissage) puis `GET /sync/changements?curseur=`. Les vendeurs ne reçoivent pas les prix d'achat (`masquerPourRole`).
+- App : base SQLite (`app/src/lib/base`, migrations versionnées dans `migrations.ts`, jamais modifier une migration publiée), chiffrée par SQLCipher sur téléphone (version de développement, pas Expo Go), WebAssembly sur le web (en-têtes COOP/COEP : `metro.config.js` en développement, plugin expo-router en production). Écrire uniquement via `useSync().enregistrer(...)` ; lire via `useLecture(...)`. `MoteurSync` envoie la file puis applique la descente seulement si la file est vide. Tests du moteur avec `node:sqlite` (`sql-node.test-utils.ts`).
+
 ## Règles
 
 - Interface et messages en français, textes prêts pour d'autres langues.

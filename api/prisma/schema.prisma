@@ -250,6 +250,7 @@ model Commerce {
   messages        Message[]
   journalAudit    JournalAudit[]
   operationsSync  OperationSync[]
+  changements     Changement[]
 }
 
 model Boutique {
@@ -1172,4 +1173,23 @@ model OperationSync {
 
   @@index([commerceId, statut])
   @@index([appareilId])
+}
+
+/// Journal des changements des données synchronisées (descente vers les appareils).
+/// Écrit dans la même transaction que la modification, sous un verrou par commerce :
+/// les numéros (seq) d'un commerce sont validés dans l'ordre, aucun n'est sauté.
+model Changement {
+  seq        BigInt   @id @default(autoincrement())
+  commerceId String
+  /// Nul : visible de toutes les boutiques (catalogue) ; sinon de cette boutique seulement.
+  boutiqueId String?
+  entite     String
+  entiteId   String
+  /// Données au format de packages/commun (nul : suppression).
+  donnees    Json?
+  creeLe     DateTime @default(now())
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+
+  @@index([commerceId, seq])
 }

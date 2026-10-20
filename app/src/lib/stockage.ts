@@ -37,4 +37,5 @@ export const CLES = {
   pin: 'gestvente.pin',
   etatPin: 'gestvente.etat-pin',
   boutique: 'gestvente.boutique',
+  cleBase: 'gestvente.cle-base',
 } as const;
