@@ -29,8 +29,8 @@ export async function choisirPhoto(source: 'galerie' | 'camera'): Promise<string
   return enregistree.uri;
 }
 
-/** Envoie la photo d'un produit (en ligne seulement). */
-export async function envoyerPhoto(api: ClientApi, produitId: string, uri: string): Promise<void> {
+/** Envoie une image (champ « photo ») à une route de l'API (en ligne seulement). */
+export async function envoyerImage(api: ClientApi, chemin: string, uri: string): Promise<void> {
   const formulaire = new FormData();
   if (Platform.OS === 'web') {
     formulaire.append('photo', await (await fetch(uri)).blob(), 'photo.jpg');
@@ -38,8 +38,23 @@ export async function envoyerPhoto(api: ClientApi, produitId: string, uri: strin
     // React Native lit le fichier à partir de son adresse locale.
     formulaire.append('photo', { uri, name: 'photo.jpg', type: 'image/jpeg' } as unknown as Blob);
   }
-  await api.requete(`/catalogue/produits/${produitId}/photo`, {
-    methode: 'PUT',
-    corps: formulaire,
+  await api.requete(chemin, { methode: 'PUT', corps: formulaire });
+}
+
+/** Photo d'un produit. */
+export const envoyerPhoto = (api: ClientApi, produitId: string, uri: string) =>
+  envoyerImage(api, `/catalogue/produits/${produitId}/photo`, uri);
+
+/**
+ * Image privée lue avec le jeton (pièce d'identité) : gardée en mémoire le temps
+ * de l'affichage, jamais écrite dans un cache.
+ */
+export async function lireImagePrivee(api: ClientApi, chemin: string): Promise<string> {
+  const blob = await api.requete<Blob>(chemin, { fichier: true });
+  return new Promise((resoudre, rejeter) => {
+    const lecteur = new FileReader();
+    lecteur.onload = () => resoudre(String(lecteur.result));
+    lecteur.onerror = () => rejeter(new Error('Image illisible.'));
+    lecteur.readAsDataURL(blob);
   });
 }

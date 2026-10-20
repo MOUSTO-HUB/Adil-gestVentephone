@@ -16,6 +16,8 @@ import { ACTIONS_AUDIT, AuditService } from '../audit/audit.service.js';
 import type { UtilisateurConnecte } from '../auth/auth.types.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { dettesFournisseurs } from '../clients/clients.ecritures.js';
+import { Role } from '../generated/prisma/enums.js';
 import { JournalService } from './journal.service.js';
 import type { ConflitDto } from './sync.dto.js';
 import { GESTIONNAIRES } from './operations/index.js';
@@ -24,7 +26,10 @@ import {
   masquerPourRole,
   versArticle,
   versCategorie,
+  versClient,
   versCompatibilite,
+  versFournisseur,
+  versGarant,
   versMarque,
   versModele,
   versPrixBoutique,
@@ -191,6 +196,12 @@ export class SyncService {
           ]);
         const masquer = <E extends EntiteSync>(entite: E, liste: DonneesEntites[E][]) =>
           liste.map((d) => masquerPourRole(entite, d, role) as DonneesEntites[E]);
+        const clients = await tx.client.findMany({ where: { commerceId } });
+        const garants = await tx.garant.findMany({ where: { client: { commerceId } } });
+        // Fournisseurs : propriétaire et gérants seulement.
+        const fournisseurs =
+          role === Role.VENDEUR ? [] : await tx.fournisseur.findMany({ where: { commerceId } });
+        const dettes = fournisseurs.length ? await dettesFournisseurs(tx, commerceId) : new Map();
         return {
           curseur: Number(dernier._max.seq ?? 0n),
           donnees: {
@@ -202,6 +213,9 @@ export class SyncService {
             compatibilite: compatibilites.map(versCompatibilite),
             stock: stocks.map(versStock),
             article: masquer('article', articles.map(versArticle)),
+            client: clients.map(versClient),
+            garant: garants.map(versGarant),
+            fournisseur: fournisseurs.map((f) => versFournisseur(f, dettes.get(f.id) ?? 0)),
           },
         };
       },

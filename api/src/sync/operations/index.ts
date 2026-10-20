@@ -6,6 +6,7 @@ import {
   prixBoutiqueEnregistrer,
   produitEnregistrer,
 } from './catalogue.operations.js';
+import { clientEnregistrer, fournisseurEnregistrer } from './clients.operations.js';
 import type { Gestionnaire } from './gestionnaire.js';
 import { articleSortir, stockAjuster } from './stock.operations.js';
 
@@ -18,4 +19,6 @@ export const GESTIONNAIRES: { [T in TypeOperation]: Gestionnaire<T> } = {
   CATEGORIE_ENREGISTRER: categorieEnregistrer,
   PRODUIT_ENREGISTRER: produitEnregistrer,
   PRIX_BOUTIQUE_ENREGISTRER: prixBoutiqueEnregistrer,
+  CLIENT_ENREGISTRER: clientEnregistrer,
+  FOURNISSEUR_ENREGISTRER: fournisseurEnregistrer,
 };

@@ -53,6 +53,10 @@ export default function Accueil() {
         ) : null}
       </Carte>
       <Bouton titre="Stock" onPress={() => router.push('/stock')} />
+      <Bouton titre="Clients" onPress={() => router.push('/clients')} />
+      {peutGererSessions(profil.role) ? (
+        <Bouton titre="Fournisseurs" onPress={() => router.push('/fournisseurs')} />
+      ) : null}
       {profil.boutiques.length > 1 ? (
         <Bouton
           titre="Changer de boutique"

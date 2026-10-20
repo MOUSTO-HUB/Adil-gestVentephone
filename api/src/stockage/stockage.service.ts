@@ -27,31 +27,41 @@ export function formatImage(octets: Buffer): FormatImage | null {
 
 export const nomPhotoValide = (nom: string) => NOM_VALIDE.test(nom);
 
-/** Fichiers (photos des produits) dans le dossier STOCKAGE_DIR. */
+/**
+ * Dossiers de STOCKAGE_DIR : « photos » (produits, servies publiquement) et
+ * « pieces » (pièces d'identité des clients, servies au seul personnel connecté).
+ */
+export type DossierStockage = 'photos' | 'pieces';
+
+/** Images enregistrées dans le dossier STOCKAGE_DIR. */
 @Injectable()
 export class StockageService {
-  private readonly dossier: string;
+  private readonly racine: string;
 
   constructor(config: ConfigService) {
     const dossier = config.get<string>('STOCKAGE_DIR', 'stockage');
-    this.dossier = join(isAbsolute(dossier) ? dossier : resolve(process.cwd(), dossier), 'photos');
+    this.racine = isAbsolute(dossier) ? dossier : resolve(process.cwd(), dossier);
   }
 
   /** Enregistre une image sous un nom aléatoire et renvoie ce nom. */
-  async enregistrerPhoto(octets: Buffer, format: FormatImage): Promise<string> {
-    await mkdir(this.dossier, { recursive: true });
+  async enregistrerPhoto(
+    octets: Buffer,
+    format: FormatImage,
+    dossier: DossierStockage = 'photos',
+  ): Promise<string> {
+    await mkdir(join(this.racine, dossier), { recursive: true });
     const nom = `${randomUUID()}.${format}`;
-    await writeFile(join(this.dossier, nom), octets);
+    await writeFile(join(this.racine, dossier, nom), octets);
     return nom;
   }
 
-  async lirePhoto(nom: string): Promise<Buffer | null> {
+  async lirePhoto(nom: string, dossier: DossierStockage = 'photos'): Promise<Buffer | null> {
     if (!nomPhotoValide(nom)) return null;
-    return readFile(join(this.dossier, nom)).catch(() => null);
+    return readFile(join(this.racine, dossier, nom)).catch(() => null);
   }
 
-  async supprimerPhoto(nom: string | null): Promise<void> {
+  async supprimerPhoto(nom: string | null, dossier: DossierStockage = 'photos'): Promise<void> {
     if (!nom || !nomPhotoValide(nom)) return;
-    await rm(join(this.dossier, nom), { force: true });
+    await rm(join(this.racine, dossier, nom), { force: true });
   }
 }

@@ -69,6 +69,11 @@ export async function supprimerCommerce(prisma: PrismaService, commerceId: strin
   await prisma.modele.deleteMany({ where: { commerceId } });
   await prisma.marque.deleteMany({ where: { commerceId } });
   await prisma.categorie.deleteMany({ where: { commerceId } });
+  await prisma.garant.deleteMany({ where: { client: { commerceId } } });
+  await prisma.client.deleteMany({ where: { commerceId } });
+  await prisma.ligneAchat.deleteMany({ where: { achat: { commerceId } } });
+  await prisma.achat.deleteMany({ where: { commerceId } });
+  await prisma.fournisseur.deleteMany({ where: { commerceId } });
   await prisma.appareil.deleteMany({ where: { commerceId } });
   await prisma.utilisateurBoutique.deleteMany({ where: { utilisateur: { commerceId } } });
   await prisma.utilisateur.deleteMany({ where: { commerceId } });

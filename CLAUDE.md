@@ -26,6 +26,13 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Photos : `StockageService` (dossier `STOCKAGE_DIR/photos`, nom aléatoire, format vérifié aux premiers octets), envoyées compressées par l'app (`app/src/lib/photo.ts`), servies publiquement par `GET /api/photos/:nom` (images sans donnée personnelle, en cache).
 - App : recherche locale `rechercherProduits` / `trouverParCode` (`app/src/lib/catalogue.ts`, colonne `recherche` normalisée), scan caméra (`components/scanner.tsx`, téléphone) ou lecteur USB (le code tapé puis Entrée dans le champ de recherche ouvre la fiche).
 
+## Clients et fournisseurs
+
+- Règles dans `packages/commun/src/clients.ts` et `telephone.ts` (`normaliserTelephone` : E.164, indicatif du commerce ajouté). Tout le personnel enregistre des clients, mais `erreurDroitsClient` : plafond de crédit fixé par le propriétaire seul (changement audité `PLAFOND_CREDIT_MODIFIE`), classement grossiste par propriétaire ou gérant. Un garant par client, synchronisé à part (`garant`).
+- Fournisseurs : propriétaire et gérants (jamais envoyés aux vendeurs) ; `dette` = bons d'achat non payés, recalculée à chaque écriture du fournisseur (les achats de l'étape 7 devront journaliser le fournisseur).
+- Pièce d'identité : fichier dans `STOCKAGE_DIR/pieces`, servi par `GET /api/clients/:id/piece` au personnel connecté, `Cache-Control: no-store`, chaque consultation auditée ; l'app l'affiche depuis la mémoire (`lireImagePrivee`), jamais en cache. Historique du client et achats du fournisseur : en ligne.
+- Doublons de téléphone signalés à la saisie (non bloquants). Toute migration locale efface le curseur : l'appareil reprend un instantané complet (les nouvelles tables se remplissent).
+
 ## Rôles
 
 PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (ventes, trocs, encaissements ; jamais de modification de prix).

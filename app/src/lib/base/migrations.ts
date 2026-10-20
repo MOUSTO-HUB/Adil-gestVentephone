@@ -81,9 +81,51 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE produit ADD COLUMN recherche TEXT;
   CREATE INDEX article_boutique_imei ON article (boutiqueId, imei);
   `,
+  // 3 : clients, garants et fournisseurs.
+  `
+  CREATE TABLE client (
+    id TEXT PRIMARY KEY,
+    nom TEXT NOT NULL,
+    telephone TEXT NOT NULL,
+    type TEXT NOT NULL,
+    typePiece TEXT,
+    numeroPiece TEXT,
+    adresse TEXT,
+    plafondCredit INTEGER,
+    archive INTEGER NOT NULL,
+    photoPiece INTEGER NOT NULL,
+    recherche TEXT
+  );
+  CREATE INDEX client_telephone ON client (telephone);
+  CREATE TABLE garant (
+    id TEXT PRIMARY KEY,
+    clientId TEXT NOT NULL,
+    nom TEXT NOT NULL,
+    telephone TEXT NOT NULL,
+    typePiece TEXT,
+    numeroPiece TEXT,
+    adresse TEXT,
+    lien TEXT
+  );
+  CREATE INDEX garant_client ON garant (clientId);
+  CREATE TABLE fournisseur (
+    id TEXT PRIMARY KEY,
+    nom TEXT NOT NULL,
+    telephone TEXT,
+    adresse TEXT,
+    note TEXT,
+    archive INTEGER NOT NULL,
+    dette INTEGER NOT NULL
+  );
+  `,
 ];
 
-/** Applique les migrations manquantes, chacune dans une transaction. */
+/**
+ * Applique les migrations manquantes, chacune dans une transaction. Une base déjà
+ * remplie qui change de version oublie son curseur : la synchronisation suivante
+ * reprend un instantané complet, qui remplit aussi les nouvelles tables (les
+ * données existantes n'apparaissent pas dans le journal des changements).
+ */
 export async function migrer(base: BaseSql): Promise<number> {
   const ligne = await base.premier<{ user_version: number }>('PRAGMA user_version');
   const version = ligne?.user_version ?? 0;
@@ -97,6 +139,9 @@ export async function migrer(base: BaseSql): Promise<number> {
       }
       await tx.executer(`PRAGMA user_version = ${i + 1}`);
     });
+  }
+  if (version > 0 && version < MIGRATIONS.length) {
+    await base.executer("DELETE FROM meta WHERE cle = 'curseur'");
   }
   return MIGRATIONS.length;
 }

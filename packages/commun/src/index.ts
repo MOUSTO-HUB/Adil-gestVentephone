@@ -4,6 +4,7 @@
 
 export * from './application.js';
 export * from './catalogue.js';
+export * from './clients.js';
 export * from './imei.js';
 export * from './monnaie.js';
 export * from './pin.js';
@@ -11,3 +12,4 @@ export * from './roles.js';
 export * from './sync/conflits.js';
 export * from './sync/entites.js';
 export * from './sync/operations.js';
+export * from './telephone.js';

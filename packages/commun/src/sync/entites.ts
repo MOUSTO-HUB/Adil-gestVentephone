@@ -13,6 +13,9 @@ export const ENTITES_SYNC = [
   'compatibilite',
   'stock',
   'article',
+  'client',
+  'garant',
+  'fournisseur',
 ] as const;
 export type EntiteSync = (typeof ENTITES_SYNC)[number];
 
@@ -93,6 +96,44 @@ export interface ArticleSync {
   prixRevente: number | null;
 }
 
+export interface ClientSync {
+  id: string;
+  nom: string;
+  /** Format E.164. */
+  telephone: string;
+  type: 'DETAIL' | 'GROSSISTE';
+  typePiece: 'CNI' | 'PASSEPORT' | 'PERMIS' | 'CARTE_CONSULAIRE' | 'AUTRE' | null;
+  numeroPiece: string | null;
+  adresse: string | null;
+  plafondCredit: number | null;
+  archive: boolean;
+  /** Une photo de la pièce d'identité existe (lue en ligne, jamais mise en cache). */
+  photoPiece: boolean;
+}
+
+export interface GarantSync {
+  id: string;
+  clientId: string;
+  nom: string;
+  telephone: string;
+  typePiece: ClientSync['typePiece'];
+  numeroPiece: string | null;
+  adresse: string | null;
+  lien: string | null;
+}
+
+/** Fournisseur (propriétaire et gérants seulement). */
+export interface FournisseurSync {
+  id: string;
+  nom: string;
+  telephone: string | null;
+  adresse: string | null;
+  note: string | null;
+  archive: boolean;
+  /** Reste dû au fournisseur sur ses bons d'achat. */
+  dette: number;
+}
+
 export interface DonneesEntites {
   marque: MarqueSync;
   modele: ModeleSync;
@@ -102,6 +143,9 @@ export interface DonneesEntites {
   compatibilite: CompatibiliteSync;
   stock: StockSync;
   article: ArticleSync;
+  client: ClientSync;
+  garant: GarantSync;
+  fournisseur: FournisseurSync;
 }
 
 /** Un changement du journal du serveur (descente vers les appareils). */

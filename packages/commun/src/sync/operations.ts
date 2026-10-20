@@ -6,6 +6,7 @@ import {
   schemaPrixBoutique,
   schemaProduit,
 } from '../catalogue.js';
+import { schemaClient, schemaFournisseur } from '../clients.js';
 import type { Changement } from './entites.js';
 
 /**
@@ -37,6 +38,10 @@ export const schemasContenus = {
   PRODUIT_ENREGISTRER: schemaProduit,
   /** Prix propres à la boutique de l'opération (tous nuls : retour aux prix communs). */
   PRIX_BOUTIQUE_ENREGISTRER: schemaPrixBoutique,
+  /** Création ou modification d'un client et de son garant (tout le personnel, voir erreurDroitsClient). */
+  CLIENT_ENREGISTRER: schemaClient,
+  /** Création ou modification d'un fournisseur ; gérant ou propriétaire. */
+  FOURNISSEUR_ENREGISTRER: schemaFournisseur,
 } as const;
 
 export type TypeOperation = keyof typeof schemasContenus;
@@ -51,6 +56,8 @@ export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   CATEGORIE_ENREGISTRER: 'Catégorie',
   PRODUIT_ENREGISTRER: 'Fiche produit',
   PRIX_BOUTIQUE_ENREGISTRER: 'Prix de la boutique',
+  CLIENT_ENREGISTRER: 'Fiche client',
+  FOURNISSEUR_ENREGISTRER: 'Fiche fournisseur',
 };
 
 /** Enveloppe commune à toutes les opérations. */

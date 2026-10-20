@@ -1,5 +1,6 @@
 import {
   texteRecherche,
+  texteRechercheClient,
   type Changement,
   type DonneesEntites,
   type EntiteSync,
@@ -47,6 +48,20 @@ const COLONNES: { [E in EntiteSync]: (keyof DonneesEntites[E] & string)[] } = {
     'prixAchat',
     'prixRevente',
   ],
+  client: [
+    'id',
+    'nom',
+    'telephone',
+    'type',
+    'typePiece',
+    'numeroPiece',
+    'adresse',
+    'plafondCredit',
+    'archive',
+    'photoPiece',
+  ],
+  garant: ['id', 'clientId', 'nom', 'telephone', 'typePiece', 'numeroPiece', 'adresse', 'lien'],
+  fournisseur: ['id', 'nom', 'telephone', 'adresse', 'note', 'archive', 'dette'],
 };
 
 const versSql = (valeur: unknown): ValeurSql => {
@@ -80,6 +95,12 @@ export async function ecrireEntite<E extends EntiteSync>(
   if (entite === 'produit') {
     await tx.executer('UPDATE produit SET recherche = ? WHERE id = ?', [
       texteRecherche(donnees as DonneesEntites['produit']),
+      id,
+    ]);
+  }
+  if (entite === 'client') {
+    await tx.executer('UPDATE client SET recherche = ? WHERE id = ?', [
+      texteRechercheClient(donnees as DonneesEntites['client']),
       id,
     ]);
   }

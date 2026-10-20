@@ -1,4 +1,7 @@
 import type {
+  ClientSync,
+  FournisseurSync,
+  GarantSync,
   ArticleSync,
   CategorieSync,
   CompatibiliteSync,
@@ -12,6 +15,9 @@ import type {
 } from '@gestvente/commun';
 import type {
   Article,
+  Client,
+  Fournisseur,
+  Garant,
   Categorie,
   Compatibilite,
   Marque,
@@ -100,13 +106,50 @@ export const versArticle = (a: Article): ArticleSync => ({
   prixRevente: nombreOuNul(a.prixRevente),
 });
 
-/** Les vendeurs ne reçoivent pas les prix d'achat (marges du commerce). */
+export const versClient = (c: Client): ClientSync => ({
+  id: c.id,
+  nom: c.nom,
+  telephone: c.telephone,
+  type: c.type,
+  typePiece: c.typePiece,
+  numeroPiece: c.numeroPiece,
+  adresse: c.adresse,
+  plafondCredit: nombreOuNul(c.plafondCredit),
+  archive: c.archive,
+  photoPiece: c.photoPieceCle !== null,
+});
+
+export const versGarant = (g: Garant): GarantSync => ({
+  id: g.id,
+  clientId: g.clientId,
+  nom: g.nom,
+  telephone: g.telephone,
+  typePiece: g.typePiece,
+  numeroPiece: g.numeroPiece,
+  adresse: g.adresse,
+  lien: g.lien,
+});
+
+/** dette : reste dû sur les bons d'achat du fournisseur (calculé par l'appelant). */
+export const versFournisseur = (f: Fournisseur, dette: number): FournisseurSync => ({
+  id: f.id,
+  nom: f.nom,
+  telephone: f.telephone,
+  adresse: f.adresse,
+  note: f.note,
+  archive: f.archive,
+  dette,
+});
+
+/** Les vendeurs ne reçoivent ni les prix d'achat (marges du commerce) ni les fournisseurs. */
 export function masquerPourRole<E extends EntiteSync>(
   entite: E,
   donnees: DonneesEntites[E] | null,
   role: Role,
 ): DonneesEntites[E] | null {
   if (!donnees || role !== Role.VENDEUR) return donnees;
+  // Les fournisseurs (achats, dettes) ne concernent que le propriétaire et les gérants.
+  if (entite === 'fournisseur') return null;
   if (entite === 'produit' || entite === 'prixBoutique' || entite === 'article') {
     return { ...donnees, prixAchat: null };
   }

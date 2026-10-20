@@ -5,31 +5,21 @@ import {
 } from '@gestvente/commun';
 import { ecrireEntite } from '../base/depot';
 import type { BaseSql } from '../base/sql';
+import { nomDejaPris } from './doublons';
 import { ErreurOperation } from './erreurs';
 
-async function doublonNom(
-  tx: BaseSql,
-  table: string,
-  id: string,
-  nom: string,
-  filtre = '',
-  params: string[] = [],
-) {
-  return tx.premier<{ nom: string }>(
-    `SELECT nom FROM ${table} WHERE lower(nom) = lower(?) AND id <> ? ${filtre}`,
-    [nom.trim(), id, ...params],
-  );
-}
-
 export async function marqueEnregistrer(tx: BaseSql, c: ContenuOperation<'MARQUE_ENREGISTRER'>) {
-  const doublon = await doublonNom(tx, 'marque', c.id, c.nom);
-  if (doublon) throw new ErreurOperation(`La marque « ${doublon.nom} » existe déjà.`);
+  const doublon = await nomDejaPris(tx, 'marque', c.id, c.nom);
+  if (doublon) throw new ErreurOperation(`La marque « ${doublon} » existe déjà.`);
   await ecrireEntite(tx, 'marque', c.id, { id: c.id, nom: c.nom.trim() });
 }
 
 export async function modeleEnregistrer(tx: BaseSql, c: ContenuOperation<'MODELE_ENREGISTRER'>) {
-  const doublon = await doublonNom(tx, 'modele', c.id, c.nom, 'AND marqueId = ?', [c.marqueId]);
-  if (doublon) throw new ErreurOperation(`Le modèle « ${doublon.nom} » existe déjà.`);
+  const doublon = await nomDejaPris(tx, 'modele', c.id, c.nom, {
+    colonne: 'marqueId',
+    valeur: c.marqueId,
+  });
+  if (doublon) throw new ErreurOperation(`Le modèle « ${doublon} » existe déjà.`);
   await ecrireEntite(tx, 'modele', c.id, { id: c.id, marqueId: c.marqueId, nom: c.nom.trim() });
 }
 
@@ -37,8 +27,8 @@ export async function categorieEnregistrer(
   tx: BaseSql,
   c: ContenuOperation<'CATEGORIE_ENREGISTRER'>,
 ) {
-  const doublon = await doublonNom(tx, 'categorie', c.id, c.nom);
-  if (doublon) throw new ErreurOperation(`La catégorie « ${doublon.nom} » existe déjà.`);
+  const doublon = await nomDejaPris(tx, 'categorie', c.id, c.nom);
+  if (doublon) throw new ErreurOperation(`La catégorie « ${doublon} » existe déjà.`);
   await ecrireEntite(tx, 'categorie', c.id, { id: c.id, nom: c.nom.trim(), type: c.type });
 }
 

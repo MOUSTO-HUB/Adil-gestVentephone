@@ -60,6 +60,9 @@ const instantane: Instantane = {
     compatibilite: [],
     stock: [stock(10)],
     article: [],
+    client: [],
+    garant: [],
+    fournisseur: [],
   },
 };
 
@@ -133,6 +136,22 @@ const ajuster = (base: BaseSql, delta: number) =>
   );
 
 describe('base locale', () => {
+  it('après une migration, oublie le curseur pour reprendre un instantané complet', async () => {
+    const base = baseEnMemoire();
+    await migrer(base);
+    await base.executer("INSERT OR REPLACE INTO meta (cle, valeur) VALUES ('curseur', '42')");
+    // Simule une base restée à la version 1.
+    await base.executer('PRAGMA user_version = 1');
+    await base.executer('DROP TABLE client');
+    await base.executer('DROP TABLE garant');
+    await base.executer('DROP TABLE fournisseur');
+    await base.executer('DROP INDEX article_boutique_imei');
+    await base.executer('ALTER TABLE produit DROP COLUMN photo');
+    await base.executer('ALTER TABLE produit DROP COLUMN recherche');
+    await migrer(base);
+    expect(await lireMeta(base, 'curseur')).toBeNull();
+  });
+
   it('applique les migrations une seule fois', async () => {
     const base = baseEnMemoire();
     expect(await migrer(base)).toBe(MIGRATIONS.length);

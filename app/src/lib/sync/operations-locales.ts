@@ -10,6 +10,7 @@ import {
 import type { BaseSql } from '../base/sql';
 import { ErreurOperation } from './erreurs';
 import * as catalogue from './operations-catalogue';
+import * as clients from './operations-clients';
 
 export { ErreurOperation };
 
@@ -69,6 +70,9 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
   PRODUIT_ENREGISTRER: (tx, _boutiqueId, contenu) => catalogue.produitEnregistrer(tx, contenu),
   PRIX_BOUTIQUE_ENREGISTRER: (tx, boutiqueId, contenu) =>
     catalogue.prixBoutiqueEnregistrer(tx, boutiqueId, contenu),
+  CLIENT_ENREGISTRER: (tx, _boutiqueId, contenu) => clients.clientEnregistrer(tx, contenu),
+  FOURNISSEUR_ENREGISTRER: (tx, _boutiqueId, contenu) =>
+    clients.fournisseurEnregistrer(tx, contenu),
 };
 
 export interface NouvelleOperation<T extends TypeOperation> {
