@@ -11,6 +11,7 @@ import { SanteModule } from './sante/sante.module.js';
 import { SecuriteModule } from './securite/securite.module.js';
 import { StockModule } from './stock/stock.module.js';
 import { SyncModule } from './sync/sync.module.js';
+import { VentesModule } from './ventes/ventes.module.js';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { SyncModule } from './sync/sync.module.js';
     SanteModule,
     BoutiquesModule,
     AppareilsModule,
+    VentesModule,
     SyncModule,
     CatalogueModule,
     ClientsModule,

@@ -18,6 +18,9 @@ export const ENTITES_SYNC = [
   'fournisseur',
   'achat',
   'ligneAchat',
+  'vente',
+  'ligneVente',
+  'paiementVente',
 ] as const;
 export type EntiteSync = (typeof ENTITES_SYNC)[number];
 
@@ -159,6 +162,47 @@ export interface LigneAchatSync {
   prixAchat: number;
 }
 
+/** Vente de la boutique (les 60 derniers jours sur les appareils). */
+export interface VenteSync {
+  id: string;
+  boutiqueId: string;
+  numero: string;
+  clientId: string | null;
+  vendeurId: string;
+  mode: 'COMPTANT' | 'CREDIT';
+  statut: 'VALIDEE' | 'ANNULEE';
+  sousTotal: number;
+  remise: number;
+  total: number;
+  montantPaye: number;
+  renduMonnaie: number;
+  dateVente: string;
+  annuleLe: string | null;
+  motifAnnulation: string | null;
+}
+
+export interface LigneVenteSync {
+  id: string;
+  venteId: string;
+  produitId: string;
+  articleId: string | null;
+  quantite: number;
+  tarif: 'DETAIL' | 'GROS';
+  prixUnitaire: number;
+  total: number;
+  /** Coût au moment de la vente (nul pour un vendeur). */
+  prixAchat: number | null;
+  finGarantie: string | null;
+}
+
+export interface PaiementVenteSync {
+  id: string;
+  venteId: string;
+  moyen: 'ESPECES' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'VIREMENT';
+  montant: number;
+  reference: string | null;
+}
+
 export interface DonneesEntites {
   marque: MarqueSync;
   modele: ModeleSync;
@@ -173,6 +217,9 @@ export interface DonneesEntites {
   fournisseur: FournisseurSync;
   achat: AchatSync;
   ligneAchat: LigneAchatSync;
+  vente: VenteSync;
+  ligneVente: LigneVenteSync;
+  paiementVente: PaiementVenteSync;
 }
 
 /** Un changement du journal du serveur (descente vers les appareils). */

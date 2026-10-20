@@ -7,7 +7,7 @@ import { confirmer } from '@/lib/confirmer';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
 
-/** Accueil : alertes de stock et accès aux écrans ; la caisse et les ventes viendront ensuite. */
+/** Accueil : alertes de stock et accès aux écrans (la vente en premier). */
 export default function Accueil() {
   const { profil, boutique, choisirBoutique, verrouiller, deconnexion, rafraichirProfil } =
     useSession();
@@ -66,6 +66,8 @@ export default function Accueil() {
             .join(', ')}${sousSeuil.length > 5 ? '…' : ''}`}
         />
       ) : null}
+      <Bouton titre="Vendre" onPress={() => router.push('/vente')} />
+      <Bouton titre="Ventes" variante="secondaire" onPress={() => router.push('/ventes')} />
       <Bouton titre="Stock" onPress={() => router.push('/stock')} />
       <Bouton titre="Fiche IMEI" variante="secondaire" onPress={() => router.push('/imei')} />
       <Bouton titre="Clients" onPress={() => router.push('/clients')} />

@@ -15,3 +15,4 @@ export * from './sync/conflits.js';
 export * from './sync/entites.js';
 export * from './sync/operations.js';
 export * from './telephone.js';
+export * from './ventes.js';

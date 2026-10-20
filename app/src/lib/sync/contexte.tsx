@@ -127,7 +127,9 @@ export function FournisseurSync({ children }: { children: ReactNode }) {
       synchroniser,
       async enregistrer(operation) {
         if (!ouverte || !moteur) throw new Error('Base locale pas encore prête.');
-        await enregistrerOperation(ouverte.base, operation, () => Crypto.randomUUID());
+        await enregistrerOperation(ouverte.base, { ...operation, utilisateurId: profil?.id }, () =>
+          Crypto.randomUUID(),
+        );
         setVersion((v) => v + 1);
         await moteur.actualiserCompteurs();
         synchroniser();
@@ -136,7 +138,7 @@ export function FournisseurSync({ children }: { children: ReactNode }) {
         await moteur?.effacerRefusees();
       },
     }),
-    [ouverte, moteur, etat, conflits, version, synchroniser],
+    [ouverte, moteur, etat, conflits, version, synchroniser, profil?.id],
   );
 
   return <Contexte.Provider value={valeur}>{children}</Contexte.Provider>;

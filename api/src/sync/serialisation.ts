@@ -4,6 +4,9 @@ import type {
   FournisseurSync,
   GarantSync,
   LigneAchatSync,
+  LigneVenteSync,
+  PaiementVenteSync,
+  VenteSync,
   ArticleSync,
   CategorieSync,
   CompatibiliteSync,
@@ -22,6 +25,9 @@ import type {
   Fournisseur,
   Garant,
   LigneAchat,
+  LigneVente,
+  Paiement,
+  Vente,
   Categorie,
   Compatibilite,
   Marque,
@@ -166,6 +172,45 @@ export const versLigneAchat = (l: LigneAchat): LigneAchatSync => ({
   prixAchat: nombre(l.prixAchat),
 });
 
+export const versVente = (v: Vente): VenteSync => ({
+  id: v.id,
+  boutiqueId: v.boutiqueId,
+  numero: v.numero,
+  clientId: v.clientId,
+  vendeurId: v.vendeurId,
+  mode: v.mode,
+  statut: v.statut,
+  sousTotal: nombre(v.sousTotal),
+  remise: nombre(v.remise),
+  total: nombre(v.total),
+  montantPaye: nombre(v.montantPaye),
+  renduMonnaie: nombre(v.renduMonnaie),
+  dateVente: v.dateVente.toISOString(),
+  annuleLe: v.annuleLe?.toISOString() ?? null,
+  motifAnnulation: v.motifAnnulation,
+});
+
+export const versLigneVente = (l: LigneVente): LigneVenteSync => ({
+  id: l.id,
+  venteId: l.venteId,
+  produitId: l.produitId,
+  articleId: l.articleId,
+  quantite: l.quantite,
+  tarif: l.tarif,
+  prixUnitaire: nombre(l.prixUnitaire),
+  total: nombre(l.total),
+  prixAchat: nombre(l.prixAchat),
+  finGarantie: l.finGarantie?.toISOString() ?? null,
+});
+
+export const versPaiementVente = (p: Paiement): PaiementVenteSync => ({
+  id: p.id,
+  venteId: p.venteId,
+  moyen: p.moyen,
+  montant: nombre(p.montant),
+  reference: p.reference,
+});
+
 /** Les vendeurs ne reçoivent ni les prix d'achat (marges du commerce) ni les fournisseurs et achats. */
 export function masquerPourRole<E extends EntiteSync>(
   entite: E,
@@ -175,7 +220,12 @@ export function masquerPourRole<E extends EntiteSync>(
   if (!donnees || role !== Role.VENDEUR) return donnees;
   // Les fournisseurs (achats, dettes) ne concernent que le propriétaire et les gérants.
   if (entite === 'fournisseur' || entite === 'achat' || entite === 'ligneAchat') return null;
-  if (entite === 'produit' || entite === 'prixBoutique' || entite === 'article') {
+  if (
+    entite === 'produit' ||
+    entite === 'prixBoutique' ||
+    entite === 'article' ||
+    entite === 'ligneVente'
+  ) {
     return { ...donnees, prixAchat: null };
   }
   return donnees;

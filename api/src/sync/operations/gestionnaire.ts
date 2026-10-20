@@ -6,6 +6,7 @@ import type {
   TypeOperation,
 } from '@gestvente/commun';
 import type { AuditService } from '../../audit/audit.service.js';
+import type { AutorisationRemiseService } from '../../ventes/autorisation-remise.service.js';
 import type { UtilisateurConnecte } from '../../auth/auth.types.js';
 import type { Role } from '../../generated/prisma/enums.js';
 import type { JournalService, Tx } from '../journal.service.js';
@@ -16,6 +17,7 @@ export interface ContexteOperation {
   operation: Operation;
   journal: JournalService;
   audit: AuditService;
+  autorisations: AutorisationRemiseService;
 }
 
 /**

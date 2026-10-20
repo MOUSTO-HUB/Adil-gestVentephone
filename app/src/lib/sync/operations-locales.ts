@@ -12,6 +12,7 @@ import { ErreurOperation } from './erreurs';
 import * as achats from './operations-achats';
 import * as catalogue from './operations-catalogue';
 import * as clients from './operations-clients';
+import * as ventes from './operations-ventes';
 
 export { ErreurOperation };
 
@@ -20,6 +21,7 @@ type AppliquerLocal<T extends TypeOperation> = (
   boutiqueId: string,
   contenu: ContenuOperation<T>,
   idProvisoire: () => string,
+  contexte: { utilisateurId: string },
 ) => Promise<void>;
 
 /**
@@ -82,12 +84,17 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
   STOCK_SEUIL: (tx, boutiqueId, contenu, id) => achats.stockSeuil(tx, boutiqueId, contenu, id),
   INVENTAIRE_VALIDER: (tx, boutiqueId, contenu, id) =>
     achats.inventaireValider(tx, boutiqueId, contenu, id),
+  VENTE_ENREGISTRER: (tx, boutiqueId, contenu, _id, contexte) =>
+    ventes.venteEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId),
+  VENTE_ANNULER: (tx, boutiqueId, contenu) => ventes.venteAnnuler(tx, boutiqueId, contenu),
 };
 
 export interface NouvelleOperation<T extends TypeOperation> {
   type: T;
   boutiqueId: string;
   contenu: ContenuOperation<T>;
+  /** Auteur (vendeur d'une vente) ; le serveur retient l'utilisateur connecté. */
+  utilisateurId?: string;
 }
 
 /**
@@ -115,6 +122,7 @@ export async function enregistrerOperation<T extends TypeOperation>(
       nouvelle.boutiqueId,
       nouvelle.contenu,
       () => `provisoire:${creerId()}`,
+      { utilisateurId: nouvelle.utilisateurId ?? '' },
     );
     await tx.executer(
       'INSERT INTO operation (id, type, boutiqueId, faiteLe, contenu) VALUES (?, ?, ?, ?, ?)',

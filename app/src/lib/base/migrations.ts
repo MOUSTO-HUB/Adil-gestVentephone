@@ -142,6 +142,48 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX ligne_achat_achat ON ligneAchat (achatId);
   `,
+  // 5 : ventes, lignes et paiements.
+  `
+  CREATE TABLE vente (
+    id TEXT PRIMARY KEY,
+    boutiqueId TEXT NOT NULL,
+    numero TEXT NOT NULL,
+    clientId TEXT,
+    vendeurId TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    statut TEXT NOT NULL,
+    sousTotal INTEGER NOT NULL,
+    remise INTEGER NOT NULL,
+    total INTEGER NOT NULL,
+    montantPaye INTEGER NOT NULL,
+    renduMonnaie INTEGER NOT NULL,
+    dateVente TEXT NOT NULL,
+    annuleLe TEXT,
+    motifAnnulation TEXT
+  );
+  CREATE INDEX vente_boutique_date ON vente (boutiqueId, dateVente);
+  CREATE TABLE ligneVente (
+    id TEXT PRIMARY KEY,
+    venteId TEXT NOT NULL,
+    produitId TEXT NOT NULL,
+    articleId TEXT,
+    quantite INTEGER NOT NULL,
+    tarif TEXT NOT NULL,
+    prixUnitaire INTEGER NOT NULL,
+    total INTEGER NOT NULL,
+    prixAchat INTEGER,
+    finGarantie TEXT
+  );
+  CREATE INDEX ligne_vente_vente ON ligneVente (venteId);
+  CREATE TABLE paiementVente (
+    id TEXT PRIMARY KEY,
+    venteId TEXT NOT NULL,
+    moyen TEXT NOT NULL,
+    montant INTEGER NOT NULL,
+    reference TEXT
+  );
+  CREATE INDEX paiement_vente_vente ON paiementVente (venteId);
+  `,
 ];
 
 /**

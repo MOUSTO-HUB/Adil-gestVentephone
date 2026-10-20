@@ -18,6 +18,7 @@ import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { dettesFournisseurs } from '../clients/clients.ecritures.js';
 import { Role } from '../generated/prisma/enums.js';
+import { AutorisationRemiseService } from '../ventes/autorisation-remise.service.js';
 import { JournalService } from './journal.service.js';
 import type { ConflitDto } from './sync.dto.js';
 import { GESTIONNAIRES } from './operations/index.js';
@@ -32,14 +33,19 @@ import {
   versFournisseur,
   versGarant,
   versLigneAchat,
+  versLigneVente,
+  versPaiementVente,
   versMarque,
   versModele,
   versPrixBoutique,
   versProduit,
   versStock,
+  versVente,
 } from './serialisation.js';
 
 export const LIMITE_CHANGEMENTS = 500;
+/** Ventes envoyées aux appareils au premier remplissage. */
+export const JOURS_VENTES_INSTANTANE = 60;
 export const LIMITE_CHANGEMENTS_MAX = 1000;
 
 @Injectable()
@@ -48,6 +54,7 @@ export class SyncService {
     private readonly prisma: PrismaService,
     private readonly journal: JournalService,
     private readonly audit: AuditService,
+    private readonly autorisations: AutorisationRemiseService,
   ) {}
 
   /**
@@ -82,7 +89,14 @@ export class SyncService {
         const controle = await this.controler(utilisateur, operation, gestionnaire);
         const resultat = controle.ok
           ? await gestionnaire.appliquer(
-              { tx, utilisateur, operation, journal: this.journal, audit: this.audit },
+              {
+                tx,
+                utilisateur,
+                operation,
+                journal: this.journal,
+                audit: this.audit,
+                autorisations: this.autorisations,
+              },
               operation.contenu as never,
             )
           : controle;
@@ -212,6 +226,12 @@ export class SyncService {
                 where: { commerceId, boutiqueId: { in: boutiqueIds } },
                 include: { lignes: true },
               });
+        // Ventes des derniers jours (caisse, reçus, historique de la boutique).
+        const depuis = new Date(Date.now() - JOURS_VENTES_INSTANTANE * 24 * 60 * 60 * 1000);
+        const ventes = await tx.vente.findMany({
+          where: { commerceId, boutiqueId: { in: boutiqueIds }, dateVente: { gte: depuis } },
+          include: { lignes: true, paiements: true },
+        });
         return {
           curseur: Number(dernier._max.seq ?? 0n),
           donnees: {
@@ -228,6 +248,12 @@ export class SyncService {
             fournisseur: fournisseurs.map((f) => versFournisseur(f, dettes.get(f.id) ?? 0)),
             achat: achats.map(versAchat),
             ligneAchat: achats.flatMap((a) => a.lignes.map(versLigneAchat)),
+            vente: ventes.map(versVente),
+            ligneVente: masquer(
+              'ligneVente',
+              ventes.flatMap((v) => v.lignes.map(versLigneVente)),
+            ),
+            paiementVente: ventes.flatMap((v) => v.paiements.map(versPaiementVente)),
           },
         };
       },

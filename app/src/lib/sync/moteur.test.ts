@@ -65,6 +65,9 @@ const instantane: Instantane = {
     fournisseur: [],
     achat: [],
     ligneAchat: [],
+    vente: [],
+    ligneVente: [],
+    paiementVente: [],
   },
 };
 
@@ -149,6 +152,9 @@ describe('base locale', () => {
     await base.executer('DROP TABLE fournisseur');
     await base.executer('DROP TABLE achat');
     await base.executer('DROP TABLE ligneAchat');
+    await base.executer('DROP TABLE vente');
+    await base.executer('DROP TABLE ligneVente');
+    await base.executer('DROP TABLE paiementVente');
     await base.executer('DROP INDEX article_boutique_imei');
     await base.executer('ALTER TABLE produit DROP COLUMN photo');
     await base.executer('ALTER TABLE produit DROP COLUMN recherche');

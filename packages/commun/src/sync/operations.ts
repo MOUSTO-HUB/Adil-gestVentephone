@@ -15,6 +15,7 @@ import {
 } from '../achats.js';
 import { schemaClient, schemaFournisseur } from '../clients.js';
 import { schemaInventaire } from '../inventaire.js';
+import { schemaAnnulationVente, schemaVente } from '../ventes.js';
 import type { Changement } from './entites.js';
 
 /**
@@ -62,6 +63,10 @@ export const schemasContenus = {
   STOCK_SEUIL: schemaSeuil,
   /** Inventaire physique validé : le stock est ajusté aux quantités comptées. */
   INVENTAIRE_VALIDER: schemaInventaire,
+  /** Vente au comptant (détail ou gros) : tout le personnel. */
+  VENTE_ENREGISTRER: schemaVente,
+  /** Annulation d'une vente, avec motif : gérant ou propriétaire. */
+  VENTE_ANNULER: schemaAnnulationVente,
 } as const;
 
 export type TypeOperation = keyof typeof schemasContenus;
@@ -84,6 +89,8 @@ export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   ACHAT_ANNULER: 'Annulation d’un bon d’achat',
   STOCK_SEUIL: 'Seuil de stock',
   INVENTAIRE_VALIDER: 'Inventaire',
+  VENTE_ENREGISTRER: 'Vente',
+  VENTE_ANNULER: 'Annulation de vente',
 };
 
 /** Enveloppe commune à toutes les opérations. */

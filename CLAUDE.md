@@ -40,6 +40,13 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Bons d'achat synchronisés (`achat`, `ligneAchat`, jamais aux vendeurs) pour réceptionner hors ligne ; comptage d'inventaire en cours gardé dans `meta` de la base locale.
 - Fiche IMEI : `GET /api/articles/imei/:imei` (achat, ventes, retours, troc, mouvements ; fournisseur et prix d'achat réservés à la gestion). Saisie des IMEI en rafale : `components/saisie-imei.tsx`.
 
+## Ventes
+
+- Règles dans `packages/commun/src/ventes.ts` : `tarifApplicable` (gros dès le seuil du produit ou client grossiste), `plafondRemise` par rôle (`remiseMaxVendeur`, `remiseMaxGerant`, 100 % propriétaire), `erreurRemise`, `controlerPaiements` (référence obligatoire pour Orange Money, MTN MoMo, virement ; monnaie rendue seulement sur les espèces), `finGarantie`, `numeroFacture` (`PREFIXE-APPAREIL6-000001`, compteur de l'appareil dans `meta`).
+- Opérations : `VENTE_ENREGISTRER` (tous les rôles ; écrite d'abord sur l'appareil) et `VENTE_ANNULER` (gestion ; refusée si retour ou crédit). Écritures serveur dans `api/src/ventes/ventes.ecritures.ts` : le serveur recontrôle tarif, remise et IMEI (déjà vendu ⇒ CONFLIT) ; écart avec ses prix journalisé `ECART_PRIX`.
+- Remise au-delà du plafond : un gérant valide en personne par son PIN (`POST /api/ventes/autorisations-remise`, en ligne) ; le jeton signé est joint à la vente et vérifié par rapport à sa date.
+- Prix d'achat des lignes masqué aux vendeurs ; l'instantané ne contient que les ventes des 60 derniers jours.
+
 ## Rôles
 
 PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (ventes, trocs, encaissements ; jamais de modification de prix).
