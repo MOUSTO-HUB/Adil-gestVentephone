@@ -247,6 +247,36 @@ describe('Ventes (e2e)', () => {
     expect(await prisma.vente.count({ where: { id: contenu.id } })).toBe(0);
   });
 
+  it('garantie par IMEI : vente, client et jours restants ; téléphone jamais vendu : 404', async () => {
+    const { body } = await http()
+      .get(`/api/ventes/garantie/${articles[0].imei}`)
+      .auth(vendeur.jetonAcces, bearer)
+      .expect(200);
+    expect(body).toMatchObject({
+      imei: articles[0].imei,
+      produit: 'Galaxy A15',
+      garantieMois: 12,
+      client: { nom: 'Client', telephone: '+224620000001' },
+      etat: 'EN_COURS',
+    });
+    expect(body.joursRestants).toBeGreaterThanOrEqual(364);
+    await http()
+      .get(`/api/ventes/garantie/${articles[2].imei}`)
+      .auth(vendeur.jetonAcces, bearer)
+      .expect(404);
+    // Un autre commerce ne voit pas les ventes de celui-ci.
+    const autre = await creerCommerce(prisma);
+    try {
+      const etranger = await connecter(app, autre.vendeurA.identifiant);
+      await http()
+        .get(`/api/ventes/garantie/${articles[0].imei}`)
+        .auth(etranger.jetonAcces, bearer)
+        .expect(404);
+    } finally {
+      await supprimerCommerce(prisma, autre.commerce.id);
+    }
+  });
+
   it('prix de gros : dès le seuil ou pour un client grossiste, refusé sinon', async () => {
     expect(
       (

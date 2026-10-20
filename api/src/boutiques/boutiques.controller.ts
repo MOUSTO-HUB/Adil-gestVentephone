@@ -4,7 +4,7 @@ import { BoutiqueResumeDto } from '../auth/auth.dto.js';
 import { BoutiqueGuard } from '../auth/guards/boutique.guard.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
-const CHAMPS = { id: true, nom: true, prefixe: true, adresse: true } as const;
+const CHAMPS = { id: true, nom: true, prefixe: true, adresse: true, telephone: true } as const;
 
 @ApiTags('Boutiques')
 @ApiBearerAuth()

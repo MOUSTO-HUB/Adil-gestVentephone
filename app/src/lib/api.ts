@@ -16,6 +16,8 @@ export interface Boutique {
   nom: string;
   prefixe: string;
   adresse: string | null;
+  /** Absent d'un profil gardé avant l'étape 9. */
+  telephone?: string | null;
 }
 
 export interface Profil {
@@ -30,6 +32,7 @@ export interface Profil {
     nom: string;
     monnaie: string;
     indicatif: string;
+    fuseau?: string;
     remiseMaxVendeur: number;
     remiseMaxGerant: number;
   };

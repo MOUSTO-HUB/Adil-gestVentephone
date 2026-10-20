@@ -68,7 +68,9 @@
           "cameraPermission": "La caméra sert à photographier les produits.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-sharing",
+      "react-native-ble-plx"
     ],
     "experiments": {
       "typedRoutes": true,

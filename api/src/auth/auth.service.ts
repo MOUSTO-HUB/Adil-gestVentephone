@@ -150,7 +150,7 @@ export class AuthService {
     });
     const boutiques = await this.prisma.boutique.findMany({
       where: { id: { in: utilisateur.boutiqueIds }, actif: true },
-      select: { id: true, nom: true, prefixe: true, adresse: true },
+      select: { id: true, nom: true, prefixe: true, adresse: true, telephone: true },
       orderBy: { nom: 'asc' },
     });
     const { commerce } = compte;
@@ -166,6 +166,7 @@ export class AuthService {
         nom: commerce.nom,
         monnaie: commerce.monnaie,
         indicatif: commerce.indicatif,
+        fuseau: commerce.fuseau,
         remiseMaxVendeur: commerce.remiseMaxVendeur,
         remiseMaxGerant: commerce.remiseMaxGerant,
       },

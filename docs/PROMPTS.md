@@ -19,7 +19,7 @@ Référence : [Cahier des charges](CAHIER_DES_CHARGES.md).
 | 6   | 1 · Socle           | Clients et fournisseurs                       | ☑    |
 | 7   | 1 · Socle           | Achats, stock, IMEI et inventaire             | ☑    |
 | 8   | 1 · Socle           | Ventes au détail et en gros                   | ☑    |
-| 9   | 1 · Socle           | Factures, reçus, impression et garantie       | ☐    |
+| 9   | 1 · Socle           | Factures, reçus, impression et garantie       | ☑    |
 | 10  | 1 · Socle           | Retours et échanges                           | ☐    |
 | 11  | 1 · Socle           | Caisse et dépenses                            | ☐    |
 | 12  | 1 · Socle           | Rapports de base et journal d'audit           | ☐    |

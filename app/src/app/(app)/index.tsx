@@ -70,6 +70,7 @@ export default function Accueil() {
       <Bouton titre="Ventes" variante="secondaire" onPress={() => router.push('/ventes')} />
       <Bouton titre="Stock" onPress={() => router.push('/stock')} />
       <Bouton titre="Fiche IMEI" variante="secondaire" onPress={() => router.push('/imei')} />
+      <Bouton titre="Garantie" variante="secondaire" onPress={() => router.push('/garantie')} />
       <Bouton titre="Clients" onPress={() => router.push('/clients')} />
       {peutGererSessions(profil.role) ? (
         <>
@@ -96,6 +97,7 @@ export default function Accueil() {
           onPress={() => router.push('/appareils')}
         />
       ) : null}
+      <Bouton titre="Imprimante" variante="secondaire" onPress={() => router.push('/imprimante')} />
       <Bouton titre="Verrouiller" variante="secondaire" onPress={verrouiller} />
       <Bouton titre="Se déconnecter" variante="danger" onPress={() => void seDeconnecter()} />
     </Ecran>

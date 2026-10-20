@@ -6,6 +6,8 @@ export * from './achats.js';
 export * from './application.js';
 export * from './catalogue.js';
 export * from './clients.js';
+export * from './documents.js';
+export * from './escpos.js';
 export * from './imei.js';
 export * from './inventaire.js';
 export * from './monnaie.js';

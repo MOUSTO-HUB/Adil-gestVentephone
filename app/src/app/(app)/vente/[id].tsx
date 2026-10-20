@@ -7,8 +7,10 @@ import {
 } from '@gestvente/commun';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
+import { DocumentsVente } from '@/components/documents-vente';
 import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
 import { confirmer } from '@/lib/confirmer';
+import { chargerDocument, lireReglagesImpression } from '@/lib/documents';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
 
@@ -48,8 +50,18 @@ export default function DetailVente() {
       paiements: await b.tous<PaiementVenteSync>('SELECT * FROM paiementVente WHERE venteId = ?', [
         id,
       ]),
+      document:
+        profil && boutique
+          ? await chargerDocument(b, id, {
+              commerce: profil.commerce.nom,
+              boutique,
+              monnaie: profil.commerce.monnaie,
+              fuseau: profil.commerce.fuseau,
+            })
+          : null,
+      reglages: await lireReglagesImpression(b),
     }),
-    [id],
+    [id, profil, boutique],
   );
   if (!donnees)
     return (
@@ -57,7 +69,7 @@ export default function DetailVente() {
         {null}
       </Ecran>
     );
-  const { vente, lignes, paiements } = donnees;
+  const { vente, lignes, paiements, document, reglages } = donnees;
   if (!vente || !boutique) {
     return (
       <Ecran titre="Vente" enHaut>
@@ -141,6 +153,7 @@ export default function DetailVente() {
           <Texte discret>Monnaie rendue : {formaterMontant(vente.renduMonnaie, monnaie)}</Texte>
         ) : null}
       </Carte>
+      {document ? <DocumentsVente document={document} reglages={reglages} /> : null}
       <Message texte={message?.texte ?? null} type={message?.type} />
       {gestion && vente.statut === 'VALIDEE' ? (
         <Carte>

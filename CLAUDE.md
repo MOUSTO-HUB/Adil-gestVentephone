@@ -47,6 +47,13 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Remise au-delà du plafond : un gérant valide en personne par son PIN (`POST /api/ventes/autorisations-remise`, en ligne) ; le jeton signé est joint à la vente et vérifié par rapport à sa date.
 - Prix d'achat des lignes masqué aux vendeurs ; l'instantané ne contient que les ventes des 60 derniers jours.
 
+## Factures, reçus et garantie
+
+- Documents construits sur l'appareil depuis la base locale (`app/src/lib/documents.ts` → `DocumentVente`), donc imprimables hors ligne. Mise en page dans `packages/commun/src/documents.ts` : `lignesRecu` (58 mm = 32 colonnes, 80 mm = 48), `recuHtml`, `factureHtml` (A4), `texteMessage` (WhatsApp/SMS), `etatGarantie`, `mentionGarantie` ; dates au fuseau du commerce (`profil.commerce.fuseau`).
+- Imprimante thermique : commandes ESC/POS (`escpos.ts`, page de code PC850) envoyées en Bluetooth BLE par `react-native-ble-plx` (`lib/imprimante-bluetooth.ts`, version `.web.ts` sans Bluetooth ; nécessite une version installée, pas Expo Go). Imprimante et largeur choisies dans l'écran `imprimante`, gardées dans `meta`.
+- Impression classique et PDF : `lib/impression.ts` (`expo-print` sur téléphone, cadre caché + impression du navigateur sur ordinateur) ; partage du PDF par `expo-sharing` ; WhatsApp (`wa.me`) et SMS avec le résumé texte.
+- Garantie par IMEI : `GET /api/ventes/garantie/:imei` (dernière vente validée du commerce), base locale hors ligne ; écran `garantie`.
+
 ## Rôles
 
 PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (ventes, trocs, encaissements ; jamais de modification de prix).

@@ -67,9 +67,12 @@ export default function Vente() {
   const [scanner, setScanner] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
-  const [derniere, setDerniere] = useState<{ numero: string; total: number; rendu: number } | null>(
-    null,
-  );
+  const [derniere, setDerniere] = useState<{
+    id: string;
+    numero: string;
+    total: number;
+    rendu: number;
+  } | null>(null);
   const boutiqueId = boutique?.id ?? '';
 
   const resultats = useLecture(
@@ -223,11 +226,12 @@ export default function Vente() {
     setEnvoi(true);
     try {
       const numero = await prochainNumeroFacture(base, boutique.prefixe, profil.appareilId);
+      const venteId = Crypto.randomUUID();
       await enregistrer({
         type: 'VENTE_ENREGISTRER',
         boutiqueId,
         contenu: {
-          id: Crypto.randomUUID(),
+          id: venteId,
           numero,
           dateVente: new Date().toISOString(),
           clientId: client?.id ?? null,
@@ -245,7 +249,7 @@ export default function Vente() {
             calcul.remise && pourcentage > plafond ? (autorisation?.jeton ?? null) : null,
         },
       });
-      setDerniere({ numero, total: calcul.total, rendu: controle.rendu });
+      setDerniere({ id: venteId, numero, total: calcul.total, rendu: controle.rendu });
       setArticles([]);
       setClient(null);
       setRemise('');
@@ -272,6 +276,10 @@ export default function Vente() {
           {derniere.rendu > 0 ? (
             <Texte gras>Monnaie à rendre : {formaterMontant(derniere.rendu, monnaie)}</Texte>
           ) : null}
+          <Bouton
+            titre="Reçu, facture, WhatsApp…"
+            onPress={() => router.push({ pathname: '/vente/[id]', params: { id: derniere.id } })}
+          />
           <Bouton titre="Nouvelle vente" variante="secondaire" onPress={() => setDerniere(null)} />
         </Carte>
       ) : null}

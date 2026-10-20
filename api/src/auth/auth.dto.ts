@@ -85,6 +85,8 @@ export class BoutiqueResumeDto {
   @ApiProperty() nom: string;
   @ApiProperty() prefixe: string;
   @ApiPropertyOptional() adresse: string | null;
+  @ApiPropertyOptional({ description: 'Imprimé sur les factures et reçus.' })
+  telephone: string | null;
 }
 
 export class CommerceResumeDto {
@@ -92,6 +94,8 @@ export class CommerceResumeDto {
   @ApiProperty() nom: string;
   @ApiProperty({ example: 'GNF' }) monnaie: string;
   @ApiProperty({ example: '+224' }) indicatif: string;
+  @ApiProperty({ example: 'Africa/Conakry', description: 'Fuseau des dates imprimées.' })
+  fuseau: string;
   @ApiProperty() remiseMaxVendeur: number;
   @ApiProperty() remiseMaxGerant: number;
 }
