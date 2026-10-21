@@ -14,6 +14,7 @@ import {
   schemaSeuil,
 } from '../achats.js';
 import { schemaClient, schemaFournisseur } from '../clients.js';
+import { schemaEncaissement } from '../credit.js';
 import { schemaInventaire } from '../inventaire.js';
 import {
   schemaClotureCaisse,
@@ -94,6 +95,8 @@ export const schemasContenus = {
   IMEI_SIGNALER: schemaImeiSignale,
   /** Appareil repris réparé, remis en vente d'occasion : gérant ou propriétaire. */
   ARTICLE_REMETTRE_EN_VENTE: schemaRemiseEnVente,
+  /** Encaissement d'une tranche de crédit (même hors ligne) : tout le personnel. */
+  CREDIT_ENCAISSER: schemaEncaissement,
 } as const;
 
 export type TypeOperation = keyof typeof schemasContenus;
@@ -127,6 +130,7 @@ export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   GRILLE_REPRISE_ENREGISTRER: 'Grille de reprise',
   IMEI_SIGNALER: 'IMEI signalé',
   ARTICLE_REMETTRE_EN_VENTE: 'Remise en vente',
+  CREDIT_ENCAISSER: 'Encaissement d’une tranche',
 };
 
 /** Enveloppe commune à toutes les opérations. */

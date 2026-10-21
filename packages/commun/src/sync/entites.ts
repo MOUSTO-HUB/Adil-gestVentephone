@@ -28,6 +28,9 @@ export const ENTITES_SYNC = [
   'troc',
   'grilleReprise',
   'imeiSignale',
+  'credit',
+  'echeance',
+  'encaissement',
 ] as const;
 export type EntiteSync = (typeof ENTITES_SYNC)[number];
 
@@ -322,6 +325,55 @@ export interface ImeiSignaleSync {
   actif: boolean;
 }
 
+/** Crédit d'une vente (tous ceux en cours, les autres des 60 derniers jours). */
+export interface CreditSync {
+  id: string;
+  boutiqueId: string;
+  venteId: string;
+  /** Numéro de la facture (la vente peut être plus ancienne que l'instantané). */
+  numeroVente: string;
+  clientId: string;
+  garantId: string | null;
+  montantTotal: number;
+  apport: number;
+  montantFinance: number;
+  /** Reste dû, pénalités comprises. */
+  montantRestant: number;
+  nombreTranches: number;
+  frequence: 'HEBDOMADAIRE' | 'MENSUELLE';
+  /** AAAA-MM-JJ. */
+  premiereEcheance: string;
+  statut: 'EN_COURS' | 'SOLDE' | 'ANNULE';
+  penaliteActive: boolean;
+  soldeLe: string | null;
+  creeLe: string;
+  creeParId: string | null;
+}
+
+export interface EcheanceSync {
+  id: string;
+  creditId: string;
+  numero: number;
+  /** AAAA-MM-JJ. */
+  dateEcheance: string;
+  montant: number;
+  montantPaye: number;
+  penalite: number;
+  soldeeLe: string | null;
+}
+
+/** Tranche encaissée (totale ou partielle). */
+export interface EncaissementSync {
+  id: string;
+  creditId: string;
+  caisseId: string | null;
+  moyen: 'ESPECES' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'VIREMENT';
+  montant: number;
+  reference: string | null;
+  creeLe: string;
+  creeParId: string | null;
+}
+
 export interface DonneesEntites {
   marque: MarqueSync;
   modele: ModeleSync;
@@ -346,6 +398,9 @@ export interface DonneesEntites {
   troc: TrocSync;
   grilleReprise: GrilleRepriseSync;
   imeiSignale: ImeiSignaleSync;
+  credit: CreditSync;
+  echeance: EcheanceSync;
+  encaissement: EncaissementSync;
 }
 
 /** Un changement du journal du serveur (descente vers les appareils). */

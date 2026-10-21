@@ -59,13 +59,14 @@ export async function caisseDeRattachement(
   return caisse?.id ?? null;
 }
 
-/** Ce qui est passé par une caisse (ventes, remboursements, dépenses). */
+/** Ce qui est passé par une caisse (ventes, tranches de crédit, remboursements, dépenses). */
 export async function mouvementsCaisse(tx: Tx, caisseId: string): Promise<MouvementsCaisse> {
   const caisse = await tx.caisse.findUniqueOrThrow({ where: { id: caisseId } });
-  const [ventes, retours, depenses] = await Promise.all([
+  const [ventes, retours, depenses, encaissements] = await Promise.all([
     tx.vente.findMany({ where: { caisseId }, include: { paiements: true } }),
     tx.retour.findMany({ where: { caisseId } }),
     tx.depense.findMany({ where: { caisseId } }),
+    tx.encaissement.findMany({ where: { caisseId } }),
   ]);
   return {
     fondInitial: Number(caisse.fondInitial),
@@ -84,6 +85,10 @@ export async function mouvementsCaisse(tx: Tx, caisseId: string): Promise<Mouvem
     depenses: depenses.map((d) => ({
       montant: Number(d.montant),
       moyen: (d.moyen === 'AVOIR' ? 'ESPECES' : d.moyen) as MoyenRemboursement,
+    })),
+    encaissements: encaissements.map((e) => ({
+      montant: Number(e.montant),
+      moyen: (e.moyen === 'AVOIR' ? 'ESPECES' : e.moyen) as MoyenRemboursement,
     })),
   };
 }

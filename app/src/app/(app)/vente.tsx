@@ -2,6 +2,7 @@ import {
   type ClientSync,
   controlerPaiements,
   formaterMontant,
+  jourLocal,
   LIBELLES_MOYENS,
   MOYENS_PAIEMENT,
   type MoyenPaiement,
@@ -15,10 +16,17 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Choix } from '@/components/choix';
 import { ChoixArticles } from '@/components/choix-articles';
+import { SaisieCredit } from '@/components/saisie-credit';
 import { SaisieTroc } from '@/components/saisie-troc';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
 import { caisseOuverte } from '@/lib/caisse-session';
+import {
+  creditDepuisFormulaire,
+  type FormulaireCredit,
+  formulaireCreditVide,
+} from '@/lib/credit-saisie';
+import { FUSEAU_PAR_DEFAUT } from '@/lib/documents';
 import { rechercherClients } from '@/lib/clients';
 import { type ArticlePanier, prixDuPanier, prochainNumeroFacture } from '@/lib/panier';
 import { useSession } from '@/lib/session';
@@ -72,6 +80,7 @@ export default function Vente() {
   const [message, setMessage] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [troc, setTroc] = useState<FormulaireTroc | null>(null);
+  const [credit, setCredit] = useState<FormulaireCredit | null>(null);
   const [infoPhotos, setInfoPhotos] = useState<string | null>(null);
   const [derniere, setDerniere] = useState<{
     id: string;
@@ -79,6 +88,7 @@ export default function Vente() {
     total: number;
     rendu: number;
     reprise: number;
+    creditId: string | null;
   } | null>(null);
   const boutiqueId = boutique?.id ?? '';
 
@@ -108,6 +118,10 @@ export default function Vente() {
   // Valeur de l'ancien téléphone déduite du total (troc).
   const reprise = troc ? Math.max(0, montantSaisi(troc.valeur) || 0) : 0;
   const totalNet = calcul.total - reprise;
+  const aujourdhui = jourLocal(new Date(), profil.commerce.fuseau ?? FUSEAU_PAR_DEFAUT);
+  // Vente à crédit : seul l'apport se paie maintenant.
+  const apport = credit ? montantSaisi(credit.apport) : 0;
+  const aPayer = credit ? (Number.isNaN(apport) ? 0 : apport) : totalNet;
   const plafond = plafondRemise(profil.role, profil.commerce);
   const pourcentage = pourcentageRemise(calcul.remise, calcul.sousTotal);
   const autorisationNecessaire =
@@ -160,7 +174,24 @@ export default function Vente() {
       if ('erreur' in resultat) return setMessage(resultat.erreur);
       trocSaisi = resultat.troc;
     }
-    const controle = controlerPaiements(totalNet, listePaiements);
+    let creditSaisi = null;
+    if (credit) {
+      const garant = client
+        ? await base.premier<{ id: string }>('SELECT id FROM garant WHERE clientId = ?', [
+            client.id,
+          ])
+        : null;
+      const resultat = creditDepuisFormulaire(
+        credit,
+        totalNet,
+        aujourdhui,
+        garant?.id ?? null,
+        () => Crypto.randomUUID(),
+      );
+      if ('erreur' in resultat) return setMessage(resultat.erreur);
+      creditSaisi = resultat.credit;
+    }
+    const controle = controlerPaiements(aPayer, listePaiements);
     if (!controle.ok) return setMessage(controle.motif);
     setEnvoi(true);
     try {
@@ -193,6 +224,7 @@ export default function Vente() {
             calcul.remise && pourcentage > plafond ? (autorisation?.jeton ?? null) : null,
           caisseId: caisse.id,
           troc: trocSaisi,
+          credit: creditSaisi,
         },
       });
       if (client && envoiFacture !== 'NON') {
@@ -208,7 +240,14 @@ export default function Vente() {
           },
         });
       }
-      setDerniere({ id: venteId, numero, total: totalNet, rendu: controle.rendu, reprise });
+      setDerniere({
+        id: venteId,
+        numero,
+        total: totalNet,
+        rendu: controle.rendu,
+        reprise,
+        creditId: creditSaisi?.id ?? null,
+      });
       // Photos du troc : envoyées dès que la vente est arrivée sur le serveur.
       if (trocSaisi && troc?.photos.length) {
         const photos = troc.photos;
@@ -224,6 +263,7 @@ export default function Vente() {
         setInfoPhotos(null);
       }
       setTroc(null);
+      setCredit(null);
       setArticles([]);
       setClient(null);
       setRemise('');
@@ -251,7 +291,16 @@ export default function Vente() {
               Reprise de l’ancien téléphone : {formaterMontant(derniere.reprise, monnaie)}
             </Texte>
           ) : null}
-          <Texte>À payer : {formaterMontant(derniere.total, monnaie)}</Texte>
+          <Texte>Total : {formaterMontant(derniere.total, monnaie)}</Texte>
+          {derniere.creditId ? (
+            <Bouton
+              titre="Contrat et échéancier du crédit"
+              icone="document-text-outline"
+              onPress={() =>
+                router.push({ pathname: '/credit/[id]', params: { id: derniere.creditId! } })
+              }
+            />
+          ) : null}
           <Message type="info" texte={infoPhotos} />
           {derniere.rendu > 0 ? (
             <Texte gras>Monnaie à rendre : {formaterMontant(derniere.rendu, monnaie)}</Texte>
@@ -356,6 +405,27 @@ export default function Vente() {
         />
       )}
 
+      {credit ? (
+        <>
+          <SaisieCredit
+            formulaire={credit}
+            surChange={setCredit}
+            client={client}
+            total={totalNet}
+            aujourdhui={aujourdhui}
+            monnaie={monnaie}
+          />
+          <Bouton titre="Vente au comptant" variante="secondaire" onPress={() => setCredit(null)} />
+        </>
+      ) : (
+        <Bouton
+          titre="Vendre à crédit (paiement par tranches)"
+          icone="calendar-outline"
+          variante="secondaire"
+          onPress={() => setCredit(formulaireCreditVide(aujourdhui))}
+        />
+      )}
+
       <Carte>
         <Texte gras>Remise (vous accordez jusqu’à {plafond} %)</Texte>
         <TextInput
@@ -445,7 +515,7 @@ export default function Vente() {
           onPress={() =>
             setPaiements({
               ...PAIEMENTS_VIDES,
-              ESPECES: { montant: String(Math.max(0, totalNet)), reference: '' },
+              ESPECES: { montant: String(Math.max(0, aPayer)), reference: '' },
             })
           }
         />
@@ -464,11 +534,17 @@ export default function Vente() {
         <Text style={[styles.total, { color: colors.text }]}>
           {reprise > 0 ? 'À payer' : 'Total'} : {formaterMontant(totalNet, monnaie)}
         </Text>
+        {credit ? (
+          <Texte gras>
+            Apport à encaisser : {formaterMontant(aPayer, monnaie)} · à crédit :{' '}
+            {formaterMontant(Math.max(0, totalNet - aPayer), monnaie)}
+          </Texte>
+        ) : null}
         {paye > 0 ? (
           <Texte>
             Payé : {formaterMontant(paye, monnaie)}
-            {paye < totalNet ? ` · reste ${formaterMontant(totalNet - paye, monnaie)}` : ''}
-            {paye > totalNet ? ` · monnaie ${formaterMontant(paye - totalNet, monnaie)}` : ''}
+            {paye < aPayer ? ` · reste ${formaterMontant(aPayer - paye, monnaie)}` : ''}
+            {paye > aPayer ? ` · monnaie ${formaterMontant(paye - aPayer, monnaie)}` : ''}
           </Texte>
         ) : null}
       </Carte>

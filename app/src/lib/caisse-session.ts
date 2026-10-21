@@ -39,7 +39,7 @@ export async function caisseOuverte(
   return c ? lireCaisse(base, c.id) : null;
 }
 
-/** Ventes, remboursements et dépenses de la caisse, d'après la base de l'appareil. */
+/** Ventes, tranches de crédit, remboursements et dépenses de la caisse (base de l'appareil). */
 export async function mouvementsCaisse(base: BaseSql, caisseId: string): Promise<MouvementsCaisse> {
   const caisse = await base.premier<{ fondInitial: number }>(
     'SELECT fondInitial FROM caisse WHERE id = ?',
@@ -67,6 +67,10 @@ export async function mouvementsCaisse(base: BaseSql, caisseId: string): Promise
     }>('SELECT montantRembourse, moyenRemboursement FROM retour WHERE caisseId = ?', [caisseId]),
     depenses: await base.tous<{ montant: number; moyen: MoyenRemboursement }>(
       'SELECT montant, moyen FROM depense WHERE caisseId = ?',
+      [caisseId],
+    ),
+    encaissements: await base.tous<{ montant: number; moyen: MoyenRemboursement }>(
+      'SELECT montant, moyen FROM encaissement WHERE caisseId = ?',
       [caisseId],
     ),
   };

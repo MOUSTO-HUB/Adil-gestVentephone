@@ -164,7 +164,7 @@ export function lignesRecu(d: DocumentVente, largeur: LargeurRecu): LigneRecu[] 
   }
   if (d.remise > 0) r.push({ texte: colonnes('Remise', `-${montant(d.remise, d.monnaie)}`, n) });
   if (d.reprise > 0) {
-    r.push({ texte: colonnes('Reprise (échange)', `-${montant(d.reprise, d.monnaie)}`, n) });
+    r.push({ texte: colonnes('Reprise', `-${montant(d.reprise, d.monnaie)}`, n) });
   }
   r.push({ texte: colonnes('TOTAL', montant(d.total, d.monnaie), n), gras: true });
   for (const p of d.paiements) {
@@ -235,7 +235,7 @@ export function factureHtml(d: DocumentVente): string {
       : '',
     d.remise > 0 ? `<tr><td>Remise</td><td class="n">− ${m(d.remise)}</td></tr>` : '',
     d.reprise > 0
-      ? `<tr><td>Reprise des articles rendus (échange)</td><td class="n">− ${m(d.reprise)}</td></tr>`
+      ? `<tr><td>Reprise (échange ou troc)</td><td class="n">− ${m(d.reprise)}</td></tr>`
       : '',
     `<tr class="total"><td>Total</td><td class="n">${m(d.total)}</td></tr>`,
     ...d.paiements.map(

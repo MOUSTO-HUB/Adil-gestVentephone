@@ -300,6 +300,55 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX imei_signale ON imeiSignale (imei);
   `,
+  // Vente à crédit : crédits, tranches, encaissements.
+  `
+  CREATE TABLE credit (
+    id TEXT PRIMARY KEY,
+    boutiqueId TEXT NOT NULL,
+    venteId TEXT NOT NULL,
+    numeroVente TEXT NOT NULL,
+    clientId TEXT NOT NULL,
+    garantId TEXT,
+    montantTotal INTEGER NOT NULL,
+    apport INTEGER NOT NULL,
+    montantFinance INTEGER NOT NULL,
+    montantRestant INTEGER NOT NULL,
+    nombreTranches INTEGER NOT NULL,
+    frequence TEXT NOT NULL,
+    premiereEcheance TEXT NOT NULL,
+    statut TEXT NOT NULL,
+    penaliteActive INTEGER NOT NULL,
+    soldeLe TEXT,
+    creeLe TEXT NOT NULL,
+    creeParId TEXT
+  );
+  CREATE INDEX credit_boutique ON credit (boutiqueId, statut);
+  CREATE INDEX credit_client ON credit (clientId);
+  CREATE INDEX credit_vente ON credit (venteId);
+  CREATE TABLE echeance (
+    id TEXT PRIMARY KEY,
+    creditId TEXT NOT NULL,
+    numero INTEGER NOT NULL,
+    dateEcheance TEXT NOT NULL,
+    montant INTEGER NOT NULL,
+    montantPaye INTEGER NOT NULL,
+    penalite INTEGER NOT NULL,
+    soldeeLe TEXT
+  );
+  CREATE INDEX echeance_credit ON echeance (creditId, numero);
+  CREATE TABLE encaissement (
+    id TEXT PRIMARY KEY,
+    creditId TEXT NOT NULL,
+    caisseId TEXT,
+    moyen TEXT NOT NULL,
+    montant INTEGER NOT NULL,
+    reference TEXT,
+    creeLe TEXT NOT NULL,
+    creeParId TEXT
+  );
+  CREATE INDEX encaissement_credit ON encaissement (creditId);
+  CREATE INDEX encaissement_caisse ON encaissement (caisseId);
+  `,
 ];
 
 /**

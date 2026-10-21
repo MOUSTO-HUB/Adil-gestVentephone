@@ -33,6 +33,9 @@ export async function retourEnregistrer(
   ]);
   if (!vente) throw new ErreurOperation('Vente introuvable dans cette boutique.');
   if (vente.statut === 'ANNULEE') throw new ErreurOperation('Cette vente a été annulée.');
+  if (await tx.premier('SELECT id FROM credit WHERE venteId = ?', [c.venteId])) {
+    throw new ErreurOperation('Vente à crédit : le retour se traite avec le gérant.');
+  }
 
   let valeur = 0;
   const lignes: {

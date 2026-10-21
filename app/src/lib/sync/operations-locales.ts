@@ -13,6 +13,7 @@ import * as achats from './operations-achats';
 import * as caisse from './operations-caisse';
 import * as catalogue from './operations-catalogue';
 import * as clients from './operations-clients';
+import * as credits from './operations-credits';
 import * as messages from './operations-messages';
 import * as retours from './operations-retours';
 import * as trocs from './operations-trocs';
@@ -108,6 +109,8 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
   IMEI_SIGNALER: (tx, _boutiqueId, contenu) => trocs.imeiSignaler(tx, contenu),
   ARTICLE_REMETTRE_EN_VENTE: (tx, boutiqueId, contenu) =>
     trocs.articleRemettreEnVente(tx, boutiqueId, contenu),
+  CREDIT_ENCAISSER: (tx, boutiqueId, contenu, _id, contexte) =>
+    credits.creditEncaisser(tx, boutiqueId, contenu, contexte.utilisateurId),
 };
 
 export interface NouvelleOperation<T extends TypeOperation> {

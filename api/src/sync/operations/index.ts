@@ -21,6 +21,7 @@ import {
   depenseEnregistrer,
 } from './caisse.operations.js';
 import { clientEnregistrer, fournisseurEnregistrer } from './clients.operations.js';
+import { creditEncaisser } from './credits.operations.js';
 import type { Gestionnaire } from './gestionnaire.js';
 import { articleSortir, stockAjuster } from './stock.operations.js';
 import { messageEnvoyer } from './messages.operations.js';
@@ -60,4 +61,5 @@ export const GESTIONNAIRES: { [T in TypeOperation]: Gestionnaire<T> } = {
   GRILLE_REPRISE_ENREGISTRER: grilleRepriseEnregistrer,
   IMEI_SIGNALER: imeiSignaler,
   ARTICLE_REMETTRE_EN_VENTE: articleRemettreEnVente,
+  CREDIT_ENCAISSER: creditEncaisser,
 };

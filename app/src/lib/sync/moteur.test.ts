@@ -75,6 +75,9 @@ const instantane: Instantane = {
     troc: [],
     grilleReprise: [],
     imeiSignale: [],
+    credit: [],
+    echeance: [],
+    encaissement: [],
   },
 };
 
@@ -169,6 +172,9 @@ describe('base locale', () => {
     await base.executer('DROP TABLE troc');
     await base.executer('DROP TABLE grilleReprise');
     await base.executer('DROP TABLE imeiSignale');
+    await base.executer('DROP TABLE credit');
+    await base.executer('DROP TABLE echeance');
+    await base.executer('DROP TABLE encaissement');
     await base.executer('DROP INDEX article_boutique_imei');
     await base.executer('ALTER TABLE produit DROP COLUMN photo');
     await base.executer('ALTER TABLE produit DROP COLUMN recherche');

@@ -12,6 +12,7 @@ import {
 } from '@gestvente/commun';
 import { ACTIONS_AUDIT } from '../audit/audit.service.js';
 import { caisseDeRattachement } from '../caisse/caisse.ecritures.js';
+import { controlerCredit, ecrireCredit } from '../credits/credit.ecritures.js';
 import { controlerTroc, ecrireTroc } from '../trocs/troc.ecritures.js';
 import type { NouveauChangement, Tx } from '../sync/journal.service.js';
 import type { ContexteOperation } from '../sync/operations/gestionnaire.js';
@@ -152,7 +153,9 @@ export async function enregistrerVente(
     autorisation?.plafond ?? null,
   );
   if (erreur) return rejet(erreur);
-  const paiements = controlerPaiements(total, d.paiements);
+  // Vente à crédit : seul l'apport se paie à la vente.
+  const aPayer = d.credit ? d.credit.apport : total;
+  const paiements = controlerPaiements(aPayer, d.paiements);
   if (!paiements.ok) return rejet(paiements.motif);
   const avoirUtilise = d.paiements
     .filter((p) => p.moyen === 'AVOIR')
@@ -179,6 +182,8 @@ export async function enregistrerVente(
 
   const troc = d.troc ? await controlerTroc(ctx, d.troc, client, dateVente) : null;
   if (troc && !troc.ok) return troc;
+  const refusCredit = d.credit ? await controlerCredit(ctx, d.credit, client, total) : null;
+  if (refusCredit) return refusCredit;
 
   // Écritures (rattachées à la caisse ouverte du vendeur).
   const caisseId = await caisseDeRattachement(tx, d.caisseId, utilisateur, boutiqueId);
@@ -192,12 +197,12 @@ export async function enregistrerVente(
       vendeurId: utilisateur.id,
       appareilId: utilisateur.appareilId,
       caisseId,
-      mode: 'COMPTANT',
+      mode: d.credit ? 'CREDIT' : 'COMPTANT',
       sousTotal,
       remise: d.remise,
       reprise: repriseTotale,
       total,
-      montantPaye: total,
+      montantPaye: aPayer,
       renduMonnaie: paiements.rendu,
       dateVente,
       creeParId: utilisateur.id,
@@ -272,6 +277,9 @@ export async function enregistrerVente(
     });
   }
   if (troc?.ok && client) changements.push(...(await ecrireTroc(ctx, troc.troc, d.id, client.id)));
+  if (d.credit && client) {
+    changements.push(...(await ecrireCredit(ctx, d.credit, d.id, client.id, total)));
+  }
   await journal.ecrire(tx, commerceId, [...changements, ...(await changementsVente(tx, d.id))]);
 
   if (d.remise > 0) {

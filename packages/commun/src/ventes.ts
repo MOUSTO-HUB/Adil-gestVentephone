@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Role } from './roles.js';
+import { schemaCreditVente } from './credit.js';
 import { schemaTroc } from './troc.js';
 
 /** Ventes au détail et en gros : prix appliqués, remises, paiements, garantie. */
@@ -57,7 +58,7 @@ export const schemaVente = z.object({
         reference: z.string().trim().max(60).nullable(),
       }),
     )
-    .min(1, 'Indiquez le paiement.')
+    // Aucun paiement possible : crédit sans apport, ou reprise couvrant tout.
     .max(4),
   /** Jeton signé par le serveur quand un gérant a validé une remise au-delà du plafond. */
   autorisationRemise: z.string().max(2000).nullable(),
@@ -65,6 +66,8 @@ export const schemaVente = z.object({
   caisseId: z.uuid().nullable().optional(),
   /** Reprise de l'ancien téléphone du client, déduite du total. */
   troc: schemaTroc.nullable().optional(),
+  /** Vente à crédit : apport payé à la vente, reste par tranches. */
+  credit: schemaCreditVente.nullable().optional(),
 });
 export type VenteSaisie = z.infer<typeof schemaVente>;
 

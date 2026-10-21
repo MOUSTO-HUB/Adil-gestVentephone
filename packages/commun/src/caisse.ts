@@ -80,6 +80,8 @@ export interface MouvementsCaisse {
   }[];
   retours: { montantRembourse: number; moyenRemboursement: MoyenRemboursement | null }[];
   depenses: { montant: number; moyen: MoyenRemboursement }[];
+  /** Tranches de crédit encaissées dans la session. */
+  encaissements?: { montant: number; moyen: MoyenRemboursement }[];
 }
 
 /** Totaux de la session : encaissé, remboursé, dépensé, attendu, par moyen. */
@@ -101,6 +103,7 @@ export function bilanCaisse(m: MouvementsCaisse) {
     }
   }
   for (const d of m.depenses) depense[d.moyen] += d.montant;
+  for (const e of m.encaissements ?? []) encaisse[e.moyen] += e.montant;
   const theorique = montantsVides();
   for (const k of MOYENS_REMBOURSEMENT) {
     theorique[k] = (k === 'ESPECES' ? m.fondInitial : 0) + encaisse[k] - rembourse[k] - depense[k];

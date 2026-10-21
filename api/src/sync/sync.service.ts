@@ -48,6 +48,9 @@ import {
   versGrilleReprise,
   versImeiSignale,
   versTroc,
+  versCredit,
+  versEcheance,
+  versEncaissement,
   versLigneRetour,
 } from './serialisation.js';
 
@@ -279,6 +282,15 @@ export class SyncService {
           where: { commerceId, boutiqueId: { in: boutiqueIds }, creeLe: { gte: depuis } },
         });
         const grille = await tx.grilleReprise.findMany({ where: { commerceId } });
+        // Crédits : tous ceux en cours, les autres récents ; leurs tranches et encaissements.
+        const credits = await tx.credit.findMany({
+          where: {
+            commerceId,
+            boutiqueId: { in: boutiqueIds },
+            OR: [{ statut: 'EN_COURS' }, { creeLe: { gte: depuis } }, { soldeLe: { gte: depuis } }],
+          },
+          include: { echeances: true, encaissements: true, vente: { select: { numero: true } } },
+        });
         const signales = await tx.imeiSignale.findMany({ where: { commerceId } });
         const depenses = await tx.depense.findMany({
           where: { commerceId, boutiqueId: { in: boutiqueIds }, dateDepense: { gte: depuis } },
@@ -331,6 +343,9 @@ export class SyncService {
             troc: trocs.map(versTroc),
             grilleReprise: grille.map(versGrilleReprise),
             imeiSignale: signales.map(versImeiSignale),
+            credit: credits.map(versCredit),
+            echeance: credits.flatMap((c) => c.echeances.map(versEcheance)),
+            encaissement: credits.flatMap((c) => c.encaissements.map(versEncaissement)),
           },
         };
       },

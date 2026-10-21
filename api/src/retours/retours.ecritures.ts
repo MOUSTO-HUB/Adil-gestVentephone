@@ -79,6 +79,9 @@ export async function enregistrerRetour(ctx: ContexteOperation, d: RetourSaisi):
   });
   if (!vente) return rejet('Vente introuvable dans cette boutique.');
   if (vente.statut === 'ANNULEE') return conflit('Cette vente a été annulée.');
+  if (vente.mode === 'CREDIT') {
+    return conflit('Vente à crédit : le retour se traite avec le gérant sur la fiche du crédit.');
+  }
 
   const dateRetour = new Date(d.dateRetour);
   if (dateRetour.getTime() > Date.now() + MARGE_HORLOGE_MS) {

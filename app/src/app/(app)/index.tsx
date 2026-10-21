@@ -1,4 +1,4 @@
-import { formaterMontant, LIBELLES_ROLES, peutGererSessions } from '@gestvente/commun';
+import { formaterMontant, LIBELLES_ROLES, peutGererSessions, jourLocal } from '@gestvente/commun';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Bouton, Ecran, Grille, Indicateur, Message, Section, Tuile } from '@/components/ui';
@@ -54,6 +54,20 @@ export default function Accueil() {
     [boutiqueId, profil?.id, gestion],
   );
   const sousSeuil = useLecture((base) => produitsSousSeuil(base, boutiqueId), [boutiqueId]);
+  // Crédits avec une tranche échue non payée (badge de la tuile).
+  const creditsEnRetard = useLecture(
+    async (base) =>
+      (
+        await base.premier<{ nombre: number }>(
+          `SELECT COUNT(DISTINCT cr.id) AS nombre FROM credit cr
+             JOIN echeance e ON e.creditId = cr.id
+            WHERE cr.boutiqueId = ? AND cr.statut = 'EN_COURS'
+              AND e.dateEcheance < ? AND e.montantPaye < e.montant + e.penalite`,
+          [boutiqueId, jourLocal(new Date(), profil?.commerce.fuseau ?? 'Africa/Conakry')],
+        )
+      )?.nombre ?? 0,
+    [boutiqueId],
+  );
 
   if (!profil || !boutique) return null;
   const monnaie = profil.commerce.monnaie;
@@ -153,6 +167,13 @@ export default function Accueil() {
           onPress={aller('/retours')}
         />
         <Tuile titre="Dépenses" icone="wallet" couleur={c.danger} onPress={aller('/depenses')} />
+        <Tuile
+          titre="Crédits"
+          icone="calendar"
+          couleur={c.primaire}
+          onPress={aller('/credits')}
+          badge={creditsEnRetard}
+        />
       </Grille>
 
       <Section titre="Troc" />

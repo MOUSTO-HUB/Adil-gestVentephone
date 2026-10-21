@@ -10,6 +10,7 @@ import {
 import { ecrireEntite } from '../base/depot';
 import type { BaseSql } from '../base/sql';
 import { ErreurOperation } from './erreurs';
+import { creditEnregistrer } from './operations-credits';
 import { trocEnregistrer } from './operations-trocs';
 
 /**
@@ -42,7 +43,9 @@ export async function venteEnregistrer(
     throw new ErreurOperation('La reprise dépasse le montant de la vente.');
   }
   const total = avantReprise - repriseTotale;
-  const paiements = controlerPaiements(total, c.paiements);
+  // Vente à crédit : seul l'apport se paie à la vente.
+  const aPayer = c.credit ? c.credit.apport : total;
+  const paiements = controlerPaiements(aPayer, c.paiements);
   if (!paiements.ok) throw new ErreurOperation(paiements.motif);
   const avoir = c.paiements.filter((p) => p.moyen === 'AVOIR').reduce((t, p) => t + p.montant, 0);
   if (avoir > 0) {
@@ -127,14 +130,14 @@ export async function venteEnregistrer(
     numero: c.numero,
     clientId: c.clientId,
     vendeurId,
-    mode: 'COMPTANT',
+    mode: c.credit ? 'CREDIT' : 'COMPTANT',
     statut: 'VALIDEE',
     sousTotal,
     remise: c.remise,
     reprise: repriseTotale,
     total,
     caisseId: c.caisseId ?? null,
-    montantPaye: total,
+    montantPaye: aPayer,
     renduMonnaie: paiements.rendu,
     dateVente: dateVente.toISOString(),
     annuleLe: null,
@@ -142,6 +145,16 @@ export async function venteEnregistrer(
   });
   if (c.troc) {
     await trocEnregistrer(tx, boutiqueId, c.id, c.clientId, c.troc, vendeurId, idProvisoire);
+  }
+  if (c.credit) {
+    await creditEnregistrer(
+      tx,
+      boutiqueId,
+      { id: c.id, numero: c.numero, clientId: c.clientId, dateVente: dateVente.toISOString() },
+      c.credit,
+      total,
+      vendeurId,
+    );
   }
 }
 
@@ -163,6 +176,9 @@ export async function venteAnnuler(
     ])
   ) {
     throw new ErreurOperation('Cette vente a un retour ou un échange : traitez-la par un retour.');
+  }
+  if (await tx.premier('SELECT id FROM credit WHERE venteId = ?', [c.venteId])) {
+    throw new ErreurOperation('Vente à crédit : elle ne s’annule pas.');
   }
   if (await tx.premier('SELECT id FROM troc WHERE venteId = ?', [c.venteId])) {
     throw new ErreurOperation('Vente avec un troc : traitez-la par un retour.');

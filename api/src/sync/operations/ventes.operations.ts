@@ -11,6 +11,7 @@ import {
   versVente,
 } from '../serialisation.js';
 import type { Gestionnaire } from './gestionnaire.js';
+import { etatCredit } from './credits.operations.js';
 import { etatTroc } from './trocs.operations.js';
 
 /** État du serveur après refus : la vente (ou son effacement), téléphones et stocks touchés. */
@@ -84,6 +85,8 @@ export const venteEnregistrer: Gestionnaire<'VENTE_ENREGISTRER'> = {
     }
     // Troc refusé : l'appareil repris sort du stock de l'appareil.
     if (contenu.troc) corrections.push(...(await etatTroc(tx, operation.boutiqueId, contenu.troc)));
+    // Crédit refusé : le crédit et ses tranches disparaissent de l'appareil.
+    if (contenu.credit) corrections.push(...(await etatCredit(tx, contenu.credit)));
     return corrections;
   },
 };

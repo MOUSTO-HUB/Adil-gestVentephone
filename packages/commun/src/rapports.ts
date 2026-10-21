@@ -247,6 +247,8 @@ export const LIBELLES_ACTIONS_AUDIT: Record<string, string> = {
   IMEI_SIGNALE: 'IMEI signalé volé ou bloqué',
   REMISE_EN_VENTE: 'Appareil repris remis en vente',
   PHOTO_TROC: 'Photo d’un appareil repris',
+  CREDIT_ACCORDE: 'Vente à crédit',
+  ENCAISSEMENT_CREDIT: 'Tranche de crédit encaissée',
 };
 
 /** Familles d'actions proposées comme filtre dans l'écran du journal. */
@@ -277,6 +279,7 @@ export const FAMILLES_AUDIT: Record<string, string[]> = {
     'IMEI_SIGNALE',
     'REMISE_EN_VENTE',
   ],
+  Crédit: ['CREDIT_ACCORDE', 'ENCAISSEMENT_CREDIT', 'PLAFOND_CREDIT_MODIFIE'],
 };
 
 /** Section d'un rapport imprimable : un tableau (valeurs déjà mises en forme). */

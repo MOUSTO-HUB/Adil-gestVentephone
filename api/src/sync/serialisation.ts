@@ -24,8 +24,14 @@ import type {
   GrilleRepriseSync,
   ImeiSignaleSync,
   TrocSync,
+  CreditSync,
+  EcheanceSync,
+  EncaissementSync,
 } from '@gestvente/commun';
 import type {
+  Credit,
+  Echeance,
+  Encaissement,
   GrilleReprise,
   ImeiSignale,
   Troc,
@@ -328,6 +334,51 @@ export const versImeiSignale = (i: ImeiSignale): ImeiSignaleSync => ({
   motif: i.motif,
   note: i.note,
   actif: i.actif,
+});
+
+const jour = (d: Date) => d.toISOString().slice(0, 10);
+
+export const versCredit = (c: Credit & { vente: { numero: string } }): CreditSync => ({
+  id: c.id,
+  boutiqueId: c.boutiqueId,
+  venteId: c.venteId,
+  numeroVente: c.vente.numero,
+  clientId: c.clientId,
+  garantId: c.garantId,
+  montantTotal: nombre(c.montantTotal),
+  apport: nombre(c.apport),
+  montantFinance: nombre(c.montantFinance),
+  montantRestant: nombre(c.montantRestant),
+  nombreTranches: c.nombreTranches,
+  frequence: c.frequence,
+  premiereEcheance: jour(c.premiereEcheance),
+  statut: c.statut,
+  penaliteActive: c.penaliteActive,
+  soldeLe: c.soldeLe?.toISOString() ?? null,
+  creeLe: c.creeLe.toISOString(),
+  creeParId: c.creeParId,
+});
+
+export const versEcheance = (e: Echeance): EcheanceSync => ({
+  id: e.id,
+  creditId: e.creditId,
+  numero: e.numero,
+  dateEcheance: jour(e.dateEcheance),
+  montant: nombre(e.montant),
+  montantPaye: nombre(e.montantPaye),
+  penalite: nombre(e.penalite),
+  soldeeLe: e.soldeeLe?.toISOString() ?? null,
+});
+
+export const versEncaissement = (e: Encaissement): EncaissementSync => ({
+  id: e.id,
+  creditId: e.creditId,
+  caisseId: e.caisseId,
+  moyen: e.moyen === 'AVOIR' ? 'ESPECES' : e.moyen,
+  montant: nombre(e.montant),
+  reference: e.reference,
+  creeLe: e.creeLe.toISOString(),
+  creeParId: e.creeParId,
 });
 
 export function masquerPourRole<E extends EntiteSync>(

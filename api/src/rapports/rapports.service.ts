@@ -152,9 +152,9 @@ export class RapportsService {
     return { jours, ...r };
   }
 
-  /** Caisses de la période, encaissements par moyen et dépenses par catégorie. */
+  /** Caisses de la période, encaissements par moyen (tranches de crédit comprises) et dépenses. */
   async caisse(commerceId: string, boutiqueId: string, p: Periode) {
-    const [caisses, ventes, retours, depenses] = await Promise.all([
+    const [caisses, ventes, retours, depenses, encaissements] = await Promise.all([
       this.prisma.caisse.findMany({
         where: { commerceId, boutiqueId, ouverteLe: { gte: p.du, lt: p.au } },
         include: { utilisateur: { select: { nom: true } } },
@@ -170,6 +170,9 @@ export class RapportsService {
       this.prisma.depense.findMany({
         where: { commerceId, boutiqueId, dateDepense: { gte: p.du, lt: p.au } },
         orderBy: { dateDepense: 'asc' },
+      }),
+      this.prisma.encaissement.findMany({
+        where: { commerceId, credit: { boutiqueId }, creeLe: { gte: p.du, lt: p.au } },
       }),
     ]);
     const reel = (m: string) => (m === 'AVOIR' ? null : (m as MoyenRemboursement));
@@ -187,6 +190,10 @@ export class RapportsService {
       depenses: depenses.map((d) => ({
         montant: nombre(d.montant),
         moyen: reel(d.moyen) ?? 'ESPECES',
+      })),
+      encaissements: encaissements.map((e) => ({
+        montant: nombre(e.montant),
+        moyen: reel(e.moyen) ?? 'ESPECES',
       })),
     });
     const parCategorie = CATEGORIES_DEPENSE.map((c) => ({
