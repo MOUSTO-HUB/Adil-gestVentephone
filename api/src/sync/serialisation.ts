@@ -21,8 +21,14 @@ import type {
   PrixBoutiqueSync,
   ProduitSync,
   StockSync,
+  GrilleRepriseSync,
+  ImeiSignaleSync,
+  TrocSync,
 } from '@gestvente/commun';
 import type {
+  GrilleReprise,
+  ImeiSignale,
+  Troc,
   Achat,
   Article,
   Client,
@@ -284,6 +290,44 @@ export const versDepense = (d: Depense): DepenseSync => ({
   dateDepense: d.dateDepense.toISOString(),
   justificatif: d.justificatifCle !== null,
   creeParId: d.creeParId,
+});
+
+export const versTroc = (t: Troc): TrocSync => ({
+  id: t.id,
+  boutiqueId: t.boutiqueId,
+  clientId: t.clientId,
+  venteId: t.venteId,
+  articleId: t.articleId,
+  modeleId: t.modeleId,
+  imei: t.imei,
+  etatEcran: t.etatEcran,
+  etatBatterie: t.etatBatterie,
+  etatBoitier: t.etatBoitier,
+  fonctionne: t.fonctionne,
+  etatGlobal: t.etatGlobal,
+  note: t.note,
+  valeurProposee: nombre(t.valeurProposee),
+  valeurRetenue: nombre(t.valeurRetenue),
+  photos: t.photoCles.length,
+  ajustementParId: t.ajustementParId,
+  creeLe: t.creeLe.toISOString(),
+  creeParId: t.creeParId,
+});
+
+export const versGrilleReprise = (g: GrilleReprise): GrilleRepriseSync => ({
+  id: g.id,
+  modeleId: g.modeleId,
+  capacite: g.capacite,
+  etat: g.etat,
+  valeur: nombre(g.valeur),
+});
+
+export const versImeiSignale = (i: ImeiSignale): ImeiSignaleSync => ({
+  id: i.id,
+  imei: i.imei,
+  motif: i.motif,
+  note: i.note,
+  actif: i.actif,
 });
 
 export function masquerPourRole<E extends EntiteSync>(

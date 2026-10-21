@@ -28,6 +28,16 @@ export interface ChargeAutorisationRetour {
   venteId: string;
 }
 
+/** Contenu du jeton : un gérant a validé, en personne, la reprise d'un appareil jusqu'à `valeur`. */
+export interface ChargeAutorisationReprise {
+  type: 'autorisation-reprise';
+  commerceId: string;
+  boutiqueId: string;
+  gerantId: string;
+  trocId: string;
+  valeur: number;
+}
+
 /** Validité du jeton : la vente doit être faite dans ce délai (elle peut être envoyée plus tard). */
 export const DUREE_AUTORISATION = '2h';
 
@@ -201,6 +211,67 @@ export class AutorisationRemiseService {
       charge.commerceId === commerceId &&
       charge.boutiqueId === boutiqueId
       ? { plafond: charge.plafond, gerantId: charge.gerantId }
+      : null;
+  }
+
+  /**
+   * Troc fait par un vendeur au-delà de sa limite : le gérant valide en personne la
+   * valeur de reprise (en ligne) ; le jeton n'est valable que pour ce troc.
+   */
+  async autoriserReprise(
+    demandeur: UtilisateurConnecte,
+    boutiqueId: string,
+    identifiant: string,
+    pin: string,
+    trocId: string,
+    valeur: number,
+  ): Promise<{ jeton: string; gerant: string; valeur: number }> {
+    const gerant = await this.verifierGerant(
+      demandeur,
+      boutiqueId,
+      identifiant,
+      pin,
+      'une reprise',
+    );
+    const charge: ChargeAutorisationReprise = {
+      type: 'autorisation-reprise',
+      commerceId: demandeur.commerceId,
+      boutiqueId,
+      gerantId: gerant.id,
+      trocId,
+      valeur,
+    };
+    await this.audit.journaliser({
+      commerceId: demandeur.commerceId,
+      boutiqueId,
+      action: ACTIONS_AUDIT.REPRISE_AUTORISEE,
+      utilisateurId: gerant.id,
+      appareilId: demandeur.appareilId,
+      entite: 'Troc',
+      entiteId: trocId,
+      details: { demandeur: demandeur.id, valeur },
+    });
+    return {
+      jeton: await this.jwt.signAsync(charge, { expiresIn: DUREE_AUTORISATION }),
+      gerant: gerant.nom,
+      valeur,
+    };
+  }
+
+  /** Valeur de reprise validée pour ce troc (et par qui), si le jeton est valable à sa date. */
+  async repriseAutorisee(
+    jeton: string | null,
+    commerceId: string,
+    boutiqueId: string,
+    trocId: string,
+    date: Date,
+  ): Promise<{ valeur: number; gerantId: string } | null> {
+    const charge = await this.lire<ChargeAutorisationReprise>(jeton, date);
+    return charge?.type === 'autorisation-reprise' &&
+      charge.commerceId === commerceId &&
+      charge.boutiqueId === boutiqueId &&
+      charge.trocId === trocId
+      ? { valeur: charge.valeur, gerantId: charge.gerantId }
       : null;
   }
 }

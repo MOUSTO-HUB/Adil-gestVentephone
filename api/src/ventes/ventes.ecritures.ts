@@ -12,6 +12,7 @@ import {
 } from '@gestvente/commun';
 import { ACTIONS_AUDIT } from '../audit/audit.service.js';
 import { caisseDeRattachement } from '../caisse/caisse.ecritures.js';
+import { controlerTroc, ecrireTroc } from '../trocs/troc.ecritures.js';
 import type { NouveauChangement, Tx } from '../sync/journal.service.js';
 import type { ContexteOperation } from '../sync/operations/gestionnaire.js';
 import {
@@ -57,13 +58,15 @@ export async function changementsVente(tx: Tx, venteId: string): Promise<Nouveau
  * encore disponibles (sinon conflit, signalé au gérant). Le prix saisi sur l'appareil
  * est celui payé par le client : s'il diffère du prix actuel, l'écart est audité.
  * `reprise` : valeur des articles rendus lors d'un échange, déduite du total.
- * Un paiement « Avoir » est pris sur le solde d'avoir du client.
+ * Un paiement « Avoir » est pris sur le solde d'avoir du client. Un troc joint
+ * (ancien téléphone du client) s'ajoute à la reprise et entre en stock.
  */
 export async function enregistrerVente(
-  { tx, utilisateur, operation, journal, audit, autorisations }: ContexteOperation,
+  ctx: ContexteOperation,
   d: VenteSaisie | VenteEchangeSaisie,
   reprise = 0,
 ): Promise<Controle> {
+  const { tx, utilisateur, operation, journal, audit, autorisations } = ctx;
   const { commerceId } = utilisateur;
   const boutiqueId = operation.boutiqueId;
   if (await tx.vente.findUnique({ where: { id: d.id } })) return rejet('Identifiant déjà utilisé.');
@@ -130,8 +133,10 @@ export async function enregistrerVente(
   }
 
   const { sousTotal, total: avantReprise } = totauxVente(d.lignes, d.remise);
-  if (reprise > avantReprise) return rejet('La reprise dépasse le montant de la vente.');
-  const total = avantReprise - reprise;
+  // Troc : la valeur de l'ancien téléphone règle une partie de la vente.
+  const repriseTotale = reprise + (d.troc?.valeurRetenue ?? 0);
+  if (repriseTotale > avantReprise) return rejet('La reprise dépasse le montant de la vente.');
+  const total = avantReprise - repriseTotale;
   const commerce = await tx.commerce.findUniqueOrThrow({ where: { id: commerceId } });
   const dateVente = new Date(d.dateVente);
   const autorisation = await autorisations.plafondAutorise(
@@ -172,6 +177,9 @@ export async function enregistrerVente(
       return { ...controle, motif: `IMEI ${article?.imei ?? '?'} : ${controle.motif}` };
   }
 
+  const troc = d.troc ? await controlerTroc(ctx, d.troc, client, dateVente) : null;
+  if (troc && !troc.ok) return troc;
+
   // Écritures (rattachées à la caisse ouverte du vendeur).
   const caisseId = await caisseDeRattachement(tx, d.caisseId, utilisateur, boutiqueId);
   await tx.vente.create({
@@ -187,7 +195,7 @@ export async function enregistrerVente(
       mode: 'COMPTANT',
       sousTotal,
       remise: d.remise,
-      reprise,
+      reprise: repriseTotale,
       total,
       montantPaye: total,
       renduMonnaie: paiements.rendu,
@@ -263,6 +271,7 @@ export async function enregistrerVente(
       donnees: versClient(debite),
     });
   }
+  if (troc?.ok && client) changements.push(...(await ecrireTroc(ctx, troc.troc, d.id, client.id)));
   await journal.ecrire(tx, commerceId, [...changements, ...(await changementsVente(tx, d.id))]);
 
   if (d.remise > 0) {
@@ -321,6 +330,7 @@ export async function annulerVente(
       retours: true,
       echanges: true,
       credit: true,
+      troc: true,
     },
   });
   if (!vente) return rejet('Vente introuvable dans cette boutique.');
@@ -328,6 +338,11 @@ export async function annulerVente(
   if (vente.retours.length)
     return conflit('Cette vente a déjà fait l’objet d’un retour : traitez-la par un retour.');
   if (vente.credit) return conflit('Cette vente est à crédit : annulez plutôt le crédit.');
+  if (vente.troc) {
+    return conflit(
+      'Vente avec un troc : le téléphone repris est en stock, traitez-la par un retour.',
+    );
+  }
   if (vente.echanges.length) {
     return conflit('Vente issue d’un échange : traitez-la par un nouveau retour.');
   }

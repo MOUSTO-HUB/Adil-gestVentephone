@@ -161,6 +161,7 @@ export async function enregistrerRetour(ctx: ContexteOperation, d: RetourSaisi):
   }
 
   // Nouvelle vente de l'échange (ses propres contrôles : stock, prix, paiement du reste).
+  if (d.echange?.troc) return rejet('Pas de troc dans un échange : faites une vente à part.');
   if (d.echange) {
     const resultat = await enregistrerVente(ctx, d.echange, bilan.reprise);
     if (!resultat.ok) return { ...resultat, motif: `Échange : ${resultat.motif}` };

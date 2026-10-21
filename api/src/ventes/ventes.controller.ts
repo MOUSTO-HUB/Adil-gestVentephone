@@ -16,7 +16,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { etatGarantie, normaliserImei } from '@gestvente/commun';
-import { IsNumber, IsString, IsUUID, Length, Max, Min } from 'class-validator';
+import { IsInt, IsNumber, IsString, IsUUID, Length, Max, Min } from 'class-validator';
 import type { UtilisateurConnecte } from '../auth/auth.types.js';
 import { Roles, UtilisateurCourant } from '../auth/decorateurs.js';
 import { BoutiqueGuard } from '../auth/guards/boutique.guard.js';
@@ -60,6 +60,36 @@ class DemandeAutorisationRetourDto {
   @ApiProperty({ description: 'Vente dont des articles sont rendus.' })
   @IsUUID()
   venteId: string;
+}
+
+class DemandeAutorisationRepriseDto {
+  @ApiProperty() @IsUUID() boutiqueId: string;
+
+  @ApiProperty({ description: 'Identifiant du gérant qui valide.' })
+  @IsString()
+  @Length(1, 60)
+  identifiant: string;
+
+  @ApiProperty({ description: 'Code PIN du gérant.' })
+  @IsString()
+  @Length(4, 6)
+  pin: string;
+
+  @ApiProperty({ description: 'Troc en cours de saisie (identifiant donné par l’appareil).' })
+  @IsUUID()
+  trocId: string;
+
+  @ApiProperty({ description: 'Valeur de reprise validée.' })
+  @IsInt()
+  @Min(1)
+  valeur: number;
+}
+
+class AutorisationRepriseDto {
+  @ApiProperty({ description: 'Jeton à joindre au troc (valable 2 heures, pour ce troc).' })
+  jeton: string;
+  @ApiProperty() gerant: string;
+  @ApiProperty() valeur: number;
 }
 
 class AutorisationRetourDto {
@@ -123,6 +153,29 @@ export class VentesController {
       dto.identifiant,
       dto.pin,
       dto.venteId,
+    );
+  }
+
+  /**
+   * Troc d'un vendeur au-delà de sa limite : un gérant valide en personne, avec son
+   * code PIN, la valeur de reprise ; le jeton renvoyé est joint au troc.
+   */
+  @Post('autorisations-reprise')
+  @HttpCode(200)
+  @Roles(Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR)
+  @UseGuards(BoutiqueGuard)
+  @ApiOkResponse({ type: AutorisationRepriseDto })
+  autoriserReprise(
+    @UtilisateurCourant() utilisateur: UtilisateurConnecte,
+    @Body() dto: DemandeAutorisationRepriseDto,
+  ): Promise<AutorisationRepriseDto> {
+    return this.autorisations.autoriserReprise(
+      utilisateur,
+      dto.boutiqueId,
+      dto.identifiant,
+      dto.pin,
+      dto.trocId,
+      dto.valeur,
     );
   }
 

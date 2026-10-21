@@ -11,6 +11,7 @@ import {
   versVente,
 } from '../serialisation.js';
 import type { Gestionnaire } from './gestionnaire.js';
+import { etatTroc } from './trocs.operations.js';
 
 /** État du serveur après refus : la vente (ou son effacement), téléphones et stocks touchés. */
 export async function etatVente(
@@ -81,6 +82,8 @@ export const venteEnregistrer: Gestionnaire<'VENTE_ENREGISTRER'> = {
     if (client) {
       corrections.push({ seq: 0, entite: 'client', id: client.id, donnees: versClient(client) });
     }
+    // Troc refusé : l'appareil repris sort du stock de l'appareil.
+    if (contenu.troc) corrections.push(...(await etatTroc(tx, operation.boutiqueId, contenu.troc)));
     return corrections;
   },
 };

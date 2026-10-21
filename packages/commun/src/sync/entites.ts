@@ -25,6 +25,9 @@ export const ENTITES_SYNC = [
   'ligneRetour',
   'caisse',
   'depense',
+  'troc',
+  'grilleReprise',
+  'imeiSignale',
 ] as const;
 export type EntiteSync = (typeof ENTITES_SYNC)[number];
 
@@ -277,6 +280,48 @@ export interface DepenseSync {
   creeParId: string | null;
 }
 
+/** Reprise d'un ancien téléphone (60 derniers jours sur les appareils, comme les ventes). */
+export interface TrocSync {
+  id: string;
+  boutiqueId: string;
+  clientId: string;
+  venteId: string | null;
+  articleId: string | null;
+  modeleId: string | null;
+  imei: string;
+  etatEcran: 'BON' | 'MOYEN' | 'MAUVAIS';
+  etatBatterie: 'BON' | 'MOYEN' | 'MAUVAIS';
+  etatBoitier: 'BON' | 'MOYEN' | 'MAUVAIS';
+  fonctionne: boolean;
+  etatGlobal: 'EXCELLENT' | 'BON' | 'MOYEN' | 'MAUVAIS';
+  note: string;
+  valeurProposee: number;
+  valeurRetenue: number;
+  /** Nombre de photos de l'appareil (lues en ligne). */
+  photos: number;
+  ajustementParId: string | null;
+  creeLe: string;
+  creeParId: string | null;
+}
+
+/** Ligne de la grille de reprise (catalogue commun du commerce). */
+export interface GrilleRepriseSync {
+  id: string;
+  modeleId: string;
+  capacite: string | null;
+  etat: 'EXCELLENT' | 'BON' | 'MOYEN' | 'MAUVAIS';
+  valeur: number;
+}
+
+/** IMEI signalé volé ou bloqué par le commerce (vérifié hors ligne à la reprise). */
+export interface ImeiSignaleSync {
+  id: string;
+  imei: string;
+  motif: 'VOLE' | 'BLOQUE';
+  note: string | null;
+  actif: boolean;
+}
+
 export interface DonneesEntites {
   marque: MarqueSync;
   modele: ModeleSync;
@@ -298,6 +343,9 @@ export interface DonneesEntites {
   ligneRetour: LigneRetourSync;
   caisse: CaisseSync;
   depense: DepenseSync;
+  troc: TrocSync;
+  grilleReprise: GrilleRepriseSync;
+  imeiSignale: ImeiSignaleSync;
 }
 
 /** Un changement du journal du serveur (descente vers les appareils). */

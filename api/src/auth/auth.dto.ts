@@ -100,6 +100,10 @@ export class CommerceResumeDto {
   @ApiProperty() remiseMaxGerant: number;
   @ApiProperty({ description: 'Délai de retour ou d’échange (jours après la vente).' })
   delaiRetourJours: number;
+  @ApiProperty({
+    description: 'Hausse maximale (%) de la valeur de reprise accordée par un vendeur.',
+  })
+  repriseMaxVendeur: number;
 }
 
 export class ProfilDto {

@@ -251,6 +251,8 @@ model Commerce {
   abonnementJusquAu DateTime?
   /// Délai (jours après la vente) pour un retour ou un échange ; au-delà, seul un appareil en panne sous garantie s'échange.
   delaiRetourJours  Int            @default(7)
+  /// Hausse maximale (en %) de la valeur de reprise proposée qu'un vendeur accorde sans le gérant.
+  repriseMaxVendeur Int            @default(10)
   creeLe            DateTime       @default(now())
   modifieLe         DateTime       @updatedAt
 
@@ -566,7 +568,7 @@ model Article {
   ligneAchat       LigneAchat?       @relation(fields: [ligneAchatId], references: [id])
   lignesVente      LigneVente[]
   lignesRetour     LigneRetour[]
-  troc             Troc?
+  trocs            Troc[]
   lignesTransfert  LigneTransfert[]
   lignesInventaire LigneInventaire[]
   mouvementsStock  MouvementStock[]
@@ -970,10 +972,11 @@ model Troc {
   boutiqueId      String
   clientId        String
   venteId         String?       @unique
-  /// Article créé en stock occasion pour l'appareil repris.
-  articleId       String?       @unique
+  /// Article créé (ou repris s'il a déjà été vendu par le commerce) en stock pour l'appareil.
+  articleId       String?
   modeleId        String?
-  description     String
+  /// Remarques sur l'appareil (rayures, accessoires, compte retiré…).
+  note            String        @default("")
   imei            String
   etatEcran       EtatComposant
   etatBatterie    EtatComposant
@@ -997,6 +1000,8 @@ model Troc {
   modele   Modele?  @relation(fields: [modeleId], references: [id])
 
   @@index([commerceId, imei])
+  @@index([boutiqueId, creeLe])
+  @@index([articleId])
 }
 
 /// Valeur de reprise d'un modèle selon son état, modifiable par le propriétaire.

@@ -15,6 +15,7 @@ import * as catalogue from './operations-catalogue';
 import * as clients from './operations-clients';
 import * as messages from './operations-messages';
 import * as retours from './operations-retours';
+import * as trocs from './operations-trocs';
 import * as ventes from './operations-ventes';
 
 export { ErreurOperation };
@@ -87,8 +88,8 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
   STOCK_SEUIL: (tx, boutiqueId, contenu, id) => achats.stockSeuil(tx, boutiqueId, contenu, id),
   INVENTAIRE_VALIDER: (tx, boutiqueId, contenu, id) =>
     achats.inventaireValider(tx, boutiqueId, contenu, id),
-  VENTE_ENREGISTRER: (tx, boutiqueId, contenu, _id, contexte) =>
-    ventes.venteEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId),
+  VENTE_ENREGISTRER: (tx, boutiqueId, contenu, id, contexte) =>
+    ventes.venteEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId, 0, id),
   VENTE_ANNULER: (tx, boutiqueId, contenu) => ventes.venteAnnuler(tx, boutiqueId, contenu),
   RETOUR_ENREGISTRER: (tx, boutiqueId, contenu, _id, contexte) =>
     retours.retourEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId),
@@ -103,6 +104,10 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
   DEPENSE_ENREGISTRER: (tx, boutiqueId, contenu, _id, contexte) =>
     caisse.depenseEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId),
   MESSAGE_ENVOYER: (tx, boutiqueId, contenu) => messages.messageEnvoyer(tx, boutiqueId, contenu),
+  GRILLE_REPRISE_ENREGISTRER: (tx, _boutiqueId, contenu) => trocs.grilleEnregistrer(tx, contenu),
+  IMEI_SIGNALER: (tx, _boutiqueId, contenu) => trocs.imeiSignaler(tx, contenu),
+  ARTICLE_REMETTRE_EN_VENTE: (tx, boutiqueId, contenu) =>
+    trocs.articleRemettreEnVente(tx, boutiqueId, contenu),
 };
 
 export interface NouvelleOperation<T extends TypeOperation> {

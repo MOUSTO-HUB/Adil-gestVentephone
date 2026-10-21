@@ -30,9 +30,10 @@ export const nomPhotoValide = (nom: string) => NOM_VALIDE.test(nom);
 /**
  * Dossiers de STOCKAGE_DIR : « photos » (produits, servies publiquement),
  * « pieces » (pièces d'identité des clients, servies au seul personnel connecté) et
- * « justificatifs » (photos des dépenses, servies à la gestion).
+ * « justificatifs » (photos des dépenses, servies à la gestion), « trocs » (état des
+ * appareils repris, servies au personnel de la boutique).
  */
-export type DossierStockage = 'photos' | 'pieces' | 'justificatifs';
+export type DossierStockage = 'photos' | 'pieces' | 'justificatifs' | 'trocs';
 
 /** Images enregistrées dans le dossier STOCKAGE_DIR. */
 @Injectable()

@@ -38,6 +38,8 @@ export interface Profil {
     remiseMaxVendeur: number;
     remiseMaxGerant: number;
     delaiRetourJours?: number;
+    /** Absent des profils gardés avant le troc : REPRISE_MAX_VENDEUR_DEFAUT. */
+    repriseMaxVendeur?: number;
   };
   boutiques: Boutique[];
 }

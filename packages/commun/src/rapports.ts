@@ -240,6 +240,13 @@ export const LIBELLES_ACTIONS_AUDIT: Record<string, string> = {
   CAISSE_VALIDEE: 'Caisse validée',
   DEPENSE_ENREGISTREE: 'Dépense',
   JUSTIFICATIF_MODIFIE: 'Justificatif de dépense',
+  TROC_ENREGISTRE: 'Troc (reprise d’un téléphone)',
+  REPRISE_AUTORISEE: 'Reprise autorisée par un gérant',
+  REPRISE_AJUSTEE: 'Valeur de reprise ajustée',
+  GRILLE_REPRISE_MODIFIEE: 'Grille de reprise modifiée',
+  IMEI_SIGNALE: 'IMEI signalé volé ou bloqué',
+  REMISE_EN_VENTE: 'Appareil repris remis en vente',
+  PHOTO_TROC: 'Photo d’un appareil repris',
 };
 
 /** Familles d'actions proposées comme filtre dans l'écran du journal. */
@@ -262,6 +269,14 @@ export const FAMILLES_AUDIT: Record<string, string[]> = {
   ],
   Stock: ['AJUSTEMENT_STOCK', 'INVENTAIRE_VALIDE', 'RECEPTION_ACHAT', 'SORTIE_ARTICLE'],
   Caisse: ['CAISSE_OUVERTE', 'CAISSE_CLOTUREE', 'CAISSE_VALIDEE', 'DEPENSE_ENREGISTREE'],
+  Troc: [
+    'TROC_ENREGISTRE',
+    'REPRISE_AUTORISEE',
+    'REPRISE_AJUSTEE',
+    'GRILLE_REPRISE_MODIFIEE',
+    'IMEI_SIGNALE',
+    'REMISE_EN_VENTE',
+  ],
 };
 
 /** Section d'un rapport imprimable : un tableau (valeurs déjà mises en forme). */

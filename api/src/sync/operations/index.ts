@@ -25,6 +25,11 @@ import type { Gestionnaire } from './gestionnaire.js';
 import { articleSortir, stockAjuster } from './stock.operations.js';
 import { messageEnvoyer } from './messages.operations.js';
 import { retourEnregistrer } from './retours.operations.js';
+import {
+  articleRemettreEnVente,
+  grilleRepriseEnregistrer,
+  imeiSignaler,
+} from './trocs.operations.js';
 import { venteAnnuler, venteEnregistrer } from './ventes.operations.js';
 
 /** Un gestionnaire par type d'opération (chaque fonctionnalité ajoute les siens). */
@@ -52,4 +57,7 @@ export const GESTIONNAIRES: { [T in TypeOperation]: Gestionnaire<T> } = {
   CAISSE_VALIDER: caisseValider,
   DEPENSE_ENREGISTRER: depenseEnregistrer,
   MESSAGE_ENVOYER: messageEnvoyer,
+  GRILLE_REPRISE_ENREGISTRER: grilleRepriseEnregistrer,
+  IMEI_SIGNALER: imeiSignaler,
+  ARTICLE_REMETTRE_EN_VENTE: articleRemettreEnVente,
 };

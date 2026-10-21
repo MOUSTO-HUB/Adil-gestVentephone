@@ -45,6 +45,9 @@ import {
   versRetour,
   versCaisse,
   versDepense,
+  versGrilleReprise,
+  versImeiSignale,
+  versTroc,
   versLigneRetour,
 } from './serialisation.js';
 
@@ -271,6 +274,12 @@ export class SyncService {
             })
           ).map((u) => [u.id, u.nom]),
         );
+        // Trocs récents, grille de reprise et IMEI signalés (contrôle hors ligne à la reprise).
+        const trocs = await tx.troc.findMany({
+          where: { commerceId, boutiqueId: { in: boutiqueIds }, creeLe: { gte: depuis } },
+        });
+        const grille = await tx.grilleReprise.findMany({ where: { commerceId } });
+        const signales = await tx.imeiSignale.findMany({ where: { commerceId } });
         const depenses = await tx.depense.findMany({
           where: { commerceId, boutiqueId: { in: boutiqueIds }, dateDepense: { gte: depuis } },
         });
@@ -319,6 +328,9 @@ export class SyncService {
               ),
             ),
             depense: depenses.map(versDepense),
+            troc: trocs.map(versTroc),
+            grilleReprise: grille.map(versGrilleReprise),
+            imeiSignale: signales.map(versImeiSignale),
           },
         };
       },

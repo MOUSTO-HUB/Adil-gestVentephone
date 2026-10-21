@@ -185,6 +185,7 @@ export class AuthService {
         remiseMaxVendeur: commerce.remiseMaxVendeur,
         remiseMaxGerant: commerce.remiseMaxGerant,
         delaiRetourJours: commerce.delaiRetourJours,
+        repriseMaxVendeur: commerce.repriseMaxVendeur,
       },
       boutiques,
     };

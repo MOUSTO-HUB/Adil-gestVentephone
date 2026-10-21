@@ -155,6 +155,25 @@ export default function Accueil() {
         <Tuile titre="Dépenses" icone="wallet" couleur={c.danger} onPress={aller('/depenses')} />
       </Grille>
 
+      <Section titre="Troc" />
+      <Grille>
+        <Tuile
+          titre="Trocs"
+          icone="swap-horizontal-outline"
+          couleur={c.accent}
+          onPress={aller('/trocs')}
+        />
+        <Tuile
+          titre="IMEI signalés"
+          icone="warning"
+          couleur={c.danger}
+          onPress={aller('/imei-signales')}
+        />
+        {profil.role === 'PROPRIETAIRE' ? (
+          <Tuile titre="Grille de reprise" icone="pricetags" onPress={aller('/grille-reprise')} />
+        ) : null}
+      </Grille>
+
       <Section titre="Stock" />
       <Grille>
         <Tuile titre="Stock" icone="cube" onPress={aller('/stock')} badge={sousSeuil?.length} />

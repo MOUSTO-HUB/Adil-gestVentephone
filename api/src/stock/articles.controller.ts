@@ -81,7 +81,7 @@ export class ArticlesController {
         ligneAchat: { include: { achat: { include: { fournisseur: { select: { nom: true } } } } } },
         lignesVente: { include: { vente: { include: { client: true, boutique: true } } } },
         lignesRetour: { include: { retour: { include: { boutique: true } } } },
-        troc: { include: { client: true, boutique: true } },
+        trocs: { include: { client: true, boutique: true }, orderBy: { creeLe: 'desc' } },
         mouvementsStock: { include: { boutique: true }, orderBy: { creeLe: 'asc' } },
       },
     });
@@ -108,8 +108,9 @@ export class ArticlesController {
         const achat = article.ligneAchat.achat;
         detail = `Bon ${achat.numero} du ${date(achat.dateAchat)}${gestion ? ` · ${achat.fournisseur.nom}` : ''}`;
       }
-      if (m.type === 'TROC_ENTREE' && article.troc) {
-        detail = `Repris à ${article.troc.client.nom}`;
+      const troc = article.trocs.find((t) => t.id === m.referenceId);
+      if (m.type === 'TROC_ENTREE' && troc) {
+        detail = `Repris à ${troc.client.nom} pour ${Number(troc.valeurRetenue)}`;
       }
       return {
         date: m.creeLe,

@@ -132,6 +132,7 @@ export class ClientsController {
         where: { clientId: client.id },
         orderBy: { creeLe: 'desc' },
         take: 50,
+        include: { article: { select: { produit: { select: { nom: true } } } } },
       }),
     ]);
     return {
@@ -153,7 +154,7 @@ export class ClientsController {
       trocs: trocs.map((t) => ({
         id: t.id,
         date: t.creeLe,
-        description: t.description,
+        description: `${t.article?.produit.nom ?? 'Téléphone'} · IMEI ${t.imei}`,
         valeurRetenue: Number(t.valeurRetenue),
       })),
     };

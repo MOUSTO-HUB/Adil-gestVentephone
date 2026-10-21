@@ -15,7 +15,7 @@ export async function choisirPhoto(source: 'galerie' | 'camera'): Promise<string
   const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1 };
   if (source === 'camera') {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) throw new Error('Autorisez la caméra pour photographier le produit.');
+    if (!permission.granted) throw new Error('Autorisez la caméra pour prendre la photo.');
   }
   const resultat =
     source === 'camera'
@@ -30,7 +30,12 @@ export async function choisirPhoto(source: 'galerie' | 'camera'): Promise<string
 }
 
 /** Envoie une image (champ « photo ») à une route de l'API (en ligne seulement). */
-export async function envoyerImage(api: ClientApi, chemin: string, uri: string): Promise<void> {
+export async function envoyerImage(
+  api: ClientApi,
+  chemin: string,
+  uri: string,
+  methode: 'PUT' | 'POST' = 'PUT',
+): Promise<void> {
   const formulaire = new FormData();
   if (Platform.OS === 'web') {
     formulaire.append('photo', await (await fetch(uri)).blob(), 'photo.jpg');
@@ -38,7 +43,7 @@ export async function envoyerImage(api: ClientApi, chemin: string, uri: string):
     // React Native lit le fichier à partir de son adresse locale.
     formulaire.append('photo', { uri, name: 'photo.jpg', type: 'image/jpeg' } as unknown as Blob);
   }
-  await api.requete(chemin, { methode: 'PUT', corps: formulaire });
+  await api.requete(chemin, { methode, corps: formulaire });
 }
 
 /** Photo d'un produit. */

@@ -258,6 +258,48 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX depense_boutique ON depense (boutiqueId, dateDepense);
   CREATE INDEX depense_caisse ON depense (caisseId);
   `,
+  // Troc : reprises, grille de reprise, IMEI signalés volés ou bloqués.
+  `
+  CREATE TABLE troc (
+    id TEXT PRIMARY KEY,
+    boutiqueId TEXT NOT NULL,
+    clientId TEXT NOT NULL,
+    venteId TEXT,
+    articleId TEXT,
+    modeleId TEXT,
+    imei TEXT NOT NULL,
+    etatEcran TEXT NOT NULL,
+    etatBatterie TEXT NOT NULL,
+    etatBoitier TEXT NOT NULL,
+    fonctionne INTEGER NOT NULL,
+    etatGlobal TEXT NOT NULL,
+    note TEXT NOT NULL,
+    valeurProposee INTEGER NOT NULL,
+    valeurRetenue INTEGER NOT NULL,
+    photos INTEGER NOT NULL,
+    ajustementParId TEXT,
+    creeLe TEXT NOT NULL,
+    creeParId TEXT
+  );
+  CREATE INDEX troc_boutique ON troc (boutiqueId, creeLe);
+  CREATE INDEX troc_vente ON troc (venteId);
+  CREATE TABLE grilleReprise (
+    id TEXT PRIMARY KEY,
+    modeleId TEXT NOT NULL,
+    capacite TEXT,
+    etat TEXT NOT NULL,
+    valeur INTEGER NOT NULL
+  );
+  CREATE INDEX grille_modele ON grilleReprise (modeleId);
+  CREATE TABLE imeiSignale (
+    id TEXT PRIMARY KEY,
+    imei TEXT NOT NULL,
+    motif TEXT NOT NULL,
+    note TEXT,
+    actif INTEGER NOT NULL
+  );
+  CREATE INDEX imei_signale ON imeiSignale (imei);
+  `,
 ];
 
 /**

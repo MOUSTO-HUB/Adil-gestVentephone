@@ -10,12 +10,14 @@ import {
 import { ecrireEntite } from '../base/depot';
 import type { BaseSql } from '../base/sql';
 import { ErreurOperation } from './erreurs';
+import { trocEnregistrer } from './operations-trocs';
 
 /**
  * Vente enregistrée sur l'appareil (en moins de 2 secondes, même hors ligne) :
  * téléphones vendus, stock diminué, vente et paiements gardés pour la caisse.
  * Le serveur refait les contrôles (prix de gros, remise, IMEI vendu ailleurs).
- * `reprise` : valeur des articles rendus d'un échange, déduite du total.
+ * `reprise` : valeur des articles rendus d'un échange, déduite du total ; un troc
+ * joint (ancien téléphone du client) s'y ajoute et entre en stock.
  */
 export async function venteEnregistrer(
   tx: BaseSql,
@@ -23,6 +25,7 @@ export async function venteEnregistrer(
   c: ContenuOperation<'VENTE_ENREGISTRER'> | VenteEchangeSaisie,
   vendeurId: string,
   reprise = 0,
+  idProvisoire: () => string = () => crypto.randomUUID(),
 ) {
   if (
     await tx.premier('SELECT id FROM vente WHERE boutiqueId = ? AND numero = ?', [
@@ -34,7 +37,11 @@ export async function venteEnregistrer(
   }
   const { sousTotal, total: avantReprise } = totauxVente(c.lignes, c.remise);
   if (c.remise > sousTotal) throw new ErreurOperation('La remise dépasse le montant de la vente.');
-  const total = avantReprise - reprise;
+  const repriseTotale = reprise + (c.troc?.valeurRetenue ?? 0);
+  if (repriseTotale > avantReprise) {
+    throw new ErreurOperation('La reprise dépasse le montant de la vente.');
+  }
+  const total = avantReprise - repriseTotale;
   const paiements = controlerPaiements(total, c.paiements);
   if (!paiements.ok) throw new ErreurOperation(paiements.motif);
   const avoir = c.paiements.filter((p) => p.moyen === 'AVOIR').reduce((t, p) => t + p.montant, 0);
@@ -124,7 +131,7 @@ export async function venteEnregistrer(
     statut: 'VALIDEE',
     sousTotal,
     remise: c.remise,
-    reprise,
+    reprise: repriseTotale,
     total,
     caisseId: c.caisseId ?? null,
     montantPaye: total,
@@ -133,6 +140,9 @@ export async function venteEnregistrer(
     annuleLe: null,
     motifAnnulation: null,
   });
+  if (c.troc) {
+    await trocEnregistrer(tx, boutiqueId, c.id, c.clientId, c.troc, vendeurId, idProvisoire);
+  }
 }
 
 export async function venteAnnuler(
@@ -153,6 +163,9 @@ export async function venteAnnuler(
     ])
   ) {
     throw new ErreurOperation('Cette vente a un retour ou un échange : traitez-la par un retour.');
+  }
+  if (await tx.premier('SELECT id FROM troc WHERE venteId = ?', [c.venteId])) {
+    throw new ErreurOperation('Vente avec un troc : traitez-la par un retour.');
   }
   const avoir = await tx.premier<{ clientId: string | null; montant: number | null }>(
     `SELECT v.clientId, SUM(p.montant) AS montant FROM vente v

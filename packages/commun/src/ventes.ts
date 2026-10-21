@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Role } from './roles.js';
+import { schemaTroc } from './troc.js';
 
 /** Ventes au détail et en gros : prix appliqués, remises, paiements, garantie. */
 
@@ -62,6 +63,8 @@ export const schemaVente = z.object({
   autorisationRemise: z.string().max(2000).nullable(),
   /** Session de caisse du vendeur où l'argent est encaissé. */
   caisseId: z.uuid().nullable().optional(),
+  /** Reprise de l'ancien téléphone du client, déduite du total. */
+  troc: schemaTroc.nullable().optional(),
 });
 export type VenteSaisie = z.infer<typeof schemaVente>;
 

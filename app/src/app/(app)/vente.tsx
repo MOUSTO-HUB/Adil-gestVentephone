@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Choix } from '@/components/choix';
 import { ChoixArticles } from '@/components/choix-articles';
+import { SaisieTroc } from '@/components/saisie-troc';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
 import { caisseOuverte } from '@/lib/caisse-session';
@@ -22,6 +23,15 @@ import { rechercherClients } from '@/lib/clients';
 import { type ArticlePanier, prixDuPanier, prochainNumeroFacture } from '@/lib/panier';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
+import { envoyerPhotosTroc } from '@/lib/photos-troc';
+import {
+  etatDuFormulaire,
+  type FormulaireTroc,
+  formulaireTrocVide,
+  montantSaisi,
+  proposerReprise,
+  trocDepuisFormulaire,
+} from '@/lib/troc';
 
 type Paiements = Record<MoyenPaiement, { montant: string; reference: string }>;
 const PAIEMENTS_VIDES = Object.fromEntries(
@@ -41,7 +51,8 @@ interface Autorisation {
 
 /**
  * Écran de vente : chercher ou scanner, panier, client facultatif, remise, paiement
- * (mixte possible). La vente s'enregistre sur l'appareil, même hors ligne.
+ * (mixte possible), troc de l'ancien téléphone du client. La vente s'enregistre sur
+ * l'appareil, même hors ligne ; les photos du troc partent ensuite, en ligne.
  */
 export default function Vente() {
   const { colors } = useTheme();
@@ -60,11 +71,14 @@ export default function Vente() {
   const [paiements, setPaiements] = useState<Paiements>(PAIEMENTS_VIDES);
   const [message, setMessage] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  const [troc, setTroc] = useState<FormulaireTroc | null>(null);
+  const [infoPhotos, setInfoPhotos] = useState<string | null>(null);
   const [derniere, setDerniere] = useState<{
     id: string;
     numero: string;
     total: number;
     rendu: number;
+    reprise: number;
   } | null>(null);
   const boutiqueId = boutique?.id ?? '';
 
@@ -91,6 +105,9 @@ export default function Vente() {
     client?.type === 'GROSSISTE',
     Number.isNaN(montantRemise) ? 0 : montantRemise,
   );
+  // Valeur de l'ancien téléphone déduite du total (troc).
+  const reprise = troc ? Math.max(0, montantSaisi(troc.valeur) || 0) : 0;
+  const totalNet = calcul.total - reprise;
   const plafond = plafondRemise(profil.role, profil.commerce);
   const pourcentage = pourcentageRemise(calcul.remise, calcul.sousTotal);
   const autorisationNecessaire =
@@ -133,7 +150,17 @@ export default function Vente() {
     }
     if (listePaiements.some((p) => Number.isNaN(p.montant)))
       return setMessage('Montants : nombres entiers attendus.');
-    const controle = controlerPaiements(calcul.total, listePaiements);
+    if (reprise > calcul.total) return setMessage('La reprise dépasse le montant de la vente.');
+    let trocSaisi = null;
+    if (troc) {
+      const proposition = troc.produit
+        ? await proposerReprise(base, boutiqueId, troc.produit.id, etatDuFormulaire(troc))
+        : null;
+      const resultat = trocDepuisFormulaire(troc, proposition?.valeur ?? 0);
+      if ('erreur' in resultat) return setMessage(resultat.erreur);
+      trocSaisi = resultat.troc;
+    }
+    const controle = controlerPaiements(totalNet, listePaiements);
     if (!controle.ok) return setMessage(controle.motif);
     setEnvoi(true);
     try {
@@ -165,6 +192,7 @@ export default function Vente() {
           autorisationRemise:
             calcul.remise && pourcentage > plafond ? (autorisation?.jeton ?? null) : null,
           caisseId: caisse.id,
+          troc: trocSaisi,
         },
       });
       if (client && envoiFacture !== 'NON') {
@@ -180,7 +208,22 @@ export default function Vente() {
           },
         });
       }
-      setDerniere({ id: venteId, numero, total: calcul.total, rendu: controle.rendu });
+      setDerniere({ id: venteId, numero, total: totalNet, rendu: controle.rendu, reprise });
+      // Photos du troc : envoyées dès que la vente est arrivée sur le serveur.
+      if (trocSaisi && troc?.photos.length) {
+        const photos = troc.photos;
+        setInfoPhotos('Envoi des photos de l’appareil repris…');
+        envoyerPhotosTroc(api, trocSaisi.id, photos).then(
+          (n) => setInfoPhotos(`${n} photo(s) de l’appareil repris enregistrée(s).`),
+          () =>
+            setInfoPhotos(
+              'Photos non envoyées (hors ligne) : ajoutez-les depuis l’écran Trocs une fois en ligne.',
+            ),
+        );
+      } else {
+        setInfoPhotos(null);
+      }
+      setTroc(null);
       setArticles([]);
       setClient(null);
       setRemise('');
@@ -203,7 +246,13 @@ export default function Vente() {
       {derniere ? (
         <Carte>
           <Texte gras>Vente enregistrée · facture {derniere.numero}</Texte>
-          <Texte>Total : {formaterMontant(derniere.total, monnaie)}</Texte>
+          {derniere.reprise > 0 ? (
+            <Texte>
+              Reprise de l’ancien téléphone : {formaterMontant(derniere.reprise, monnaie)}
+            </Texte>
+          ) : null}
+          <Texte>À payer : {formaterMontant(derniere.total, monnaie)}</Texte>
+          <Message type="info" texte={infoPhotos} />
           {derniere.rendu > 0 ? (
             <Texte gras>Monnaie à rendre : {formaterMontant(derniere.rendu, monnaie)}</Texte>
           ) : null}
@@ -283,6 +332,29 @@ export default function Vente() {
           </>
         )}
       </Carte>
+
+      {troc ? (
+        <>
+          <SaisieTroc
+            formulaire={troc}
+            surChange={setTroc}
+            client={client}
+            boutiqueId={boutiqueId}
+            monnaie={monnaie}
+            role={profil.role}
+            repriseMaxVendeur={profil.commerce.repriseMaxVendeur}
+            api={api}
+          />
+          <Bouton titre="Retirer le troc" variante="secondaire" onPress={() => setTroc(null)} />
+        </>
+      ) : (
+        <Bouton
+          titre="Troc : reprendre l’ancien téléphone du client"
+          icone="swap-horizontal"
+          variante="secondaire"
+          onPress={() => setTroc(formulaireTrocVide(Crypto.randomUUID(), Crypto.randomUUID()))}
+        />
+      )}
 
       <Carte>
         <Texte gras>Remise (vous accordez jusqu’à {plafond} %)</Texte>
@@ -373,26 +445,30 @@ export default function Vente() {
           onPress={() =>
             setPaiements({
               ...PAIEMENTS_VIDES,
-              ESPECES: { montant: String(calcul.total), reference: '' },
+              ESPECES: { montant: String(Math.max(0, totalNet)), reference: '' },
             })
           }
         />
       </Carte>
 
       <Carte>
-        {calcul.remise > 0 ? (
+        {calcul.remise > 0 || reprise > 0 ? (
           <Texte discret>Sous-total : {formaterMontant(calcul.sousTotal, monnaie)}</Texte>
         ) : null}
+        {calcul.remise > 0 ? (
+          <Texte discret>Remise : − {formaterMontant(calcul.remise, monnaie)}</Texte>
+        ) : null}
+        {reprise > 0 ? (
+          <Texte discret>Reprise (troc) : − {formaterMontant(reprise, monnaie)}</Texte>
+        ) : null}
         <Text style={[styles.total, { color: colors.text }]}>
-          Total : {formaterMontant(calcul.total, monnaie)}
+          {reprise > 0 ? 'À payer' : 'Total'} : {formaterMontant(totalNet, monnaie)}
         </Text>
         {paye > 0 ? (
           <Texte>
             Payé : {formaterMontant(paye, monnaie)}
-            {paye < calcul.total ? ` · reste ${formaterMontant(calcul.total - paye, monnaie)}` : ''}
-            {paye > calcul.total
-              ? ` · monnaie ${formaterMontant(paye - calcul.total, monnaie)}`
-              : ''}
+            {paye < totalNet ? ` · reste ${formaterMontant(totalNet - paye, monnaie)}` : ''}
+            {paye > totalNet ? ` · monnaie ${formaterMontant(paye - totalNet, monnaie)}` : ''}
           </Texte>
         ) : null}
       </Carte>

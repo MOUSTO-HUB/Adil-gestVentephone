@@ -23,6 +23,7 @@ import {
 } from '../caisse.js';
 import { schemaEnvoiMessage } from '../messages.js';
 import { schemaRetour } from '../retours.js';
+import { schemaGrilleReprise, schemaImeiSignale, schemaRemiseEnVente } from '../troc.js';
 import { schemaAnnulationVente, schemaVente } from '../ventes.js';
 import type { Changement } from './entites.js';
 
@@ -87,6 +88,12 @@ export const schemasContenus = {
   DEPENSE_ENREGISTRER: schemaDepense,
   /** Facture ou reçu envoyé au client par SMS ou WhatsApp (envoyé par le serveur). */
   MESSAGE_ENVOYER: schemaEnvoiMessage,
+  /** Grille de reprise d'un modèle (troc) : propriétaire. */
+  GRILLE_REPRISE_ENREGISTRER: schemaGrilleReprise,
+  /** IMEI signalé volé ou bloqué (ou levée) : gérant ou propriétaire. */
+  IMEI_SIGNALER: schemaImeiSignale,
+  /** Appareil repris réparé, remis en vente d'occasion : gérant ou propriétaire. */
+  ARTICLE_REMETTRE_EN_VENTE: schemaRemiseEnVente,
 } as const;
 
 export type TypeOperation = keyof typeof schemasContenus;
@@ -117,6 +124,9 @@ export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   CAISSE_VALIDER: 'Validation de caisse',
   DEPENSE_ENREGISTRER: 'Dépense',
   MESSAGE_ENVOYER: 'Envoi au client',
+  GRILLE_REPRISE_ENREGISTRER: 'Grille de reprise',
+  IMEI_SIGNALER: 'IMEI signalé',
+  ARTICLE_REMETTRE_EN_VENTE: 'Remise en vente',
 };
 
 /** Enveloppe commune à toutes les opérations. */
