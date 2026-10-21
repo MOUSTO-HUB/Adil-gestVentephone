@@ -6,6 +6,7 @@ Gestion de vente de téléphones et d'accessoires pour commerçants : catalogue,
 
 - [Cahier des charges](docs/CAHIER_DES_CHARGES.md)
 - [Étapes et prompts de développement](docs/PROMPTS.md)
+- [Mise en production](docs/DEPLOIEMENT.md)
 
 ## Structure
 
@@ -90,8 +91,8 @@ Tests de bout en bout de l'API (base démarrée) : `pnpm --filter @gestvente/api
 
 Le code est ajouté étape par étape en suivant [docs/PROMPTS.md](docs/PROMPTS.md).
 
-| Phase              | Contenu                                                          | État     |
-| ------------------ | ---------------------------------------------------------------- | -------- |
-| 1. Socle           | Catalogue, stock et IMEI, ventes, caisse, hors ligne, 1 boutique | En cours |
-| 2. Troc et crédit  | Reprise d'appareils, crédits, tranches, rappels SMS/WhatsApp     | À faire  |
-| 3. Multi-boutiques | Boutiques, transferts, tableau consolidé, rapports avancés       | À faire  |
+| Phase              | Contenu                                                          | État    |
+| ------------------ | ---------------------------------------------------------------- | ------- |
+| 1. Socle           | Catalogue, stock et IMEI, ventes, caisse, hors ligne, 1 boutique | Terminé |
+| 2. Troc et crédit  | Reprise d'appareils, crédits, tranches, rappels SMS/WhatsApp     | À faire |
+| 3. Multi-boutiques | Boutiques, transferts, tableau consolidé, rapports avancés       | À faire |

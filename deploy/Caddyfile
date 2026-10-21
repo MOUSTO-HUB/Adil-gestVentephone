@@ -1,0 +1,39 @@
+# HTTPS automatique (Let's Encrypt) pour {$DOMAINE} ; ACME_EMAIL reçoit les avis d'expiration.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAINE} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(self), microphone=(), geolocation=()"
+		-Server
+	}
+
+	# API : relayée telle quelle (l'adresse du client passe par X-Forwarded-For).
+	handle /api/* {
+		request_body {
+			max_size 12MB
+		}
+		reverse_proxy api:3200
+	}
+
+	# Application web : SQLite WebAssembly exige l'isolation (COOP / COEP).
+	handle {
+		root * /srv
+		header {
+			Cross-Origin-Opener-Policy "same-origin"
+			Cross-Origin-Embedder-Policy "credentialless"
+		}
+		@empreinte path /_expo/static/* /assets/*
+		header @empreinte Cache-Control "public, max-age=31536000, immutable"
+		@frais path / /index.html /sw.js /manifest.json
+		header @frais Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

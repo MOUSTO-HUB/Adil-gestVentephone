@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+    />
+    <title>%WEB_TITLE%</title>
+    <meta
+      name="description"
+      content="Ventes, stock IMEI, caisse et rapports d'une boutique de téléphones, même hors ligne."
+    />
+    <!-- Site installable (ordinateur et téléphone) -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#283593" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icones/icone-192.png" />
+    <link rel="apple-touch-icon" href="/icones/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="GestVente" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Réinitialisation de styles recommandée par react-native-web -->
+    <style id="expo-reset">
+      html,
+      body {
+        height: 100%;
+        background-color: #f3f4f8;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background-color: #0f1220;
+        }
+      }
+      body {
+        overflow: hidden;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>Activez JavaScript pour utiliser GestVente Phone.</noscript>
+    <div id="root"></div>
+    <script>
+      // Service worker : l'application s'ouvre hors ligne (jamais en développement local).
+      if ('serviceWorker' in navigator && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function () {});
+        });
+      }
+    </script>
+  </body>
+</html>

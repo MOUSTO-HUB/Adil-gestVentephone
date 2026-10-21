@@ -1,0 +1,96 @@
+# Production sur un VPS : docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# Guide : docs/DEPLOIEMENT.md. Seuls les ports 80 et 443 (Caddy) sont ouverts.
+name: gestvente-prod
+
+services:
+  caddy:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAINE: ${DOMAINE:?DOMAINE manquant}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL manquant}
+    volumes:
+      - caddy_donnees:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/api.Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant}
+      APP_ORIGIN: https://${DOMAINE}
+      API_PORT: 3200
+      STOCKAGE_DIR: /donnees/stockage
+    volumes:
+      - stockage:/donnees/stockage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant}
+      POSTGRES_DB: ${POSTGRES_DB:?}
+    volumes:
+      - postgres_donnees:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis_donnees:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sauvegarde:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    entrypoint: ['sh', '/sauvegarde.sh']
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      SAUVEGARDE_CLE: ${SAUVEGARDE_CLE:?SAUVEGARDE_CLE manquante}
+      SAUVEGARDE_JOURS: ${SAUVEGARDE_JOURS:-14}
+      SAUVEGARDE_HEURE: ${SAUVEGARDE_HEURE:-02}
+    volumes:
+      - ./deploy/sauvegarde.sh:/sauvegarde.sh:ro
+      - ./sauvegardes:/sauvegardes
+      - stockage:/stockage:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  caddy_donnees:
+  caddy_config:
+  postgres_donnees:
+  redis_donnees:
+  stockage:

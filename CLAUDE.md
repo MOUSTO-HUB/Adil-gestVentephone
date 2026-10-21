@@ -74,6 +74,17 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Impression classique et PDF : `lib/impression.ts` (`expo-print` sur téléphone, cadre caché + impression du navigateur sur ordinateur) ; partage du PDF par `expo-sharing` ; WhatsApp (`wa.me`) et SMS avec le résumé texte.
 - Garantie par IMEI : `GET /api/ventes/garantie/:imei` (dernière vente validée du commerce), base locale hors ligne ; écran `garantie`.
 
+## Interface
+
+- Charte dans `app/src/lib/theme.ts` (`useCouleurs()` : indigo, ambre pour la vente, états vert/orange/rouge ; clair et sombre) : jamais de couleur en dur dans un écran. Composants de `components/ui.tsx` : `Ecran` (en-tête coloré, flèche de retour : pas de bouton « Retour » en bas d'écran), `Bouton` (`icone` Ionicons, variantes principal/secondaire/accent/danger), `Carte`, `Message` (erreur/info/succes), `Section`, `Grille`, `Tuile`, `Indicateur`. Icônes : `@expo/vector-icons/Ionicons`. Icônes de l'application dessinées par `app/scripts/icones.cjs`.
+
+## Production
+
+- `docker-compose.prod.yml` : Caddy (HTTPS, site installable exporté par `deploy/web.Dockerfile`, relais `/api`), API (`deploy/api.Dockerfile`, `prisma migrate deploy` au démarrage), PostgreSQL, Redis, sauvegarde chiffrée quotidienne (`deploy/sauvegarde.sh`, rotation). Secrets dans `.env.prod` (modèle `deploy/production.env.example`). Guide : `docs/DEPLOIEMENT.md`.
+- Premier compte : `node dist/cli/initialiser.js` (commerce, boutique, propriétaire ; mot de passe provisoire affiché une fois).
+- Site installable : `app/public` (`index.html`, `manifest.json`, `sw.js` : coquille hors ligne, jamais l'API en cache, `icones/`). Application mobile : `app/eas.json` (APK `preview`, AAB et iOS `production`, canaux EAS Update), `runtimeVersion` = version de l'application.
+- CI : `.github/workflows/ci.yml` (lint, types, format, tests, e2e avec PostgreSQL et Redis, compilation, export web, images Docker). Recette de la phase 1 : `api/test/recette.e2e-spec.ts`.
+
 ## Rôles
 
 PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (ventes, trocs, encaissements ; jamais de modification de prix).
@@ -92,7 +103,7 @@ PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (vent
 - Formats partagés dans `packages/commun/src/sync` : entités synchronisées (`entites.ts`), opérations et schémas zod de leur contenu (`operations.ts`), règles de conflit (`conflits.ts`, ex. `controlerSortieArticle` : un IMEI déjà vendu ou sorti ⇒ CONFLIT).
 - Nouveau type d'opération : schéma dans `schemasContenus` + libellé, gestionnaire serveur dans `api/src/sync/operations/` (rôles, contrôle avant écriture, écritures, `journal.ecrire`, audit, `corrections`), effet local dans `app/src/lib/sync/operations-locales.ts` (même contrôle), tests des deux côtés.
 - Serveur : `POST /sync/operations` idempotent (UUID de l'appareil), une transaction par opération sous verrou du commerce (`JournalService.verrouiller`) ; rejet ou conflit ⇒ rien n'est écrit, l'opération est enregistrée avec son motif et l'état du serveur est renvoyé (`corrections`). Toute modification d'une donnée synchronisée (y compris hors /sync, ex. catalogue) passe par `JournalService.ecrire` dans la même transaction. `GET /sync/instantane` (premier remplissage) puis `GET /sync/changements?curseur=`. Les vendeurs ne reçoivent pas les prix d'achat (`masquerPourRole`).
-- App : base SQLite (`app/src/lib/base`, migrations versionnées dans `migrations.ts`, jamais modifier une migration publiée), chiffrée par SQLCipher sur téléphone (version de développement, pas Expo Go), WebAssembly sur le web (en-têtes COOP/COEP : `metro.config.js` en développement, plugin expo-router en production). Écrire uniquement via `useSync().enregistrer(...)` ; lire via `useLecture(...)`. `MoteurSync` envoie la file puis applique la descente seulement si la file est vide. Tests du moteur avec `node:sqlite` (`sql-node.test-utils.ts`).
+- App : base SQLite (`app/src/lib/base`, migrations versionnées dans `migrations.ts`, jamais modifier une migration publiée), chiffrée par SQLCipher sur téléphone (version de développement, pas Expo Go), WebAssembly sur le web (en-têtes COOP/COEP : `metro.config.js` en développement, `deploy/Caddyfile` en production). Écrire uniquement via `useSync().enregistrer(...)` ; lire via `useLecture(...)`. `MoteurSync` envoie la file puis applique la descente seulement si la file est vide. Tests du moteur avec `node:sqlite` (`sql-node.test-utils.ts`).
 
 ## Règles
 

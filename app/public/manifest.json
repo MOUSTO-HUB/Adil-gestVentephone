@@ -1,0 +1,24 @@
+{
+  "name": "GestVente Phone",
+  "short_name": "GestVente",
+  "description": "Ventes, stock IMEI, caisse et rapports d'une boutique de téléphones, même hors ligne.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F3F4F8",
+  "theme_color": "#283593",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icones/icone-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

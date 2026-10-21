@@ -33,3 +33,6 @@ sauvegardes/
 app/expo-env.d.ts
 .metro-health-check*
 .kotlin/
+
+# Export web de production
+app/dist-web/

@@ -1,0 +1,15 @@
+# Contexte des images Docker : le code seulement (pas de dépendances ni de secrets).
+**/node_modules
+**/dist
+**/dist-web
+**/.expo
+api/src/generated
+api/stockage
+sauvegardes
+.git
+.env
+.env.*
+**/*.log
+**/*.tsbuildinfo
+app/android
+app/ios
