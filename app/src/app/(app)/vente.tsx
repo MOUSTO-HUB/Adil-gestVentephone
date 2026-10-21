@@ -13,6 +13,7 @@ import * as Crypto from 'expo-crypto';
 import { router, useTheme } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Choix } from '@/components/choix';
 import { ChoixArticles } from '@/components/choix-articles';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
@@ -49,6 +50,8 @@ export default function Vente() {
   const monnaie = profil?.commerce.monnaie;
   const [articles, setArticles] = useState<ArticlePanier[]>([]);
   const [client, setClient] = useState<ClientSync | null>(null);
+  /** Facture envoyée au client par le serveur après l'encaissement (si un client est choisi). */
+  const [envoiFacture, setEnvoiFacture] = useState<'NON' | 'SMS' | 'WHATSAPP'>('SMS');
   const [rechercheClient, setRechercheClient] = useState('');
   const [remise, setRemise] = useState('');
   const [autorisation, setAutorisation] = useState<Autorisation | null>(null);
@@ -164,6 +167,19 @@ export default function Vente() {
           caisseId: caisse.id,
         },
       });
+      if (client && envoiFacture !== 'NON') {
+        await enregistrer({
+          type: 'MESSAGE_ENVOYER',
+          boutiqueId,
+          contenu: {
+            id: Crypto.randomUUID(),
+            venteId,
+            type: 'FACTURE',
+            canal: envoiFacture,
+            telephone: null,
+          },
+        });
+      }
       setDerniere({ id: venteId, numero, total: calcul.total, rendu: controle.rendu });
       setArticles([]);
       setClient(null);
@@ -223,7 +239,23 @@ export default function Vente() {
             : '(facultatif)'}
         </Texte>
         {client ? (
-          <Bouton titre="Retirer le client" variante="secondaire" onPress={() => setClient(null)} />
+          <>
+            <Choix
+              libelle="Envoyer la facture au client"
+              options={[
+                { id: 'SMS', nom: 'Par SMS' },
+                { id: 'WHATSAPP', nom: 'Par WhatsApp' },
+                { id: 'NON', nom: 'Non' },
+              ]}
+              valeurs={[envoiFacture]}
+              surChoix={([v]) => v && setEnvoiFacture(v as 'NON' | 'SMS' | 'WHATSAPP')}
+            />
+            <Bouton
+              titre="Retirer le client"
+              variante="secondaire"
+              onPress={() => setClient(null)}
+            />
+          </>
         ) : (
           <>
             <TextInput

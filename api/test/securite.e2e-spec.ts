@@ -14,6 +14,8 @@ const ROUTES_PUBLIQUES: Record<string, string> = {
   'POST /api/auth/connexion': 'connexion (limitée par IP et par identifiant)',
   'POST /api/auth/rafraichir': 'renouvellement par jeton de rafraichissement',
   'GET /api/photos/{nom}': 'photos du catalogue (sans donnée personnelle), nom aléatoire',
+  'GET /api/f/{code}':
+    'facture envoyée au client par SMS ou WhatsApp, code aléatoire de 10 caractères',
 };
 
 describe('Sécurité des routes (e2e)', () => {

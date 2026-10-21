@@ -23,6 +23,7 @@ import {
 import { clientEnregistrer, fournisseurEnregistrer } from './clients.operations.js';
 import type { Gestionnaire } from './gestionnaire.js';
 import { articleSortir, stockAjuster } from './stock.operations.js';
+import { messageEnvoyer } from './messages.operations.js';
 import { retourEnregistrer } from './retours.operations.js';
 import { venteAnnuler, venteEnregistrer } from './ventes.operations.js';
 
@@ -50,4 +51,5 @@ export const GESTIONNAIRES: { [T in TypeOperation]: Gestionnaire<T> } = {
   CAISSE_CLOTURER: caisseCloturer,
   CAISSE_VALIDER: caisseValider,
   DEPENSE_ENREGISTRER: depenseEnregistrer,
+  MESSAGE_ENVOYER: messageEnvoyer,
 };

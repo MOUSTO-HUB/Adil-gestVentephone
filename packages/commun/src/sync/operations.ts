@@ -21,6 +21,7 @@ import {
   schemaOuvertureCaisse,
   schemaValidationCaisse,
 } from '../caisse.js';
+import { schemaEnvoiMessage } from '../messages.js';
 import { schemaRetour } from '../retours.js';
 import { schemaAnnulationVente, schemaVente } from '../ventes.js';
 import type { Changement } from './entites.js';
@@ -84,6 +85,8 @@ export const schemasContenus = {
   CAISSE_VALIDER: schemaValidationCaisse,
   /** Dépense de la boutique, payée depuis la caisse ou non. */
   DEPENSE_ENREGISTRER: schemaDepense,
+  /** Facture ou reçu envoyé au client par SMS ou WhatsApp (envoyé par le serveur). */
+  MESSAGE_ENVOYER: schemaEnvoiMessage,
 } as const;
 
 export type TypeOperation = keyof typeof schemasContenus;
@@ -113,6 +116,7 @@ export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   CAISSE_CLOTURER: 'Clôture de caisse',
   CAISSE_VALIDER: 'Validation de caisse',
   DEPENSE_ENREGISTRER: 'Dépense',
+  MESSAGE_ENVOYER: 'Envoi au client',
 };
 
 /** Enveloppe commune à toutes les opérations. */

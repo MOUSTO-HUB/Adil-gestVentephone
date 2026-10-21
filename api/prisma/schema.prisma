@@ -263,6 +263,7 @@ model Commerce {
   inventaires     Inventaire[]
   mouvementsStock MouvementStock[]
   messages        Message[]
+  modelesMessages ModeleMessage[]
   journalAudit    JournalAudit[]
   operationsSync  OperationSync[]
   changements     Changement[]
@@ -756,6 +757,8 @@ model Vente {
   montantPaye     BigInt
   renduMonnaie    BigInt      @default(0)
   dateVente       DateTime    @default(now())
+  /// Code court du lien public de la facture (envoyé par SMS ou WhatsApp).
+  codePublic      String?     @unique
   annuleLe        DateTime?
   annuleParId     String?
   motifAnnulation String?
@@ -1137,11 +1140,14 @@ model LigneTransfert {
 model Message {
   id                   String        @id @default(uuid())
   commerceId           String
+  boutiqueId           String?
   clientId             String?
   canal                CanalMessage
   type                 TypeMessage
   destinataire         String
   contenu              String
+  /// Valeurs des variables (paramètres du modèle WhatsApp, bascule vers le SMS).
+  variables            Json?
   statut               StatutMessage @default(EN_ATTENTE)
   essais               Int           @default(0)
   cout                 BigInt?
@@ -1159,6 +1165,22 @@ model Message {
 
   @@index([commerceId, creeLe])
   @@index([statut])
+  @@index([referenceType, referenceId])
+}
+
+/// Texte d'un message modifié par le propriétaire (sinon le texte par défaut).
+model ModeleMessage {
+  id           String       @id @default(uuid())
+  commerceId   String
+  type         TypeMessage
+  canal        CanalMessage
+  texte        String
+  modifieLe    DateTime     @updatedAt
+  modifieParId String?
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+
+  @@unique([commerceId, type, canal])
 }
 
 /// Opérations sensibles : remise, prix, annulation, suppression, ajustement, connexion.

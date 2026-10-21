@@ -212,7 +212,9 @@ export default function DetailVente() {
           }
         />
       ) : null}
-      {document ? <DocumentsVente document={document} reglages={reglages} /> : null}
+      {document ? (
+        <DocumentsVente document={document} reglages={reglages} venteId={vente.id} />
+      ) : null}
       <Message texte={message?.texte ?? null} type={message?.type} />
       {gestion && vente.statut === 'VALIDEE' && !retours.length && !origine ? (
         <Carte>

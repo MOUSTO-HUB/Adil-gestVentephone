@@ -24,7 +24,7 @@ Référence : [Cahier des charges](CAHIER_DES_CHARGES.md).
 | 11  | 1 · Socle           | Caisse et dépenses                            | ☑    |
 | 12  | 1 · Socle           | Rapports de base et journal d'audit           | ☑    |
 | 13  | 1 · Socle           | Mise en production de la phase 1              | ☑    |
-| 14  | 2 · Troc et crédit  | Messagerie SMS et WhatsApp                    | ☐    |
+| 14  | 2 · Troc et crédit  | Messagerie SMS et WhatsApp                    | ☑    |
 | 15  | 2 · Troc et crédit  | Troc (reprise d'appareils)                    | ☐    |
 | 16  | 2 · Troc et crédit  | Vente à crédit et tranches                    | ☐    |
 | 17  | 2 · Troc et crédit  | Rappels automatiques et pénalités             | ☐    |

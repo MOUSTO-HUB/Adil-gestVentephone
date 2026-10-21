@@ -251,7 +251,7 @@ export function factureHtml(d: DocumentVente): string {
     .filter(Boolean)
     .map((t) => echapper(t as string))
     .join('<br>');
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Facture ${echapper(d.numero)}</title>
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Facture ${echapper(d.numero)}</title>
 <style>
 @page { size: A4; margin: 15mm; }
 body { font-family: Helvetica, Arial, sans-serif; font-size: 11pt; color: #111; margin: 0; }
@@ -270,6 +270,12 @@ table { width: 100%; border-collapse: collapse; }
 .total td { font-weight: bold; font-size: 13pt; border-top: 1px solid #111; }
 .annulee { color: #b91c1c; font-weight: bold; font-size: 14pt; margin-top: 12px; }
 footer { margin-top: 32px; font-size: 9pt; color: #555; }
+/* Lecture à l'écran (lien envoyé au client) : marges, largeur limitée, texte lisible. */
+@media screen {
+  body { max-width: 820px; margin: 0 auto; padding: 20px 16px; font-size: 15px; }
+  .lignes { display: block; overflow-x: auto; }
+  .totaux { width: 100%; max-width: 380px; }
+}
 </style></head><body>
 <header>
   <div><h1>${echapper(d.commerce)}</h1><div>${echapper(d.boutique.nom)}</div><div class="discret">${coordonnees}</div></div>

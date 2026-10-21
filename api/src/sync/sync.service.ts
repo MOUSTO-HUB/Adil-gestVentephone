@@ -19,6 +19,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { dettesFournisseurs } from '../clients/clients.ecritures.js';
 import { Role } from '../generated/prisma/enums.js';
 import { AutorisationRemiseService } from '../ventes/autorisation-remise.service.js';
+import { MessagesService } from '../messages/messages.service.js';
 import { JournalService } from './journal.service.js';
 import type { ConflitDto } from './sync.dto.js';
 import { GESTIONNAIRES } from './operations/index.js';
@@ -59,6 +60,7 @@ export class SyncService {
     private readonly journal: JournalService,
     private readonly audit: AuditService,
     private readonly autorisations: AutorisationRemiseService,
+    private readonly messages: MessagesService,
   ) {}
 
   /**
@@ -100,6 +102,7 @@ export class SyncService {
                 journal: this.journal,
                 audit: this.audit,
                 autorisations: this.autorisations,
+                messages: this.messages,
               },
               operation.contenu as never,
             )

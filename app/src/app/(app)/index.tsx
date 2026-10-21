@@ -191,6 +191,12 @@ export default function Accueil() {
             />
             <Tuile titre="Journal d’audit" icone="document-text" onPress={aller('/journal')} />
             <Tuile
+              titre="Messages aux clients"
+              icone="chatbubbles"
+              couleur={c.accent}
+              onPress={aller('/messages')}
+            />
+            <Tuile
               titre="Appareils connectés"
               icone="phone-portrait"
               onPress={aller('/appareils')}

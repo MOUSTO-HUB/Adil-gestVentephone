@@ -34,6 +34,17 @@ services:
       APP_ORIGIN: https://${DOMAINE}
       API_PORT: 3200
       STOCKAGE_DIR: /donnees/stockage
+      URL_PUBLIQUE: https://${DOMAINE}
+      # Messagerie : voir docs/DEPLOIEMENT.md (journal = rien n'est envoyé).
+      SMS_FOURNISSEUR: ${SMS_FOURNISSEUR:-journal}
+      SMS_URL: ${SMS_URL:-}
+      SMS_CLE: ${SMS_CLE:-}
+      SMS_EXPEDITEUR: ${SMS_EXPEDITEUR:-GestVente}
+      SMS_COUT: ${SMS_COUT:-0}
+      WHATSAPP_FOURNISSEUR: ${WHATSAPP_FOURNISSEUR:-aucun}
+      WHATSAPP_JETON: ${WHATSAPP_JETON:-}
+      WHATSAPP_NUMERO_ID: ${WHATSAPP_NUMERO_ID:-}
+      WHATSAPP_COUT: ${WHATSAPP_COUT:-0}
     volumes:
       - stockage:/donnees/stockage
     depends_on:

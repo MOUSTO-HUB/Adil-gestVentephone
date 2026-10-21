@@ -6,6 +6,7 @@ import type {
   TypeOperation,
 } from '@gestvente/commun';
 import type { AuditService } from '../../audit/audit.service.js';
+import type { MessagesService } from '../../messages/messages.service.js';
 import type { AutorisationRemiseService } from '../../ventes/autorisation-remise.service.js';
 import type { UtilisateurConnecte } from '../../auth/auth.types.js';
 import type { Role } from '../../generated/prisma/enums.js';
@@ -18,6 +19,8 @@ export interface ContexteOperation {
   journal: JournalService;
   audit: AuditService;
   autorisations: AutorisationRemiseService;
+  /** Envois aux clients (SMS, WhatsApp) : jamais un fournisseur directement. */
+  messages: MessagesService;
 }
 
 /**

@@ -13,6 +13,7 @@ import * as achats from './operations-achats';
 import * as caisse from './operations-caisse';
 import * as catalogue from './operations-catalogue';
 import * as clients from './operations-clients';
+import * as messages from './operations-messages';
 import * as retours from './operations-retours';
 import * as ventes from './operations-ventes';
 
@@ -101,6 +102,7 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
     caisse.caisseValider(tx, contenu, contexte.utilisateurNom),
   DEPENSE_ENREGISTRER: (tx, boutiqueId, contenu, _id, contexte) =>
     caisse.depenseEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId),
+  MESSAGE_ENVOYER: (tx, boutiqueId, contenu) => messages.messageEnvoyer(tx, boutiqueId, contenu),
 };
 
 export interface NouvelleOperation<T extends TypeOperation> {

@@ -58,6 +58,8 @@ export async function creerCommerce(prisma: PrismaService) {
 /** Supprime un commerce de test et tout ce qui en dépend. */
 export async function supprimerCommerce(prisma: PrismaService, commerceId: string) {
   await prisma.journalAudit.deleteMany({ where: { commerceId } });
+  await prisma.message.deleteMany({ where: { commerceId } });
+  await prisma.modeleMessage.deleteMany({ where: { commerceId } });
   await prisma.operationSync.deleteMany({ where: { commerceId } });
   await prisma.changement.deleteMany({ where: { commerceId } });
   await prisma.mouvementStock.deleteMany({ where: { commerceId } });

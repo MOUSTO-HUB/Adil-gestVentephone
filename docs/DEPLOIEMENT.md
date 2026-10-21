@@ -54,6 +54,21 @@ avec `openssl rand -base64 48` (`POSTGRES_PASSWORD`, `JWT_SECRET`, `SAUVEGARDE_C
 > **Gardez `SAUVEGARDE_CLE` ailleurs que sur le serveur** (gestionnaire de mots de
 > passe) : sans elle, les sauvegardes ne peuvent pas être restaurées.
 
+### Messagerie (SMS, WhatsApp)
+
+Par défaut (`SMS_FOURNISSEUR=journal`), aucun SMS ne part : le texte est écrit dans les
+journaux de l'API (`… logs api`). Pour envoyer réellement :
+
+- **SMS** : `SMS_FOURNISSEUR=http`, `SMS_URL` (passerelle de l'opérateur ou de
+  l'agrégateur, appelée en `POST { to, from, text }`), `SMS_CLE`, `SMS_EXPEDITEUR`,
+  `SMS_COUT` (coût d'un SMS affiché dans l'historique). Une passerelle au format
+  différent s'adapte dans `api/src/messages/fournisseurs.ts` (`HttpSmsSender`).
+- **WhatsApp Business** : `WHATSAPP_FOURNISSEUR=cloud`, `WHATSAPP_JETON` et
+  `WHATSAPP_NUMERO_ID` (Meta Business), puis faites approuver par Meta les modèles
+  `gestvente_facture`, `gestvente_recu`, `gestvente_rappel_echeance`,
+  `gestvente_retard_echeance` avec les textes WhatsApp de `packages/commun/src/messages.ts`.
+  En cas d'échec (3 essais), le message part en SMS.
+
 ## 4. Démarrer
 
 ```bash
