@@ -1,8 +1,15 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '../../generated/prisma/enums.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { BOUTIQUE_OUVERTE, refusCommerce } from '../acces.regles.js';
 import type { ChargeJeton, RequeteAuthentifiee } from '../auth.types.js';
 import { CLE_PUBLIC } from '../decorateurs.js';
 
@@ -38,6 +45,10 @@ export class JwtAuthGuard implements CanActivate {
     } catch {
       throw new UnauthorizedException("Jeton d'accès invalide ou expiré.");
     }
+    // Les autres jetons signés (concepteur, autorisations du gérant) n'ouvrent pas de session.
+    if (!charge.appareilId || (charge as { type?: string }).type) {
+      throw new UnauthorizedException("Jeton d'accès invalide ou expiré.");
+    }
 
     const appareil = await this.prisma.appareil.findUnique({
       where: { id: charge.appareilId },
@@ -49,7 +60,11 @@ export class JwtAuthGuard implements CanActivate {
             commerceId: true,
             role: true,
             actif: true,
-            boutiques: { select: { boutiqueId: true } },
+            commerce: { select: { statut: true, motifStatut: true } },
+            boutiques: {
+              where: { boutique: BOUTIQUE_OUVERTE },
+              select: { boutiqueId: true },
+            },
           },
         },
       },
@@ -59,12 +74,16 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Session fermée. Reconnectez-vous.');
     }
 
-    // Le propriétaire a accès à toutes les boutiques de son commerce.
+    // Commerce suspendu ou retiré par le concepteur : plus aucune requête.
+    const refus = refusCommerce(utilisateur.commerce);
+    if (refus) throw new ForbiddenException(refus);
+
+    // Le propriétaire a accès à toutes les boutiques ouvertes de son commerce.
     const boutiqueIds =
       utilisateur.role === Role.PROPRIETAIRE
         ? (
             await this.prisma.boutique.findMany({
-              where: { commerceId: utilisateur.commerceId },
+              where: { commerceId: utilisateur.commerceId, ...BOUTIQUE_OUVERTE },
               select: { id: true },
             })
           ).map((b) => b.id)

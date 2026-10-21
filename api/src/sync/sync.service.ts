@@ -147,7 +147,18 @@ export class SyncService {
     gestionnaire: Gestionnaire<TypeOperation>,
   ): Promise<{ ok: true } | { ok: false; statut: 'REJETEE'; motif: string }> {
     if (!utilisateur.boutiqueIds.includes(operation.boutiqueId)) {
-      return { ok: false, statut: 'REJETEE', motif: "Vous n'êtes pas rattaché à cette boutique." };
+      const boutique = await this.prisma.boutique.findUnique({
+        where: { id: operation.boutiqueId },
+        select: { verrouillee: true, supprimeeLe: true },
+      });
+      const fermee = boutique && (boutique.verrouillee || boutique.supprimeeLe);
+      return {
+        ok: false,
+        statut: 'REJETEE',
+        motif: fermee
+          ? 'Boutique verrouillée par la plateforme : opération refusée.'
+          : "Vous n'êtes pas rattaché à cette boutique.",
+      };
     }
     if (!gestionnaire.roles.includes(utilisateur.role)) {
       return {

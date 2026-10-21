@@ -1,7 +1,7 @@
 /**
- * Mise en service : crée le commerce, sa première boutique et le compte du
- * propriétaire. Le mot de passe provisoire est affiché une seule fois ; le code PIN
- * est choisi à la première connexion.
+ * Mise en service : crée le compte du concepteur de la plateforme (mot de passe
+ * affiché une seule fois). Les commerces, leurs boutiques et leurs propriétaires se
+ * créent ensuite dans l'espace concepteur.
  *
  *   docker compose -f docker-compose.prod.yml exec api node dist/cli/initialiser.js
  */
@@ -12,7 +12,6 @@ import { createInterface } from 'node:readline/promises';
 import { hash } from '@node-rs/argon2';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.js';
-import { Role } from '../generated/prisma/enums.js';
 
 for (const fichier of ['.env', '../.env']) {
   if (!process.env.DATABASE_URL && existsSync(fichier)) process.loadEnvFile(fichier);
@@ -48,49 +47,24 @@ async function demander(
 }
 
 async function principal() {
-  console.log('\nMise en service de GestVente Phone : commerce, boutique et propriétaire.\n');
-  const commerce = await demander('Nom du commerce (ex. Adil Phone)');
-  const telephone = await demander('Téléphone du commerce (+224…)', (v) =>
-    /^\+\d{8,15}$/.test(v) ? null : 'Format international attendu : +224620000000.',
-  );
-  const boutique = await demander('Nom de la première boutique (ex. Adil Phone Madina)');
-  const adresse = await demander('Adresse de la boutique', () => null);
-  const prefixe = (
-    await demander('Préfixe des factures (2 à 5 lettres, ex. MAD)', (v) =>
-      /^[A-Za-z]{2,5}$/.test(v) ? null : '2 à 5 lettres.',
-    )
-  ).toUpperCase();
-  const nom = await demander('Nom du propriétaire');
+  console.log('\nMise en service de GestVente Phone : compte du concepteur de la plateforme.');
+  console.log('Les commerçants se créent ensuite dans l’espace concepteur (écran de connexion).\n');
+  const nom = await demander('Nom du concepteur');
   const identifiant = (
-    await demander('Identifiant de connexion du propriétaire', (v) =>
+    await demander('Identifiant de connexion', (v) =>
       /^[a-zA-Z0-9._-]{3,40}$/.test(v) ? null : '3 à 40 caractères : lettres, chiffres, . _ -',
     )
   ).toLowerCase();
-  if (await prisma.utilisateur.findFirst({ where: { identifiant } })) {
+  if (await prisma.concepteur.findUnique({ where: { identifiant } })) {
     throw new Error(`L’identifiant « ${identifiant} » est déjà utilisé.`);
   }
-
   const motDePasse = randomBytes(12).toString('base64url');
-  await prisma.$transaction(async (tx) => {
-    const c = await tx.commerce.create({ data: { nom: commerce, telephone } });
-    const b = await tx.boutique.create({
-      data: { commerceId: c.id, nom: boutique, prefixe, adresse: adresse || null, telephone },
-    });
-    await tx.utilisateur.create({
-      data: {
-        commerceId: c.id,
-        nom,
-        identifiant,
-        role: Role.PROPRIETAIRE,
-        motDePasseHash: await hash(motDePasse),
-        boutiques: { create: [{ boutiqueId: b.id }] },
-      },
-    });
+  await prisma.concepteur.create({
+    data: { nom, identifiant, motDePasseHash: await hash(motDePasse) },
   });
-  console.log('\nCommerce, boutique et compte créés.');
+  console.log('\nCompte du concepteur créé.');
   console.log(`  Identifiant : ${identifiant}`);
-  console.log(`  Mot de passe provisoire (affiché une seule fois) : ${motDePasse}`);
-  console.log('Le code PIN sera choisi à la première connexion.\n');
+  console.log(`  Mot de passe (affiché une seule fois) : ${motDePasse}\n`);
 }
 
 principal()

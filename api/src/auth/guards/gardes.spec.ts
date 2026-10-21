@@ -37,6 +37,7 @@ const appareilActif = (role: Role = Role.VENDEUR) => ({
     role,
     actif: true,
     boutiques: [{ boutiqueId: 'A' }],
+    commerce: { statut: 'ACTIF', motifStatut: null as string | null },
   },
 });
 
@@ -109,6 +110,19 @@ describe('JwtAuthGuard', () => {
       'A',
       'B',
     ]);
+  });
+
+  it('refuse les sessions d’un commerce suspendu par la plateforme (403)', async () => {
+    const appareil = appareilActif();
+    appareil.utilisateur.commerce = { statut: 'SUSPENDU', motifStatut: 'Abonnement impayé' };
+    await expect(garde(appareil).canActivate(avecJeton(await jetonValide()))).rejects.toThrow(
+      /suspendu \(Abonnement impayé\)/,
+    );
+  });
+
+  it('refuse un jeton du concepteur (sans appareil)', async () => {
+    const jeton = await jwt.signAsync({ type: 'concepteur', sub: 'k1' });
+    await expect(garde().canActivate(avecJeton(jeton))).rejects.toThrow(UnauthorizedException);
   });
 });
 

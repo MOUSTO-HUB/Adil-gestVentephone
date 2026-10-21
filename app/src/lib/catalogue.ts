@@ -24,7 +24,16 @@ export async function rechercherProduits(
   base: BaseSql,
   boutiqueId: string,
   terme: string,
-  options: { archives?: boolean; limite?: number } = {},
+  options: {
+    archives?: boolean;
+    limite?: number;
+    /** Filtres de la vente : type, marque, modèle (un accessoire compatible compte). */
+    type?: 'TELEPHONE' | 'ACCESSOIRE' | null;
+    marqueId?: string | null;
+    modeleId?: string | null;
+    /** Produits en stock d'abord. */
+    enStockDabord?: boolean;
+  } = {},
 ): Promise<ProduitTrouve[]> {
   const mots = motsRecherche(terme);
   const brut = terme.trim();
@@ -46,6 +55,24 @@ export async function rechercherProduits(
     }
   }
   const filtreArchives = options.archives ? '' : 'AND p.archive = 0';
+  const filtres: string[] = [];
+  const paramsFiltres: ValeurSql[] = [];
+  if (options.type) {
+    filtres.push('p.type = ?');
+    paramsFiltres.push(options.type);
+  }
+  if (options.modeleId) {
+    filtres.push(
+      '(p.modeleId = ? OR p.id IN (SELECT accessoireId FROM compatibilite WHERE modeleId = ?))',
+    );
+    paramsFiltres.push(options.modeleId, options.modeleId);
+  } else if (options.marqueId) {
+    filtres.push(
+      `(p.marqueId = ? OR p.id IN (SELECT c.accessoireId FROM compatibilite c
+          JOIN modele mo ON mo.id = c.modeleId WHERE mo.marqueId = ?))`,
+    );
+    paramsFiltres.push(options.marqueId, options.marqueId);
+  }
   return base.tous<ProduitTrouve>(
     `SELECT p.id, p.nom, p.type, p.photo, p.archive,
             COALESCE(pb.prixDetail, p.prixDetail) AS prixDetail,
@@ -56,10 +83,25 @@ export async function rechercherProduits(
        LEFT JOIN stock s ON s.produitId = p.id AND s.boutiqueId = ?
       WHERE 1 = 1 ${filtreArchives}
         ${conditions.length ? `AND (${conditions.join(' OR ')})` : ''}
-      ORDER BY p.recherche, p.nom
+        ${filtres.map((f) => `AND ${f}`).join(' ')}
+      ORDER BY ${options.enStockDabord ? '(COALESCE(s.quantite, 0) > 0) DESC,' : ''} p.recherche, p.nom
       LIMIT ${options.limite ?? LIMITE_RESULTATS}`,
-    params,
+    [...params, ...paramsFiltres],
   );
+}
+
+/** Marques du catalogue (filtres de la recherche). */
+export function marquesCatalogue(base: BaseSql) {
+  return base.tous<{ id: string; nom: string }>('SELECT id, nom FROM marque ORDER BY nom');
+}
+
+/** Modèles d'une marque, dans l'ordre naturel (A5 avant A10). */
+export async function modelesMarque(base: BaseSql, marqueId: string) {
+  const modeles = await base.tous<{ id: string; nom: string }>(
+    'SELECT id, nom FROM modele WHERE marqueId = ?',
+    [marqueId],
+  );
+  return modeles.sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { numeric: true }));
 }
 
 /**

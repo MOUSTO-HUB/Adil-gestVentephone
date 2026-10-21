@@ -7,12 +7,10 @@ import {
 } from '@gestvente/commun';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { PhotoProduit } from '@/components/photo-produit';
 import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
-import { messageErreur } from '@/lib/api';
 import { confirmer } from '@/lib/confirmer';
-import { choisirPhoto, envoyerPhoto } from '@/lib/photo';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
 
@@ -32,14 +30,13 @@ type MessageFiche = { texte: string; type: 'erreur' | 'info' } | null;
 /** Fiche produit de la boutique : prix, quantité, IMEI en stock ; gestion par le gérant. */
 export default function FicheProduit() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { profil, boutique, api } = useSession();
-  const { enregistrer, synchroniser } = useSync();
+  const { profil, boutique } = useSession();
+  const { enregistrer } = useSync();
   const gestion = !!profil && peutGererSessions(profil.role);
   const monnaie = profil?.commerce.monnaie;
   const [delta, setDelta] = useState('');
   const [motif, setMotif] = useState('');
   const [message, setMessage] = useState<MessageFiche>(null);
-  const [envoiPhoto, setEnvoiPhoto] = useState(false);
 
   const fiche = useLecture<Fiche | null>(
     async (base) => {
@@ -143,22 +140,6 @@ export default function FicheProduit() {
     }, `Téléphone ${article.imei} sorti du stock.`);
   };
 
-  const changerPhoto = async (source: 'galerie' | 'camera') => {
-    setMessage(null);
-    try {
-      const uri = await choisirPhoto(source);
-      if (!uri) return;
-      setEnvoiPhoto(true);
-      await envoyerPhoto(api, produit.id, uri);
-      synchroniser();
-      setMessage({ texte: 'Photo enregistrée.', type: 'info' });
-    } catch (e) {
-      setMessage({ texte: messageErreur(e), type: 'erreur' });
-    } finally {
-      setEnvoiPhoto(false);
-    }
-  };
-
   return (
     <Ecran
       titre={produit.nom}
@@ -198,24 +179,6 @@ export default function FicheProduit() {
               }
             />
           </View>
-          <View style={styles.action}>
-            <Bouton
-              titre={produit.photo ? 'Changer la photo' : 'Ajouter une photo'}
-              variante="secondaire"
-              chargement={envoiPhoto}
-              onPress={() => void changerPhoto('galerie')}
-            />
-          </View>
-          {Platform.OS !== 'web' ? (
-            <View style={styles.action}>
-              <Bouton
-                titre="Photographier"
-                variante="secondaire"
-                chargement={envoiPhoto}
-                onPress={() => void changerPhoto('camera')}
-              />
-            </View>
-          ) : null}
         </View>
       ) : null}
 

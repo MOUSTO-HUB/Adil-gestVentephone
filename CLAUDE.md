@@ -23,8 +23,8 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 ## Catalogue
 
 - Règles et schémas zod dans `packages/commun/src/catalogue.ts` (produit, prix de boutique, nom proposé, texte de recherche). Écritures serveur dans `api/src/catalogue/catalogue.ecritures.ts`, communes aux opérations des appareils (`MARQUE_/MODELE_/CATEGORIE_/PRODUIT_/PRIX_BOUTIQUE_ENREGISTRER`) et à l'import Excel (`import.service.ts`, simulation puis import) ; changement de prix ⇒ `PRIX_MODIFIE` au journal d'audit avec avant/après.
-- Photos : `StockageService` (dossier `STOCKAGE_DIR/photos`, nom aléatoire, format vérifié aux premiers octets), envoyées compressées par l'app (`app/src/lib/photo.ts`), servies publiquement par `GET /api/photos/:nom` (images sans donnée personnelle, en cache).
-- App : recherche locale `rechercherProduits` / `trouverParCode` (`app/src/lib/catalogue.ts`, colonne `recherche` normalisée), scan caméra (`components/scanner.tsx`, téléphone) ou lecteur USB (le code tapé puis Entrée dans le champ de recherche ouvre la fiche).
+- Catalogue de base (`api/src/catalogue/reference.ts`, téléphones et accessoires courants en Guinée, prix en GNF) : installé par `installerCatalogueReference` à la création d'un commerce et à la demande du concepteur ; ajoute seulement ce qui manque (noms comparés par `normaliserRecherche`), ne remplace jamais une saisie du commerçant ; changements écrits au journal pour les appareils. Produits sans photo (photos réservées au troc, étape 15).
+- App : recherche locale `rechercherProduits` / `trouverParCode` (`app/src/lib/catalogue.ts`, colonne `recherche` normalisée ; filtres type, marque, modèle avec accessoires compatibles, en stock d'abord, pastilles dans `components/choix-articles.tsx`), scan caméra (`components/scanner.tsx`, téléphone) ou lecteur USB (le code tapé puis Entrée dans le champ de recherche ouvre la fiche).
 
 ## Clients et fournisseurs
 
@@ -88,9 +88,15 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 ## Production
 
 - `docker-compose.prod.yml` : Caddy (HTTPS, site installable exporté par `deploy/web.Dockerfile`, relais `/api`), API (`deploy/api.Dockerfile`, `prisma migrate deploy` au démarrage), PostgreSQL, Redis, sauvegarde chiffrée quotidienne (`deploy/sauvegarde.sh`, rotation). Secrets dans `.env.prod` (modèle `deploy/production.env.example`). Guide : `docs/DEPLOIEMENT.md`.
-- Premier compte : `node dist/cli/initialiser.js` (commerce, boutique, propriétaire ; mot de passe provisoire affiché une fois).
+- Premier compte : `node dist/cli/initialiser.js` crée le concepteur (mot de passe affiché une fois) ; les commerçants se créent dans l'espace concepteur.
 - Site installable : `app/public` (`index.html`, `manifest.json`, `sw.js` : coquille hors ligne, jamais l'API en cache, `icones/`). Application mobile : `app/eas.json` (APK `preview`, AAB et iOS `production`, canaux EAS Update), `runtimeVersion` = version de l'application.
 - CI : `.github/workflows/ci.yml` (lint, types, format, tests, e2e avec PostgreSQL et Redis, compilation, export web, images Docker). Recette de la phase 1 : `api/test/recette.e2e-spec.ts`.
+
+## Espace concepteur (plateforme)
+
+- Compte `Concepteur` distinct des commerçants (seed : `concepteur`) ; jeton `{ type: 'concepteur' }` de 10 h, refusé par `JwtAuthGuard` (pas d'appareil). Routes `/api/plateforme` (`api/src/plateforme`) : `@Public()` + `@UseGuards(ConcepteurGuard)`, actions auditées `PLATEFORME_*`.
+- Commerce `statut` ACTIF / SUSPENDU / SUPPRIME (jamais effacé, restaurable) ; boutique `verrouillee`, `supprimeeLe`. Contrôlés par `refusCommerce` et `BOUTIQUE_OUVERTE` (`acces.regles.ts`) à la connexion, au renouvellement, dans `JwtAuthGuard`, `BoutiqueGuard` et la synchronisation (opération REJETEE).
+- App : écrans `app/src/app/plateforme` (session `lib/plateforme.tsx`, sans base locale), lien « Espace concepteur » sous la connexion ; route ouverte quel que soit l'état de la session du commerçant.
 
 ## Rôles
 

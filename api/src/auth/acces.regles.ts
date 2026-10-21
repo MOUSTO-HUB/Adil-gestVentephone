@@ -8,6 +8,21 @@ export interface Acteur {
 }
 
 /** Un employé n'accède qu'aux boutiques de son rattachement ; le propriétaire à toutes celles de son commerce. */
+/** Une boutique verrouillée ou retirée par le concepteur ne reçoit plus d'opérations. */
+export const BOUTIQUE_OUVERTE = { verrouillee: false, supprimeeLe: null } as const;
+
+/** Message d'un commerce suspendu ou retiré de la plateforme (null : actif). */
+export function refusCommerce(commerce: {
+  statut: 'ACTIF' | 'SUSPENDU' | 'SUPPRIME';
+  motifStatut: string | null;
+}): string | null {
+  if (commerce.statut === 'ACTIF') return null;
+  const motif = commerce.motifStatut ? ` (${commerce.motifStatut})` : '';
+  return commerce.statut === 'SUSPENDU'
+    ? `L'accès de votre commerce est suspendu${motif}. Contactez GestVente pour le rétablir.`
+    : `Ce commerce n'est plus sur la plateforme${motif}.`;
+}
+
 export function peutAccederBoutique(
   utilisateur: Acteur,
   boutique: { id: string; commerceId: string },

@@ -11,6 +11,7 @@ import { completerImei } from '@gestvente/commun';
 import { hash } from '@node-rs/argon2';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from 'dotenv';
+import { installerCatalogueReference } from '../src/catalogue/installer-reference.js';
 import { PrismaClient, Role, TypeClient, TypePiece } from '../src/generated/prisma/client.js';
 
 config({ path: ['.env', '../.env'], quiet: true });
@@ -690,8 +691,20 @@ async function main() {
     data: { montantTotal: totalAccessoires, montantPaye: Math.round(totalAccessoires / 2) },
   });
 
+  // Catalogue de base de la plateforme (comme pour tout nouveau commerçant).
+  const catalogue = await prisma.$transaction((tx) => installerCatalogueReference(tx, commerceId), {
+    timeout: 60_000,
+  });
+  // Concepteur de la plateforme (espace concepteur).
+  await prisma.concepteur.upsert({
+    where: { identifiant: 'concepteur' },
+    create: { nom: 'Concepteur GestVente', identifiant: 'concepteur', motDePasseHash },
+    update: {},
+  });
+
   console.log(
-    `Données de démonstration créées : ${comptes.length} comptes (${comptes.map((c) => c.identifiant).join(', ')}, PIN 2580), ` +
+    `Catalogue de base : ${catalogue.produits} produits ajoutés. Concepteur : « concepteur ». ` +
+      `Données de démonstration créées : ${comptes.length} comptes (${comptes.map((c) => c.identifiant).join(', ')}, PIN 2580), ` +
       `${TELEPHONES.length + ACCESSOIRES.length} produits, ${numeroImei} IMEI, ${CLIENTS.length} clients, ${FOURNISSEURS.length} fournisseurs.`,
   );
 }

@@ -59,8 +59,8 @@ export class ErreurReseau extends Error {
   }
 }
 
-interface Options {
-  methode?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+export interface Options {
+  methode?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   /** JSON, ou FormData pour envoyer un fichier (photo, classeur Excel). */
   corps?: unknown;
   /** Réponse brute (fichier à télécharger) au lieu de JSON. */
@@ -74,7 +74,7 @@ interface Branchements {
   sessionPerdue: () => void;
 }
 
-async function appeler<T>(chemin: string, options: Options, jeton?: string): Promise<T> {
+export async function appeler<T>(chemin: string, options: Options, jeton?: string): Promise<T> {
   let reponse: Response;
   const formulaire = options.corps instanceof FormData;
   try {

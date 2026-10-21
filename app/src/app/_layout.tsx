@@ -31,6 +31,9 @@ function Navigation() {
       <Stack.Protected guard={statut === 'pret' && !!boutique}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
+      {/* Espace concepteur : session propre, aucune donnée de commerce sur l'appareil ; en dernier
+          pour que la redirection par défaut reste sur les écrans du commerçant. */}
+      <Stack.Screen name="plateforme" />
     </Stack>
   );
 }

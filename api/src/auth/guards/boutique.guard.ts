@@ -42,10 +42,13 @@ export class BoutiqueGuard implements CanActivate {
     const utilisateur = requete.utilisateur;
     const boutique = await this.prisma.boutique.findUnique({
       where: { id: valeur },
-      select: { id: true, commerceId: true },
+      select: { id: true, commerceId: true, verrouillee: true, supprimeeLe: true },
     });
     if (!utilisateur || !boutique || boutique.commerceId !== utilisateur.commerceId) {
       throw new NotFoundException('Boutique introuvable.');
+    }
+    if (boutique.verrouillee || boutique.supprimeeLe) {
+      throw new ForbiddenException('Boutique verrouillée par la plateforme.');
     }
     if (!peutAccederBoutique(utilisateur, boutique)) {
       throw new ForbiddenException("Vous n'êtes pas rattaché à cette boutique.");

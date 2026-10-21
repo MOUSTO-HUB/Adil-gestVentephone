@@ -27,6 +27,15 @@ enum Role {
   VENDEUR
 }
 
+/// État d'un commerce abonné, décidé par le concepteur de la plateforme.
+enum StatutCommerce {
+  ACTIF
+  /// Accès refusé (abonnement impayé…) ; les données restent intactes.
+  SUSPENDU
+  /// Retiré de la plateforme : invisible, rien n'est effacé (restauration possible).
+  SUPPRIME
+}
+
 enum TypeProduit {
   TELEPHONE
   ACCESSOIRE
@@ -221,23 +230,29 @@ enum StatutOperationSync {
 
 /// Compte du propriétaire : regroupe ses boutiques, employés et données.
 model Commerce {
-  id               String   @id @default(uuid())
-  nom              String
-  telephone        String?
-  adresse          String?
+  id                String         @id @default(uuid())
+  nom               String
+  telephone         String?
+  adresse           String?
   /// Code de la monnaie des montants (GNF par défaut).
-  monnaie          String   @default("GNF")
+  monnaie           String         @default("GNF")
   /// Indicatif ajouté aux numéros saisis sans indicatif.
-  indicatif        String   @default("+224")
-  fuseau           String   @default("Africa/Conakry")
+  indicatif         String         @default("+224")
+  fuseau            String         @default("Africa/Conakry")
   /// Remise maximale (en %) qu'un vendeur peut accorder sans le gérant.
-  remiseMaxVendeur Int      @default(5)
+  remiseMaxVendeur  Int            @default(5)
   /// Remise maximale (en %) qu'un gérant peut accorder.
-  remiseMaxGerant  Int      @default(15)
+  remiseMaxGerant   Int            @default(15)
+  statut            StatutCommerce @default(ACTIF)
+  /// Motif affiché au commerçant (suspension, suppression).
+  motifStatut       String?
+  statutModifieLe   DateTime?
+  /// Fin de l'abonnement en cours (information du concepteur).
+  abonnementJusquAu DateTime?
   /// Délai (jours après la vente) pour un retour ou un échange ; au-delà, seul un appareil en panne sous garantie s'échange.
-  delaiRetourJours Int      @default(7)
-  creeLe           DateTime @default(now())
-  modifieLe        DateTime @updatedAt
+  delaiRetourJours  Int            @default(7)
+  creeLe            DateTime       @default(now())
+  modifieLe         DateTime       @updatedAt
 
   boutiques       Boutique[]
   utilisateurs    Utilisateur[]
@@ -270,17 +285,21 @@ model Commerce {
 }
 
 model Boutique {
-  id         String   @id @default(uuid())
-  commerceId String
-  nom        String
-  adresse    String?
-  telephone  String?
+  id          String    @id @default(uuid())
+  commerceId  String
+  nom         String
+  adresse     String?
+  telephone   String?
   /// Préfixe des numéros de facture de la boutique (ex. KAL).
-  prefixe    String
-  actif      Boolean  @default(true)
-  creeLe     DateTime @default(now())
-  modifieLe  DateTime @updatedAt
-  creeParId  String?
+  prefixe     String
+  actif       Boolean   @default(true)
+  /// Verrouillée par le concepteur : plus aucune opération, données gardées.
+  verrouillee Boolean   @default(false)
+  /// Retirée par le concepteur (jamais effacée : restauration possible).
+  supprimeeLe DateTime?
+  creeLe      DateTime  @default(now())
+  modifieLe   DateTime  @updatedAt
+  creeParId   String?
 
   commerce          Commerce              @relation(fields: [commerceId], references: [id])
   utilisateurs      UtilisateurBoutique[]
@@ -1248,4 +1267,17 @@ model Changement {
   commerce Commerce @relation(fields: [commerceId], references: [id])
 
   @@index([commerceId, seq])
+}
+
+/// Concepteur de la plateforme : gère les commerces abonnés et leurs boutiques,
+/// sans accès à leurs ventes ni à leurs clients.
+model Concepteur {
+  id                String    @id @default(uuid())
+  nom               String
+  identifiant       String    @unique
+  motDePasseHash    String
+  actif             Boolean   @default(true)
+  derniereConnexion DateTime?
+  creeLe            DateTime  @default(now())
+  modifieLe         DateTime  @updatedAt
 }

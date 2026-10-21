@@ -12,6 +12,7 @@ import { Role } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { LIMITES, LimiteurService } from '../securite/limiteur.service.js';
 import type { AppareilDto, ProfilDto, ResultatPinDto, SessionDto } from './auth.dto.js';
+import { BOUTIQUE_OUVERTE, refusCommerce } from './acces.regles.js';
 import type { ChargeJeton, UtilisateurConnecte } from './auth.types.js';
 import {
   creerJetonRafraichissement,
@@ -71,6 +72,11 @@ export class AuthService {
     if (!compte.actif) {
       throw new ForbiddenException('Ce compte est désactivé. Adressez-vous au propriétaire.');
     }
+    const commerce = await this.prisma.commerce.findUniqueOrThrow({
+      where: { id: compte.commerceId },
+    });
+    const refus = refusCommerce(commerce);
+    if (refus) throw new ForbiddenException(refus);
 
     const nouvelAppareil = await this.prisma.appareil.create({
       data: {
@@ -105,7 +111,7 @@ export class AuthService {
     if (!lu) throw new UnauthorizedException(MESSAGE_SESSION);
     const appareil = await this.prisma.appareil.findUnique({
       where: { id: lu.appareilId },
-      include: { utilisateur: true },
+      include: { utilisateur: true, commerce: true },
     });
     if (!appareil || appareil.revoqueLe || !appareil.jetonHash) {
       throw new UnauthorizedException(MESSAGE_SESSION);
@@ -122,6 +128,8 @@ export class AuthService {
       });
       throw new UnauthorizedException(MESSAGE_SESSION);
     }
+    const refus = refusCommerce(appareil.commerce);
+    if (refus) throw new ForbiddenException(refus);
     if (
       !appareil.utilisateur.actif ||
       !appareil.jetonExpireLe ||
@@ -149,7 +157,7 @@ export class AuthService {
       include: { commerce: true },
     });
     const boutiques = await this.prisma.boutique.findMany({
-      where: { id: { in: utilisateur.boutiqueIds }, actif: true },
+      where: { id: { in: utilisateur.boutiqueIds }, actif: true, ...BOUTIQUE_OUVERTE },
       select: { id: true, nom: true, prefixe: true, adresse: true, telephone: true },
       orderBy: { nom: 'asc' },
     });

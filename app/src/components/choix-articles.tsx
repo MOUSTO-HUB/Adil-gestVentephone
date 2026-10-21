@@ -2,7 +2,7 @@ import { formaterMontant } from '@gestvente/commun';
 import * as Crypto from 'expo-crypto';
 import { useTheme } from 'expo-router';
 import { type Dispatch, type SetStateAction, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Scanner, scannerDisponible } from '@/components/scanner';
 import { Bouton, Carte, Champ, Message, Texte } from '@/components/ui';
 import {
@@ -13,9 +13,63 @@ import {
   produitPourVente,
   versPanier,
 } from '@/lib/caisse';
-import { rechercherProduits, trouverParCode } from '@/lib/catalogue';
+import {
+  marquesCatalogue,
+  modelesMarque,
+  rechercherProduits,
+  trouverParCode,
+} from '@/lib/catalogue';
 import type { ArticlePanier, LignePrix } from '@/lib/panier';
 import { useLecture, useSync } from '@/lib/sync/contexte';
+import { useCouleurs } from '@/lib/theme';
+
+type TypeFiltre = '' | 'TELEPHONE' | 'ACCESSOIRE';
+
+/** Rangée de pastilles qui défile horizontalement (marques, modèles). */
+function Pastilles({
+  options,
+  valeur,
+  surChoix,
+  libelle,
+}: {
+  options: { id: string; nom: string }[];
+  valeur: string;
+  surChoix: (id: string) => void;
+  libelle: string;
+}) {
+  const c = useCouleurs();
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      accessibilityLabel={libelle}
+      contentContainerStyle={styles.rangee}
+    >
+      {options.map((o) => {
+        const actif = o.id === valeur;
+        return (
+          <Pressable
+            key={o.id || 'tous'}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: actif }}
+            onPress={() => surChoix(actif && o.id ? '' : o.id)}
+            style={[
+              styles.filtre,
+              {
+                backgroundColor: actif ? c.bouton : c.carte,
+                borderColor: actif ? c.bouton : c.bordure,
+              },
+            ]}
+          >
+            <Text style={{ color: actif ? '#ffffff' : c.texte, fontWeight: actif ? '700' : '500' }}>
+              {o.nom}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
 
 /**
  * Choix des articles d'une vente ou d'un échange : recherche, lecteur de codes ou
@@ -38,16 +92,35 @@ export function ChoixArticles({
   titre?: string;
 }) {
   const { colors } = useTheme();
+  const c = useCouleurs();
   const { base } = useSync();
   const [recherche, setRecherche] = useState('');
+  const [type, setType] = useState<TypeFiltre>('');
+  const [marqueId, setMarqueId] = useState('');
+  const [modeleId, setModeleId] = useState('');
+  const filtre = !!(type || marqueId || modeleId);
   const [choixImei, setChoixImei] = useState<{ produitId: string; nom: string } | null>(null);
   const [scanner, setScanner] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  // Résultats dès la première lettre ou le premier filtre ; en stock d'abord.
   const resultats = useLecture(
     async (b) =>
-      recherche.trim() ? rechercherProduits(b, boutiqueId, recherche, { limite: 6 }) : [],
-    [recherche, boutiqueId],
+      recherche.trim() || filtre
+        ? rechercherProduits(b, boutiqueId, recherche, {
+            limite: 30,
+            type: type || null,
+            marqueId: marqueId || null,
+            modeleId: modeleId || null,
+            enStockDabord: true,
+          })
+        : [],
+    [recherche, boutiqueId, type, marqueId, modeleId],
+  );
+  const marques = useLecture((b) => marquesCatalogue(b), []);
+  const modelesFiltre = useLecture(
+    async (b) => (marqueId ? modelesMarque(b, marqueId) : []),
+    [marqueId],
   );
   const imeis = useLecture(
     async (b) =>
@@ -135,13 +208,46 @@ export function ChoixArticles({
   return (
     <>
       <Champ
-        libelle="Produit (nom, code-barres ou IMEI)"
+        libelle="Rechercher un produit"
         value={recherche}
         onChangeText={setRecherche}
         autoCorrect={false}
         returnKeyType="search"
+        placeholder="Nom, code-barres, IMEI ou détail (128 Go, noir…)"
         onSubmitEditing={() => void lireCode(recherche)}
       />
+      <Pastilles
+        libelle="Type de produit"
+        options={[
+          { id: '', nom: 'Tout' },
+          { id: 'TELEPHONE', nom: 'Téléphones' },
+          { id: 'ACCESSOIRE', nom: 'Accessoires' },
+        ]}
+        valeur={type}
+        surChoix={(v) => setType(v as TypeFiltre)}
+      />
+      {marques?.length ? (
+        <Pastilles
+          libelle="Marque"
+          options={[{ id: '', nom: 'Toutes les marques' }, ...marques]}
+          valeur={marqueId}
+          surChoix={(v) => {
+            setMarqueId(v);
+            setModeleId('');
+          }}
+        />
+      ) : null}
+      {marqueId && modelesFiltre?.length ? (
+        <Pastilles
+          libelle="Modèle"
+          options={[{ id: '', nom: 'Tous les modèles' }, ...modelesFiltre]}
+          valeur={modeleId}
+          surChoix={setModeleId}
+        />
+      ) : null}
+      {(recherche.trim() || filtre) && resultats?.length === 0 ? (
+        <Texte discret>Aucun produit ne correspond.</Texte>
+      ) : null}
       {scannerDisponible ? (
         <Bouton titre="Scanner" variante="secondaire" onPress={() => setScanner(true)} />
       ) : null}
@@ -152,10 +258,24 @@ export function ChoixArticles({
           onPress={() => void ajouterProduit(p.id)}
           style={[styles.resultat, { borderColor: colors.border, backgroundColor: colors.card }]}
         >
-          <Text style={{ color: colors.text, flex: 1 }}>{p.nom}</Text>
-          <Text style={{ color: colors.text, opacity: 0.65 }}>
-            {formaterMontant(p.prixDetail, monnaie)} · {p.quantite} en stock
-          </Text>
+          <Text style={{ color: colors.text, flex: 1, fontWeight: '600' }}>{p.nom}</Text>
+          <Text style={{ color: colors.text }}>{formaterMontant(p.prixDetail, monnaie)}</Text>
+          <View
+            style={[
+              styles.stock,
+              { backgroundColor: p.quantite > 0 ? c.fondSucces : c.fondDanger },
+            ]}
+          >
+            <Text
+              style={{
+                color: p.quantite > 0 ? c.succes : c.danger,
+                fontWeight: '700',
+                fontSize: 13,
+              }}
+            >
+              {p.quantite > 0 ? `${p.quantite} en stock` : 'Rupture'}
+            </Text>
+          </View>
         </Pressable>
       ))}
       {choixImei ? (
@@ -264,7 +384,11 @@ export function ChoixArticles({
 }
 
 const styles = StyleSheet.create({
+  rangee: { gap: 8, paddingVertical: 2 },
+  filtre: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 7 },
+  stock: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
   resultat: {
+    alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,

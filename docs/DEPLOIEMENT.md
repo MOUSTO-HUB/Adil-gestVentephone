@@ -80,15 +80,23 @@ curl https://gestvente.exemple.com/api/sante
 La première construction prend 5 à 10 minutes. Caddy obtient seul le certificat
 HTTPS ; les migrations de la base s'appliquent à chaque démarrage de l'API.
 
-## 5. Créer le commerce et le propriétaire
+## 5. Créer le compte du concepteur, puis les commerçants
 
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.prod exec api node dist/cli/initialiser.js
 ```
 
-La commande demande le nom du commerce, la première boutique (et son préfixe de
-facture), le nom et l'identifiant du propriétaire, puis affiche **une seule fois**
-le mot de passe provisoire. Le code PIN est choisi à la première connexion.
+La commande demande le nom et l'identifiant du concepteur de la plateforme, puis
+affiche **une seule fois** son mot de passe. Ouvrez ensuite le site, **Espace
+concepteur** (sous le bouton de connexion) : chaque commerçant abonné s'y crée avec
+sa première boutique et son propriétaire (mot de passe provisoire affiché une seule
+fois ; le code PIN est choisi à la première connexion). Le catalogue de base
+(téléphones et accessoires courants, sans photo) est installé d'office ; le
+commerçant n'a plus qu'à saisir ses quantités et ajuster ses prix.
+
+Depuis cet espace : ajouter des boutiques, les verrouiller ou les supprimer
+(restaurables), suspendre ou retirer un commerce, noter la fin de l'abonnement,
+recréer le mot de passe du propriétaire.
 
 ## 6. Installer le site sur les ordinateurs
 

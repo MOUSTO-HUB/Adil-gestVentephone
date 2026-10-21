@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Bouton, Champ, Ecran, Message } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
@@ -49,6 +50,12 @@ export default function Connexion() {
       />
       <Message texte={erreur} />
       <Bouton titre="Se connecter" onPress={valider} chargement={envoi} />
+      <Bouton
+        titre="Espace concepteur"
+        variante="secondaire"
+        icone="construct-outline"
+        onPress={() => router.push('/plateforme')}
+      />
     </Ecran>
   );
 }

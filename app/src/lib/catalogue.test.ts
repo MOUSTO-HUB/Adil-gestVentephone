@@ -266,3 +266,77 @@ describe('opérations du catalogue (effet local)', () => {
     expect(await base.tous('SELECT id FROM prixBoutique')).toEqual([]);
   });
 });
+
+describe('filtres de la vente', () => {
+  let base: BaseSql;
+  const SAMSUNG = uuid();
+  const TECNO = uuid();
+  const A10 = uuid();
+  const S22 = uuid();
+  const a10 = produit({
+    nom: 'Samsung A10 32 Go',
+    type: 'TELEPHONE',
+    marqueId: SAMSUNG,
+    modeleId: A10,
+  });
+  const s22 = produit({
+    nom: 'Samsung S22 Ultra 256 Go',
+    type: 'TELEPHONE',
+    marqueId: SAMSUNG,
+    modeleId: S22,
+  });
+  const camon = produit({ nom: 'Tecno Camon 15 64 Go', type: 'TELEPHONE', marqueId: TECNO });
+  const anticasse = produit({ nom: 'Anticasse Samsung A10' });
+  const casque = produit({ nom: 'Casque Bluetooth P47' });
+
+  beforeAll(async () => {
+    base = await nouvelleBase();
+    for (const p of [a10, s22, camon, anticasse, casque])
+      await ecrireEntite(base, 'produit', p.id, p);
+    await ecrireEntite(base, 'modele', A10, { id: A10, marqueId: SAMSUNG, nom: 'A10' });
+    await ecrireEntite(base, 'modele', S22, { id: S22, marqueId: SAMSUNG, nom: 'S22 Ultra' });
+    const compat = `${anticasse.id}:${A10}`;
+    await ecrireEntite(base, 'compatibilite', compat, {
+      id: compat,
+      accessoireId: anticasse.id,
+      modeleId: A10,
+    });
+    await ecrireEntite(base, 'stock', 's1', {
+      id: 's1',
+      produitId: s22.id,
+      boutiqueId: BOUTIQUE,
+      quantite: 2,
+      seuilMinimum: 0,
+    });
+  });
+
+  const noms = async (terme: string, options: Parameters<typeof rechercherProduits>[3]) =>
+    (await rechercherProduits(base, BOUTIQUE, terme, options)).map((p) => p.nom);
+
+  it('type, marque et modèle (les accessoires compatibles suivent le modèle)', async () => {
+    expect(await noms('', { type: 'ACCESSOIRE' })).toEqual([
+      'Anticasse Samsung A10',
+      'Casque Bluetooth P47',
+    ]);
+    expect(await noms('', { marqueId: SAMSUNG })).toEqual([
+      'Anticasse Samsung A10',
+      'Samsung A10 32 Go',
+      'Samsung S22 Ultra 256 Go',
+    ]);
+    expect(await noms('', { modeleId: A10 })).toEqual([
+      'Anticasse Samsung A10',
+      'Samsung A10 32 Go',
+    ]);
+    expect(await noms('', { modeleId: A10, type: 'TELEPHONE' })).toEqual(['Samsung A10 32 Go']);
+    expect(await noms('ultra', { marqueId: SAMSUNG })).toEqual(['Samsung S22 Ultra 256 Go']);
+    expect(await noms('camon', { marqueId: SAMSUNG })).toEqual([]);
+  });
+
+  it('les produits en stock d’abord', async () => {
+    expect(await noms('', { marqueId: SAMSUNG, enStockDabord: true })).toEqual([
+      'Samsung S22 Ultra 256 Go',
+      'Anticasse Samsung A10',
+      'Samsung A10 32 Go',
+    ]);
+  });
+});
