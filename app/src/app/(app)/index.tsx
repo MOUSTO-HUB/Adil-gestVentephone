@@ -1,6 +1,12 @@
-import { formaterMontant, LIBELLES_ROLES, peutGererSessions, jourLocal } from '@gestvente/commun';
+import {
+  avertissementAbonnement,
+  formaterMontant,
+  LIBELLES_ROLES,
+  peutGererSessions,
+  jourLocal,
+} from '@gestvente/commun';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Bouton, Ecran, Grille, Indicateur, Message, Section, Tuile } from '@/components/ui';
 import { produitsSousSeuil } from '@/lib/achats';
 import { caisseOuverte } from '@/lib/caisse-session';
@@ -20,6 +26,7 @@ export default function Accueil() {
   const { etat, conflits } = useSync();
   const boutiqueId = boutique?.id ?? '';
   const gestion = !!profil && peutGererSessions(profil.role);
+  const [ouvertLe] = useState(() => new Date());
 
   useEffect(() => {
     rafraichirProfil().catch(() => undefined);
@@ -100,6 +107,12 @@ export default function Accueil() {
   };
 
   const prenom = profil.nom.split(' ')[0];
+  // Seul le propriétaire est prévenu de l'échéance de l'abonnement (essai compris).
+  const abonnement = profil.commerce.abonnement;
+  const avertissement =
+    profil.role === 'PROPRIETAIRE' && abonnement?.jusquAu
+      ? avertissementAbonnement(new Date(abonnement.jusquAu), abonnement.etat === 'ESSAI', ouvertLe)
+      : null;
   const aVerifier = etat.refusees + (gestion ? conflits : etat.enConflit);
   const aTraiter = (jour?.aValider ?? 0) + aVerifier;
 
@@ -110,6 +123,11 @@ export default function Accueil() {
       retour={false}
       enHaut
     >
+      {/* Refus du serveur (commerce suspendu, abonnement expiré…) : rien ne part, tout est gardé. */}
+      {etat.erreur ? <Message texte={etat.erreur} /> : null}
+      {avertissement && !etat.erreur ? (
+        <Message type={avertissement.niveau} texte={avertissement.texte} />
+      ) : null}
       <Grille>
         <Indicateur
           libelle={gestion ? 'Ventes du jour' : 'Mes ventes du jour'}

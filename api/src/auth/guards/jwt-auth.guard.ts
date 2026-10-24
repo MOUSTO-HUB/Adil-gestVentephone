@@ -60,7 +60,7 @@ export class JwtAuthGuard implements CanActivate {
             commerceId: true,
             role: true,
             actif: true,
-            commerce: { select: { statut: true, motifStatut: true } },
+            commerce: { select: { statut: true, motifStatut: true, abonnementJusquAu: true } },
             boutiques: {
               where: { boutique: BOUTIQUE_OUVERTE },
               select: { boutiqueId: true },

@@ -19,10 +19,14 @@ import {
   ApiPropertyOptional,
   ApiTags,
 } from '@nestjs/swagger';
+import { FORMULES_ABONNEMENT, type FormuleAbonnement } from '@gestvente/commun';
 import {
   IsBoolean,
   IsIn,
+  IsInt,
   IsISO8601,
+  Max,
+  Min,
   IsOptional,
   IsString,
   Length,
@@ -31,7 +35,7 @@ import {
 } from 'class-validator';
 import { Public } from '../auth/decorateurs.js';
 import { LIMITES, LimiteurService } from '../securite/limiteur.service.js';
-import type { StatutCommerce } from '../generated/prisma/enums.js';
+import type { MoyenPaiement, StatutCommerce } from '../generated/prisma/enums.js';
 import { ConcepteurCourant, type ConcepteurConnecte, ConcepteurGuard } from './concepteur.guard.js';
 import { PlateformeService } from './plateforme.service.js';
 
@@ -78,6 +82,29 @@ class AbonnementDto {
   jusquAu: string | null;
 }
 
+const MOYENS = ['ESPECES', 'ORANGE_MONEY', 'MTN_MOMO', 'VIREMENT'] as const;
+
+class PaiementDto {
+  @ApiProperty({ enum: FORMULES_ABONNEMENT }) @IsIn(FORMULES_ABONNEMENT) formule: FormuleAbonnement;
+  @ApiProperty({ description: 'Nombre de mois ou d’années payés.', minimum: 1, maximum: 24 })
+  @IsInt()
+  @Min(1)
+  @Max(24)
+  periodes: number;
+  @ApiProperty({ enum: MOYENS }) @IsIn(MOYENS) moyen: MoyenPaiement;
+  @ApiPropertyOptional({ description: 'Obligatoire sauf en espèces.' })
+  @IsOptional()
+  @IsString()
+  @Length(0, 80)
+  reference?: string;
+  @ApiPropertyOptional({ description: 'Montant payé en GNF (par défaut : le tarif).' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1_000_000_000)
+  montant?: number;
+}
+
 class BoutiqueDto {
   @ApiProperty() @IsString() @Length(2, 80) nom: string;
   @ApiProperty()
@@ -104,8 +131,8 @@ class FiltreCommercesDto {
 }
 
 /**
- * Espace concepteur (compte distinct des commerçants) : commerces abonnés, boutiques,
- * verrouillage, retrait et restauration, catalogue de base.
+ * Espace concepteur (compte distinct des commerçants) : commerces abonnés, abonnements et
+ * paiements, boutiques, verrouillage, retrait et restauration, catalogue de base.
  */
 @ApiTags('Plateforme (concepteur)')
 @Controller('plateforme')
@@ -130,6 +157,17 @@ export class PlateformeController {
       }
       throw erreur;
     }
+  }
+
+  @Get('tableau')
+  @Public()
+  @UseGuards(ConcepteurGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({
+    description: 'Commerces par état d’abonnement, encaissements (GNF), échéances.',
+  })
+  tableau() {
+    return this.plateforme.tableau();
   }
 
   @Get('commerces')
@@ -181,6 +219,19 @@ export class PlateformeController {
     @Body() dto: AbonnementDto,
   ): Promise<void> {
     await this.plateforme.modifierAbonnement(c, id, dto.jusquAu);
+  }
+
+  @Post('commerces/:id/paiements')
+  @Public()
+  @UseGuards(ConcepteurGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ description: 'Paiement enregistré et nouvelle échéance.' })
+  paiement(
+    @ConcepteurCourant() c: ConcepteurConnecte,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PaiementDto,
+  ) {
+    return this.plateforme.enregistrerPaiement(c, id, dto);
   }
 
   @Post('commerces/:id/boutiques')

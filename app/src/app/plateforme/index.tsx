@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Bouton, Champ, Ecran, Indicateur, Message, Texte } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
-import { BadgeStatut, dateCourte } from '@/components/plateforme';
+import { BadgeAbonnement, BadgeStatut, dateCourte } from '@/components/plateforme';
 import { type ResumeCommerce, usePlateforme } from '@/lib/plateforme';
 import { ombre, useCouleurs } from '@/lib/theme';
 
@@ -113,6 +113,12 @@ function Commerces() {
           />
         </View>
         <Bouton
+          titre="Tableau de bord"
+          variante="secondaire"
+          icone="stats-chart"
+          onPress={() => router.push('/plateforme/tableau')}
+        />
+        <Bouton
           titre="Quitter"
           variante="secondaire"
           icone="log-out-outline"
@@ -183,6 +189,7 @@ function Commerces() {
               {x.nom}
             </Text>
             <BadgeStatut statut={x.statut} />
+            {x.statut === 'ACTIF' ? <BadgeAbonnement {...x.abonnement} /> : null}
           </View>
           <Texte discret>
             {x.proprietaire
@@ -208,7 +215,7 @@ function Commerces() {
           </View>
           <Texte discret>
             Abonnement :{' '}
-            {x.abonnementJusquAu ? `jusqu’au ${dateCourte(x.abonnementJusquAu)}` : 'non renseigné'}
+            {x.abonnementJusquAu ? `jusqu’au ${dateCourte(x.abonnementJusquAu)}` : 'sans échéance'}
             {x.derniereVente ? ` · dernière vente le ${dateCourte(x.derniereVente)}` : ''}
           </Texte>
         </Pressable>

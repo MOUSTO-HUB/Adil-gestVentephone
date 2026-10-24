@@ -1,9 +1,19 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { LIBELLES_ROLES, type Role } from '@gestvente/commun';
+import {
+  FORMULES_ABONNEMENT,
+  type FormuleAbonnement,
+  formaterMontant,
+  GRACE_JOURS,
+  LIBELLES_FORMULES,
+  LIBELLES_MOYENS,
+  LIBELLES_ROLES,
+  type Role,
+} from '@gestvente/commun';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { BadgeStatut, dateCourte } from '@/components/plateforme';
+import { Choix } from '@/components/choix';
+import { BadgeAbonnement, BadgeStatut, dateCourte } from '@/components/plateforme';
 import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
 import { messageErreur, type Options } from '@/lib/api';
 import { confirmer } from '@/lib/confirmer';
@@ -11,12 +21,22 @@ import {
   type AccesProvisoire,
   dateSaisie,
   type DetailCommerce,
+  type MoyenAbonnement,
   type StatutCommerce,
   usePlateforme,
 } from '@/lib/plateforme';
 import { useCouleurs } from '@/lib/theme';
 
 type Boutique = DetailCommerce['boutiques'][number];
+
+const MOYENS: MoyenAbonnement[] = ['ESPECES', 'ORANGE_MONEY', 'MTN_MOMO', 'VIREMENT'];
+const PAIEMENT_VIDE = {
+  formule: 'MENSUELLE' as FormuleAbonnement,
+  periodes: '1',
+  moyen: 'ORANGE_MONEY' as MoyenAbonnement,
+  reference: '',
+  montant: '',
+};
 
 export default function FicheCommercant() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,6 +50,7 @@ export default function FicheCommercant() {
   const [motif, setMotif] = useState('');
   const [abonnement, setAbonnement] = useState('');
   const [nouvelle, setNouvelle] = useState({ nom: '', prefixe: '', adresse: '' });
+  const [paiement, setPaiement] = useState(PAIEMENT_VIDE);
 
   const charger = useCallback(
     () =>
@@ -105,6 +126,39 @@ export default function FicheCommercant() {
         ? `Abonnement enregistré jusqu’au ${abonnement.trim()}.`
         : 'Date d’abonnement effacée.',
     );
+  };
+
+  const periodes = Number(paiement.periodes) || 0;
+  const tarif = commerce.tarifs[paiement.formule] * periodes;
+
+  const enregistrerPaiement = async () => {
+    if (!Number.isInteger(periodes) || periodes < 1 || periodes > 24) {
+      return setErreur('Nombre de périodes : de 1 à 24.');
+    }
+    if (paiement.moyen !== 'ESPECES' && !paiement.reference.trim()) {
+      return setErreur('La référence de la transaction est obligatoire pour ce moyen.');
+    }
+    const montant = paiement.montant.trim() ? Number(paiement.montant) : undefined;
+    if (montant !== undefined && (!Number.isInteger(montant) || montant < 0)) {
+      return setErreur('Montant en GNF, sans décimale.');
+    }
+    const r = await agir<{ montant: number; jusquAu: string }>(
+      'paiement',
+      `/commerces/${id}/paiements`,
+      {
+        methode: 'POST',
+        corps: {
+          formule: paiement.formule,
+          periodes,
+          moyen: paiement.moyen,
+          reference: paiement.reference.trim() || undefined,
+          montant,
+        },
+      },
+      (x) =>
+        `${formaterMontant(x.montant, 'GNF')} enregistrés : accès ouvert jusqu’au ${dateCourte(x.jusquAu)}.`,
+    );
+    if (r) setPaiement(PAIEMENT_VIDE);
   };
 
   const ajouterBoutique = async () => {
@@ -310,14 +364,78 @@ export default function FicheCommercant() {
       </Carte>
 
       <Carte titre="Abonnement" icone="calendar">
+        <View style={styles.ligne}>
+          <BadgeAbonnement {...commerce.abonnement} />
+          <Texte discret>
+            {commerce.abonnementJusquAu
+              ? `Échéance : ${dateCourte(commerce.abonnementJusquAu)}`
+              : 'Accès sans limite de date'}
+            {commerce.essaiJusquAu ? ` · essai jusqu’au ${dateCourte(commerce.essaiJusquAu)}` : ''}
+          </Texte>
+        </View>
+        <Texte discret>
+          Tarif ({boutiquesVisibles.length} boutique{boutiquesVisibles.length > 1 ? 's' : ''}) :{' '}
+          {formaterMontant(commerce.tarifs.MENSUELLE, 'GNF')} par mois ou{' '}
+          {formaterMontant(commerce.tarifs.ANNUELLE, 'GNF')} par an. Après l’échéance, l’accès reste
+          ouvert {GRACE_JOURS} jours puis il est coupé (données conservées).
+        </Texte>
+        <Choix
+          libelle="Formule"
+          options={FORMULES_ABONNEMENT.map((f) => ({ id: f, nom: LIBELLES_FORMULES[f] }))}
+          valeurs={[paiement.formule]}
+          surChoix={([formule]) =>
+            setPaiement((p) => ({ ...p, formule: formule as FormuleAbonnement }))
+          }
+        />
         <Champ
-          libelle="Payé jusqu’au (vide : non renseigné)"
+          libelle={paiement.formule === 'MENSUELLE' ? 'Nombre de mois' : 'Nombre d’années'}
+          value={paiement.periodes}
+          keyboardType="number-pad"
+          onChangeText={(periodes) => setPaiement((p) => ({ ...p, periodes }))}
+        />
+        <Choix
+          libelle="Moyen de paiement"
+          options={MOYENS.map((m) => ({ id: m, nom: LIBELLES_MOYENS[m] }))}
+          valeurs={[paiement.moyen]}
+          surChoix={([moyen]) => setPaiement((p) => ({ ...p, moyen: moyen as MoyenAbonnement }))}
+        />
+        {paiement.moyen !== 'ESPECES' ? (
+          <Champ
+            libelle="Référence de la transaction"
+            value={paiement.reference}
+            onChangeText={(reference) => setPaiement((p) => ({ ...p, reference }))}
+          />
+        ) : null}
+        <Champ
+          libelle={`Montant payé (vide : ${formaterMontant(tarif, 'GNF')})`}
+          value={paiement.montant}
+          keyboardType="number-pad"
+          onChangeText={(montant) => setPaiement((p) => ({ ...p, montant }))}
+        />
+        <Bouton
+          titre="Enregistrer le paiement"
+          icone="cash"
+          onPress={() => void enregistrerPaiement()}
+          chargement={enCours === 'paiement'}
+        />
+        {commerce.paiements.length ? <Texte gras>Paiements reçus</Texte> : null}
+        {commerce.paiements.map((p) => (
+          <Texte key={p.id} discret>
+            {dateCourte(p.creeLe)} · {formaterMontant(p.montant, 'GNF')} ·{' '}
+            {LIBELLES_FORMULES[p.formule]} × {p.periodes} · {LIBELLES_MOYENS[p.moyen]}
+            {p.reference ? ` (${p.reference})` : ''} · du {dateCourte(p.periodeDu)} au{' '}
+            {dateCourte(p.periodeAu)}
+          </Texte>
+        ))}
+        <Texte gras>Corriger l’échéance</Texte>
+        <Champ
+          libelle="Accès ouvert jusqu’au (vide : sans échéance)"
           value={abonnement}
           onChangeText={setAbonnement}
           placeholder="JJ/MM/AAAA"
         />
         <Bouton
-          titre="Enregistrer"
+          titre="Enregistrer la date"
           icone="save"
           variante="secondaire"
           onPress={() => void enregistrerAbonnement()}

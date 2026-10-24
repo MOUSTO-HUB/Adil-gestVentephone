@@ -36,6 +36,12 @@ enum StatutCommerce {
   SUPPRIME
 }
 
+/// Formule d'abonnement à la plateforme.
+enum FormuleAbonnement {
+  MENSUELLE
+  ANNUELLE
+}
+
 enum TypeProduit {
   TELEPHONE
   ACCESSOIRE
@@ -252,8 +258,10 @@ model Commerce {
   /// Motif affiché au commerçant (suspension, suppression).
   motifStatut       String?
   statutModifieLe   DateTime?
-  /// Fin de l'abonnement en cours (information du concepteur).
+  /// Fin de l'abonnement en cours (vide : sans échéance). Échéance + délai de grâce dépassés : accès coupé.
   abonnementJusquAu DateTime?
+  /// Fin de la période d'essai offerte à la création.
+  essaiJusquAu      DateTime?
   /// Délai (jours après la vente) pour un retour ou un échange ; au-delà, seul un appareil en panne sous garantie s'échange.
   delaiRetourJours  Int            @default(7)
   /// Hausse maximale (en %) de la valeur de reprise proposée qu'un vendeur accorde sans le gérant.
@@ -272,35 +280,36 @@ model Commerce {
   creeLe            DateTime       @default(now())
   modifieLe         DateTime       @updatedAt
 
-  boutiques        Boutique[]
-  utilisateurs     Utilisateur[]
-  appareils        Appareil[]
-  marques          Marque[]
-  modeles          Modele[]
-  categories       Categorie[]
-  produits         Produit[]
-  articles         Article[]
-  clients          Client[]
-  fournisseurs     Fournisseur[]
-  achats           Achat[]
-  ventes           Vente[]
-  retours          Retour[]
-  caisses          Caisse[]
-  depenses         Depense[]
-  trocs            Troc[]
-  grillesReprise   GrilleReprise[]
-  imeiSignales     ImeiSignale[]
-  credits          Credit[]
-  encaissements    Encaissement[]
-  transferts       Transfert[]
-  inventaires      Inventaire[]
-  mouvementsStock  MouvementStock[]
-  messages         Message[]
-  modelesMessages  ModeleMessage[]
-  rapportsArchives RapportArchive[]
-  journalAudit     JournalAudit[]
-  operationsSync   OperationSync[]
-  changements      Changement[]
+  boutiques           Boutique[]
+  utilisateurs        Utilisateur[]
+  appareils           Appareil[]
+  marques             Marque[]
+  modeles             Modele[]
+  categories          Categorie[]
+  produits            Produit[]
+  articles            Article[]
+  clients             Client[]
+  fournisseurs        Fournisseur[]
+  achats              Achat[]
+  ventes              Vente[]
+  retours             Retour[]
+  caisses             Caisse[]
+  depenses            Depense[]
+  trocs               Troc[]
+  grillesReprise      GrilleReprise[]
+  imeiSignales        ImeiSignale[]
+  credits             Credit[]
+  encaissements       Encaissement[]
+  transferts          Transfert[]
+  inventaires         Inventaire[]
+  mouvementsStock     MouvementStock[]
+  messages            Message[]
+  modelesMessages     ModeleMessage[]
+  rapportsArchives    RapportArchive[]
+  paiementsAbonnement PaiementAbonnement[]
+  journalAudit        JournalAudit[]
+  operationsSync      OperationSync[]
+  changements         Changement[]
 }
 
 model Boutique {
@@ -1331,4 +1340,25 @@ model RapportArchive {
   commerce Commerce @relation(fields: [commerceId], references: [id])
 
   @@unique([commerceId, frequence, du])
+}
+
+/// Paiement d'abonnement enregistré par le concepteur (montant en GNF) ; il prolonge l'échéance.
+model PaiementAbonnement {
+  id         String            @id @default(uuid())
+  commerceId String
+  formule    FormuleAbonnement
+  periodes   Int
+  montant    BigInt
+  moyen      MoyenPaiement
+  reference  String?
+  periodeDu  DateTime
+  periodeAu  DateTime
+  /// Nom du concepteur qui l'a saisi.
+  saisiPar   String
+  creeLe     DateTime          @default(now())
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+
+  @@index([commerceId, creeLe])
+  @@index([creeLe])
 }

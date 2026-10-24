@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import type { EtatAbonnement, FormuleAbonnement } from '@gestvente/commun';
 import { appeler, ErreurApi, type Options } from './api';
 import { effacer, ecrire, lire } from './stockage';
 
@@ -101,6 +102,7 @@ export interface ResumeCommerce {
   statut: StatutCommerce;
   motifStatut: string | null;
   abonnementJusquAu: string | null;
+  abonnement: EtatAbonnementCommerce;
   creeLe: string;
   proprietaire: { nom: string; identifiant: string; derniereConnexion: string | null } | null;
   boutiques: number;
@@ -120,6 +122,11 @@ export interface DetailCommerce {
   statut: StatutCommerce;
   motifStatut: string | null;
   abonnementJusquAu: string | null;
+  essaiJusquAu: string | null;
+  abonnement: EtatAbonnementCommerce;
+  /** Prix d'une période selon les boutiques ouvertes (GNF). */
+  tarifs: Record<FormuleAbonnement, number>;
+  paiements: PaiementAbonnement[];
   creeLe: string;
   produits: number;
   clients: number;
@@ -139,6 +146,50 @@ export interface DetailCommerce {
     role: string;
     actif: boolean;
     derniereConnexion: string | null;
+  }[];
+}
+
+export interface EtatAbonnementCommerce {
+  etat: EtatAbonnement;
+  joursRestants: number | null;
+}
+
+export type MoyenAbonnement = 'ESPECES' | 'ORANGE_MONEY' | 'MTN_MOMO' | 'VIREMENT';
+
+export interface PaiementAbonnement {
+  id: string;
+  formule: FormuleAbonnement;
+  periodes: number;
+  montant: number;
+  moyen: MoyenAbonnement;
+  reference: string | null;
+  periodeDu: string;
+  periodeAu: string;
+  saisiPar: string;
+  creeLe: string;
+}
+
+/** Tableau de bord du concepteur (montants en GNF). */
+export interface TableauPlateforme {
+  commerces: { total: number; actifs: number; suspendus: number; nouveauxCeMois: number };
+  abonnements: Record<EtatAbonnement, number>;
+  encaisse: Record<'mois' | 'annee', { montant: number; paiements: number }>;
+  echeances: {
+    id: string;
+    nom: string;
+    etat: EtatAbonnement;
+    jusquAu: string;
+    joursRestants: number;
+  }[];
+  derniersPaiements: {
+    id: string;
+    commerceId: string;
+    commerce: string;
+    formule: FormuleAbonnement;
+    periodes: number;
+    montant: number;
+    moyen: MoyenAbonnement;
+    creeLe: string;
   }[];
 }
 

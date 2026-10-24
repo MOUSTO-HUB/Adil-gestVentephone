@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsIn, IsOptional, IsString, Length, Matches, ValidateNested } from 'class-validator';
-import type { ParametresRappels } from '@gestvente/commun';
+import type { EtatAbonnement, ParametresRappels } from '@gestvente/commun';
 import { Role } from '../generated/prisma/enums.js';
 
 export const PLATEFORMES = ['android', 'ios', 'web', 'windows', 'macos', 'autre'] as const;
@@ -90,6 +90,23 @@ export class BoutiqueResumeDto {
   telephone: string | null;
 }
 
+export class AbonnementResumeDto {
+  @ApiProperty({ enum: ['ILLIMITE', 'ESSAI', 'ACTIF', 'A_RENOUVELER', 'EN_GRACE', 'EXPIRE'] })
+  etat: EtatAbonnement;
+  @ApiProperty({
+    nullable: true,
+    type: Number,
+    description: 'Jours avant l’échéance (négatif : échue).',
+  })
+  joursRestants: number | null;
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description: 'Fin de l’abonnement (vide : sans échéance).',
+  })
+  jusquAu: string | null;
+}
+
 export class CommerceResumeDto {
   @ApiProperty() id: string;
   @ApiProperty() nom: string;
@@ -107,6 +124,7 @@ export class CommerceResumeDto {
   repriseMaxVendeur: number;
   @ApiProperty({ description: 'Rappels des tranches et pénalité de retard.' })
   rappels: ParametresRappels;
+  @ApiProperty({ type: AbonnementResumeDto }) abonnement: AbonnementResumeDto;
 }
 
 export class ProfilDto {

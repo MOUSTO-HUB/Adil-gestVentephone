@@ -17,6 +17,7 @@ function Navigation() {
       <Stack.Screen name="index" />
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="nouveau" />
+        <Stack.Screen name="tableau" />
         <Stack.Screen name="commerce/[id]" />
       </Stack.Protected>
     </Stack>

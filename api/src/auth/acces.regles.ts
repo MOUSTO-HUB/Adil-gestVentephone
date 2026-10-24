@@ -1,3 +1,4 @@
+import { etatAbonnement, messageAbonnementExpire } from '@gestvente/commun';
 import { Role } from '../generated/prisma/enums.js';
 
 export interface Acteur {
@@ -11,12 +12,24 @@ export interface Acteur {
 /** Une boutique verrouillée ou retirée par le concepteur ne reçoit plus d'opérations. */
 export const BOUTIQUE_OUVERTE = { verrouillee: false, supprimeeLe: null } as const;
 
-/** Message d'un commerce suspendu ou retiré de la plateforme (null : actif). */
-export function refusCommerce(commerce: {
-  statut: 'ACTIF' | 'SUSPENDU' | 'SUPPRIME';
-  motifStatut: string | null;
-}): string | null {
-  if (commerce.statut === 'ACTIF') return null;
+/**
+ * Message d'un commerce suspendu, retiré de la plateforme ou dont l'abonnement a expiré
+ * (échéance + délai de grâce) ; null : accès ouvert. Les données ne sont jamais touchées.
+ */
+export function refusCommerce(
+  commerce: {
+    statut: 'ACTIF' | 'SUSPENDU' | 'SUPPRIME';
+    motifStatut: string | null;
+    abonnementJusquAu: Date | null;
+  },
+  maintenant = new Date(),
+): string | null {
+  if (commerce.statut === 'ACTIF') {
+    const { etat } = etatAbonnement(commerce.abonnementJusquAu, null, maintenant);
+    return etat === 'EXPIRE' && commerce.abonnementJusquAu
+      ? messageAbonnementExpire(commerce.abonnementJusquAu)
+      : null;
+  }
   const motif = commerce.motifStatut ? ` (${commerce.motifStatut})` : '';
   return commerce.statut === 'SUSPENDU'
     ? `L'accès de votre commerce est suspendu${motif}. Contactez GestVente pour le rétablir.`

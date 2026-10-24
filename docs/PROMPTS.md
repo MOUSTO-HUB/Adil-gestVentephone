@@ -33,7 +33,7 @@ Référence : [Cahier des charges](CAHIER_DES_CHARGES.md).
 | 20  | 3 · Multi-boutiques | Tableau de bord consolidé et rapports avancés | ☑    |
 | 21  | 3 · Multi-boutiques | Sécurité, performance et recette finale       | ☑    |
 | 22  | 3 · Multi-boutiques | Documentation utilisateur et formation        | ☑    |
-| 23  | Option              | Abonnement pour d'autres commerçants          | ☐    |
+| 23  | Option              | Abonnement pour d'autres commerçants          | ☑    |
 
 ---
 

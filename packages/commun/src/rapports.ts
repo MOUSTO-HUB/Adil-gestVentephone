@@ -262,6 +262,13 @@ export const LIBELLES_ACTIONS_AUDIT: Record<string, string> = {
   TRANSFERT_ECART: 'Écart à la réception d’un transfert',
   TRANSFERT_ANNULE: 'Transfert annulé',
   ARCHIVAGE: 'Client ou fournisseur archivé (ou restauré)',
+  PLATEFORME_COMMERCE_CREE: 'Commerce ouvert sur la plateforme',
+  PLATEFORME_STATUT_COMMERCE: 'Accès du commerce suspendu ou rétabli',
+  PLATEFORME_ABONNEMENT: 'Échéance de l’abonnement modifiée',
+  PLATEFORME_PAIEMENT: 'Abonnement payé',
+  PLATEFORME_BOUTIQUE: 'Boutique modifiée par GestVente',
+  PLATEFORME_CATALOGUE: 'Catalogue de base installé',
+  PLATEFORME_MOT_DE_PASSE: 'Mot de passe du propriétaire réinitialisé par GestVente',
 };
 
 /** Familles d'actions proposées comme filtre dans l'écran du journal. */

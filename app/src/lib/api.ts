@@ -1,4 +1,4 @@
-import type { ParametresRappels, Role } from '@gestvente/commun';
+import type { EtatAbonnement, ParametresRappels, Role } from '@gestvente/commun';
 import { API_URL } from './config';
 
 export interface Jetons {
@@ -42,6 +42,8 @@ export interface Profil {
     repriseMaxVendeur?: number;
     /** Rappels des tranches et pénalité (absent des profils gardés avant l'étape 17). */
     rappels?: ParametresRappels;
+    /** Échéance de l'abonnement (absent des profils gardés avant l'étape 23). */
+    abonnement?: { etat: EtatAbonnement; joursRestants: number | null; jusquAu: string | null };
   };
   boutiques: Boutique[];
 }

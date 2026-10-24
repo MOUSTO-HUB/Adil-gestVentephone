@@ -211,10 +211,114 @@ describe('Espace concepteur (e2e)', () => {
       .post(`/commerces/${commerceId}/proprietaire/mot-de-passe`)
       .expect(200);
     expect(body.identifiant).toBe(identifiant);
-    await connecter(app, identifiant, body.motDePasse);
+    motDePasse = body.motDePasse;
+    await connecter(app, identifiant, motDePasse);
     const journal = await prisma.journalAudit.findMany({
       where: { commerceId, action: { startsWith: 'PLATEFORME_' } },
     });
     expect(journal.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('essai offert à la création ; échéance dépassée : accès et synchronisation coupés, données gardées', async () => {
+    const { body: detail } = await plateforme().get(`/commerces/${commerceId}`).expect(200);
+    expect(detail.abonnement.etat).toBe('ESSAI');
+    expect(detail.abonnement.joursRestants).toBe(30);
+    // Deux boutiques ouvertes (la seconde, ajoutée plus haut, est restaurée).
+    expect(detail.tarifs).toEqual({ MENSUELLE: 200_000, ANNUELLE: 2_000_000 });
+
+    const session = await connecter(app, identifiant, motDePasse);
+    const { body: profil } = await http()
+      .get('/api/auth/moi')
+      .auth(session.jetonAcces, bearer)
+      .expect(200);
+    expect(profil.commerce.abonnement.etat).toBe('ESSAI');
+
+    // Échue depuis 3 jours : délai de grâce, l'accès reste ouvert avec un avertissement.
+    const ilYa = (jours: number) => new Date(Date.now() - jours * 86_400_000).toISOString();
+    await plateforme()
+      .patch(`/commerces/${commerceId}/abonnement`, { jusquAu: ilYa(3) })
+      .expect(204);
+    const { body: grace } = await http()
+      .get('/api/auth/moi')
+      .auth(session.jetonAcces, bearer)
+      .expect(200);
+    expect(grace.commerce.abonnement.etat).toBe('EN_GRACE');
+
+    // Échue depuis 10 jours : plus de requête, de synchronisation ni de connexion.
+    await plateforme()
+      .patch(`/commerces/${commerceId}/abonnement`, { jusquAu: ilYa(10) })
+      .expect(204);
+    const refus = await http()
+      .get('/api/sync/changements?curseur=0')
+      .auth(session.jetonAcces, bearer)
+      .expect(403);
+    expect(refus.body.message).toMatch(/abonnement.*données sont conservées/);
+    await http()
+      .post('/api/auth/connexion')
+      .send({ identifiant, motDePasse, appareil: { nom: 'Test', plateforme: 'web' } })
+      .expect(403);
+    expect(await prisma.produit.count({ where: { commerceId } })).toBe(PRODUITS_REFERENCE);
+
+    const { body: tableau } = await plateforme().get('/tableau').expect(200);
+    expect(tableau.abonnements.EXPIRE).toBeGreaterThanOrEqual(1);
+    expect(tableau.echeances.some((e: { id: string }) => e.id === commerceId)).toBe(true);
+
+    // Paiement d'un mois : la nouvelle période part d'aujourd'hui, l'accès revient.
+    await plateforme()
+      .post(`/commerces/${commerceId}/paiements`, {
+        formule: 'MENSUELLE',
+        periodes: 1,
+        moyen: 'ORANGE_MONEY',
+      })
+      .expect(400);
+    const { body: paye } = await plateforme()
+      .post(`/commerces/${commerceId}/paiements`, {
+        formule: 'MENSUELLE',
+        periodes: 1,
+        moyen: 'ORANGE_MONEY',
+        reference: 'OM-ABO-1',
+      })
+      .expect(201);
+    expect(paye.montant).toBe(200_000);
+    const jours = (iso: string) => Math.round((new Date(iso).getTime() - Date.now()) / 86_400_000);
+    expect(jours(paye.jusquAu)).toBeGreaterThanOrEqual(28);
+    await http()
+      .get('/api/sync/changements?curseur=0')
+      .auth(session.jetonAcces, bearer)
+      .expect(200);
+
+    // Payé d'avance : l'année s'ajoute à l'échéance en cours, rien n'est perdu.
+    const { body: annee } = await plateforme()
+      .post(`/commerces/${commerceId}/paiements`, {
+        formule: 'ANNUELLE',
+        periodes: 1,
+        moyen: 'ESPECES',
+        montant: 1_400_000,
+      })
+      .expect(201);
+    expect(annee.montant).toBe(1_400_000);
+    expect(jours(annee.jusquAu) - jours(paye.jusquAu)).toBeGreaterThanOrEqual(365);
+
+    const { body: apres } = await plateforme().get(`/commerces/${commerceId}`).expect(200);
+    expect(apres.abonnement.etat).toBe('ACTIF');
+    expect(apres.paiements.map((p: { montant: number }) => p.montant)).toEqual([
+      1_400_000, 200_000,
+    ]);
+    const { body: bilan } = await plateforme().get('/tableau').expect(200);
+    expect(bilan.encaisse.annee.montant).toBeGreaterThanOrEqual(1_600_000);
+    expect(bilan.derniersPaiements[0].commerce).toMatch(/Phone Center/);
+    // Le tableau ne donne que des compteurs : aucune vente, aucun client.
+    expect(JSON.stringify(bilan)).not.toMatch(/client|vente/i);
+  });
+
+  it('jeton du concepteur refusé sur les données des commerces', async () => {
+    for (const url of [
+      '/api/sync/instantane',
+      '/api/tableau/trocs',
+      '/api/sync/changements?curseur=0',
+      '/api/tableau',
+    ]) {
+      await http().get(url).auth(jeton, bearer).expect(401);
+    }
   });
 });

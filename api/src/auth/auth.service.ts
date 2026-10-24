@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { erreurNouveauPin, ordreFacture } from '@gestvente/commun';
+import { erreurNouveauPin, etatAbonnement, ordreFacture } from '@gestvente/commun';
 import { hash, verify } from '@node-rs/argon2';
 import { ACTIONS_AUDIT, AuditService } from '../audit/audit.service.js';
 import { Role } from '../generated/prisma/enums.js';
@@ -188,6 +188,10 @@ export class AuthService {
         delaiRetourJours: commerce.delaiRetourJours,
         repriseMaxVendeur: commerce.repriseMaxVendeur,
         rappels: parametresDe(commerce),
+        abonnement: {
+          ...etatAbonnement(commerce.abonnementJusquAu, commerce.essaiJusquAu, new Date()),
+          jusquAu: commerce.abonnementJusquAu?.toISOString() ?? null,
+        },
       },
       boutiques,
     };
