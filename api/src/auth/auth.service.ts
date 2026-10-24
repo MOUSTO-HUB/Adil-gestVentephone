@@ -12,6 +12,7 @@ import { Role } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { LIMITES, LimiteurService } from '../securite/limiteur.service.js';
 import type { AppareilDto, ProfilDto, ResultatPinDto, SessionDto } from './auth.dto.js';
+import { parametresDe } from '../credits/parametres.js';
 import { BOUTIQUE_OUVERTE, refusCommerce } from './acces.regles.js';
 import type { ChargeJeton, UtilisateurConnecte } from './auth.types.js';
 import {
@@ -186,6 +187,7 @@ export class AuthService {
         remiseMaxGerant: commerce.remiseMaxGerant,
         delaiRetourJours: commerce.delaiRetourJours,
         repriseMaxVendeur: commerce.repriseMaxVendeur,
+        rappels: parametresDe(commerce),
       },
       boutiques,
     };

@@ -216,6 +216,8 @@ const COLONNES: { [E in EntiteSync]: (keyof DonneesEntites[E] & string)[] } = {
     'montantPaye',
     'penalite',
     'soldeeLe',
+    'dernierRappel',
+    'nombreRelances',
   ],
   encaissement: [
     'id',

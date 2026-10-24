@@ -91,6 +91,7 @@ export async function ecrireCredit(
   const { commerceId } = utilisateur;
   const boutiqueId = operation.boutiqueId;
   const finance = total - c.apport;
+  const commerce = await tx.commerce.findUniqueOrThrow({ where: { id: commerceId } });
   await tx.credit.create({
     data: {
       id: c.id,
@@ -106,6 +107,8 @@ export async function ecrireCredit(
       nombreTranches: c.nombreTranches,
       frequence: c.frequence,
       premiereEcheance: versDateJour(c.premiereEcheance),
+      // Conditions du contrat (la pénalité suit le réglage du commerce).
+      penaliteActive: commerce.penaliteActive,
       creeParId: utilisateur.id,
     },
   });

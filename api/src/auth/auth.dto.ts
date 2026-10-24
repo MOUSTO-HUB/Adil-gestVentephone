@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsIn, IsOptional, IsString, Length, Matches, ValidateNested } from 'class-validator';
+import type { ParametresRappels } from '@gestvente/commun';
 import { Role } from '../generated/prisma/enums.js';
 
 export const PLATEFORMES = ['android', 'ios', 'web', 'windows', 'macos', 'autre'] as const;
@@ -104,6 +105,8 @@ export class CommerceResumeDto {
     description: 'Hausse maximale (%) de la valeur de reprise accordée par un vendeur.',
   })
   repriseMaxVendeur: number;
+  @ApiProperty({ description: 'Rappels des tranches et pénalité de retard.' })
+  rappels: ParametresRappels;
 }
 
 export class ProfilDto {

@@ -249,6 +249,9 @@ export const LIBELLES_ACTIONS_AUDIT: Record<string, string> = {
   PHOTO_TROC: 'Photo d’un appareil repris',
   CREDIT_ACCORDE: 'Vente à crédit',
   ENCAISSEMENT_CREDIT: 'Tranche de crédit encaissée',
+  PENALITE_APPLIQUEE: 'Pénalité de retard',
+  RELANCE_MANUELLE: 'Relance d’un client',
+  PARAMETRES_RAPPELS: 'Réglages des rappels et pénalités',
 };
 
 /** Familles d'actions proposées comme filtre dans l'écran du journal. */
@@ -279,7 +282,14 @@ export const FAMILLES_AUDIT: Record<string, string[]> = {
     'IMEI_SIGNALE',
     'REMISE_EN_VENTE',
   ],
-  Crédit: ['CREDIT_ACCORDE', 'ENCAISSEMENT_CREDIT', 'PLAFOND_CREDIT_MODIFIE'],
+  Crédit: [
+    'CREDIT_ACCORDE',
+    'ENCAISSEMENT_CREDIT',
+    'PLAFOND_CREDIT_MODIFIE',
+    'PENALITE_APPLIQUEE',
+    'RELANCE_MANUELLE',
+    'PARAMETRES_RAPPELS',
+  ],
 };
 
 /** Section d'un rapport imprimable : un tableau (valeurs déjà mises en forme). */

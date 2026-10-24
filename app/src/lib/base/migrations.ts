@@ -349,6 +349,11 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX encaissement_credit ON encaissement (creditId);
   CREATE INDEX encaissement_caisse ON encaissement (caisseId);
   `,
+  // Rappels des tranches : dernier rappel et relances envoyées.
+  `
+  ALTER TABLE echeance ADD COLUMN dernierRappel TEXT;
+  ALTER TABLE echeance ADD COLUMN nombreRelances INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 /**

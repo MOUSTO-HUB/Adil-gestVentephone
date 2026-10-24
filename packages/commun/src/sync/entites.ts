@@ -360,6 +360,9 @@ export interface EcheanceSync {
   montantPaye: number;
   penalite: number;
   soldeeLe: string | null;
+  /** Jour (AAAA-MM-JJ) du dernier rappel envoyé, ou null. */
+  dernierRappel: string | null;
+  nombreRelances: number;
 }
 
 /** Tranche encaissée (totale ou partielle). */

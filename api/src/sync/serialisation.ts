@@ -368,6 +368,8 @@ export const versEcheance = (e: Echeance): EcheanceSync => ({
   montantPaye: nombre(e.montantPaye),
   penalite: nombre(e.penalite),
   soldeeLe: e.soldeeLe?.toISOString() ?? null,
+  dernierRappel: e.dernierRappelLe ? jour(e.dernierRappelLe) : null,
+  nombreRelances: e.nombreRelances,
 });
 
 export const versEncaissement = (e: Encaissement): EncaissementSync => ({

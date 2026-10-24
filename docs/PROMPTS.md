@@ -27,7 +27,7 @@ Référence : [Cahier des charges](CAHIER_DES_CHARGES.md).
 | 14  | 2 · Troc et crédit  | Messagerie SMS et WhatsApp                    | ☑    |
 | 15  | 2 · Troc et crédit  | Troc (reprise d'appareils)                    | ☑    |
 | 16  | 2 · Troc et crédit  | Vente à crédit et tranches                    | ☑    |
-| 17  | 2 · Troc et crédit  | Rappels automatiques et pénalités             | ☐    |
+| 17  | 2 · Troc et crédit  | Rappels automatiques et pénalités             | ☑    |
 | 18  | 3 · Multi-boutiques | Boutiques multiples, employés et prix         | ☐    |
 | 19  | 3 · Multi-boutiques | Transferts entre boutiques                    | ☐    |
 | 20  | 3 · Multi-boutiques | Tableau de bord consolidé et rapports avancés | ☐    |

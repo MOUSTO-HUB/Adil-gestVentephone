@@ -6,9 +6,13 @@ import {
   jourLocal,
   LIBELLES_FREQUENCES,
   LIBELLES_MOYENS,
+  LIBELLES_RAPPELS,
   LIBELLES_STATUTS_CREDIT,
   lignesRecuEncaissement,
   MOYENS_REMBOURSEMENT,
+  PARAMETRES_RAPPELS_DEFAUT,
+  peutGererSessions,
+  prochainRappel,
   type MoyenRemboursement,
   moyenAvecReference,
   type RecuEncaissement,
@@ -41,7 +45,7 @@ const entier = (texte: string) => {
 export default function FicheCredit() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const c = useCouleurs();
-  const { profil, boutique } = useSession();
+  const { profil, boutique, api } = useSession();
   const { base, enregistrer } = useSync();
   const [montant, setMontant] = useState('');
   const [moyen, setMoyen] = useState<MoyenRemboursement>('ESPECES');
@@ -49,6 +53,7 @@ export default function FicheCredit() {
   const [message, setMessage] = useState<{ texte: string; type: 'erreur' | 'succes' } | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [recuId, setRecuId] = useState<string | null>(null);
+  const [relance, setRelance] = useState(false);
   const fuseau = profil?.commerce.fuseau ?? FUSEAU_PAR_DEFAUT;
   const aujourdhui = jourLocal(new Date(), fuseau);
   const boutiqueId = boutique?.id ?? '';
@@ -91,6 +96,36 @@ export default function FicheCredit() {
     ? recuEncaissement(detail, recuId, entete, profil.nom)
     : null;
   const suggestion = situation.montantEchu || situation.prochaine?.reste || 0;
+  const parametres = profil.commerce.rappels ?? PARAMETRES_RAPPELS_DEFAUT;
+  const prochain =
+    credit.statut === 'EN_COURS' ? prochainRappel(detail.echeances, aujourdhui, parametres) : null;
+  const dernierRappel = detail.echeances
+    .map((e) => e.dernierRappel)
+    .filter((d): d is string => d !== null)
+    .sort()
+    .pop();
+  const penalites = detail.echeances.reduce((t, e) => t + e.penalite, 0);
+
+  /** « Relancer maintenant » : message envoyé par le serveur (en ligne). */
+  const relancer = async () => {
+    setMessage(null);
+    setRelance(true);
+    try {
+      const r = await api.requete<{
+        type: keyof typeof LIBELLES_RAPPELS;
+        montant: number;
+        canal: string;
+      }>(`/credits/${credit.id}/relancer`, { methode: 'POST' });
+      setMessage({
+        texte: `${LIBELLES_RAPPELS[r.type]} envoyé par ${r.canal === 'WHATSAPP' ? 'WhatsApp' : 'SMS'} (${formaterMontant(r.montant, monnaie)}).`,
+        type: 'succes',
+      });
+    } catch (e) {
+      setMessage({ texte: messageErreur(e), type: 'erreur' });
+    } finally {
+      setRelance(false);
+    }
+  };
 
   const encaisser = async () => {
     setMessage(null);
@@ -155,6 +190,26 @@ export default function FicheCredit() {
         {situation.joursRetard ? (
           <Message
             texte={`${situation.tranchesEnRetard} tranche(s) en retard (${situation.joursRetard} jours) : ${formaterMontant(situation.montantEchu, monnaie)} échus.`}
+          />
+        ) : null}
+        {penalites > 0 ? (
+          <Texte discret>Dont pénalités de retard : {formaterMontant(penalites, monnaie)}</Texte>
+        ) : null}
+        {credit.statut === 'EN_COURS' ? (
+          <Texte discret>
+            {prochain
+              ? `Prochain rappel : ${jourFr(prochain.jour)} (${LIBELLES_RAPPELS[prochain.rappel.type].toLowerCase()})`
+              : 'Aucun rappel prévu (relances épuisées).'}
+            {dernierRappel ? ` · dernier envoyé le ${jourFr(dernierRappel)}` : ''}
+          </Texte>
+        ) : null}
+        {credit.statut === 'EN_COURS' && peutGererSessions(profil.role) ? (
+          <Bouton
+            titre="Relancer maintenant"
+            icone="megaphone-outline"
+            variante="accent"
+            chargement={relance}
+            onPress={() => void relancer()}
           />
         ) : null}
         <Bouton
@@ -250,7 +305,12 @@ export default function FicheCredit() {
                       : 'À payer'}
                 </Texte>
               </View>
-              <Texte gras>{formaterMontant(e.montant + e.penalite, monnaie)}</Texte>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Texte gras>{formaterMontant(e.montant + e.penalite, monnaie)}</Texte>
+                {e.penalite > 0 ? (
+                  <Texte discret>dont pénalité {formaterMontant(e.penalite, monnaie)}</Texte>
+                ) : null}
+              </View>
             </View>
           );
         })}

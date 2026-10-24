@@ -1,4 +1,4 @@
-import type { Role } from '@gestvente/commun';
+import type { ParametresRappels, Role } from '@gestvente/commun';
 import { API_URL } from './config';
 
 export interface Jetons {
@@ -40,6 +40,8 @@ export interface Profil {
     delaiRetourJours?: number;
     /** Absent des profils gardés avant le troc : REPRISE_MAX_VENDEUR_DEFAUT. */
     repriseMaxVendeur?: number;
+    /** Rappels des tranches et pénalité (absent des profils gardés avant l'étape 17). */
+    rappels?: ParametresRappels;
   };
   boutiques: Boutique[];
 }

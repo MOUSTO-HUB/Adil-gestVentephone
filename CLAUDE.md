@@ -89,6 +89,13 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 - Opération `CREDIT_ENCAISSER` (tout le personnel, hors ligne, rattachée à la caisse ouverte) : tranches, `montantRestant`, crédit `SOLDE` ; au-delà du dû ⇒ CONFLIT ; audit `ENCAISSEMENT_CREDIT`. `bilanCaisse` compte `encaissements` (serveur, appareil, rapport de caisse). Entités `credit` (tous ceux en cours + 60 jours), `echeance`, `encaissement`.
 - App : `components/saisie-credit.tsx` (plafond, encours, échéancier en direct), `lib/credit-saisie.ts`, `lib/credits.ts`, `lib/sync/operations-credits.ts`, écrans `credits` (en cours, en retard, soldés, total dû) et `credit/[id]` (échéancier, encaissement, reçu, contrat), impression par `components/impression-document.tsx`.
 
+## Rappels et pénalités
+
+- Règles dans `packages/commun/src/rappels.ts` : `rappelDu` (un message par crédit et par jour : relance de retard de tout l'échu tous les `INTERVALLE_RELANCE_JOURS` jours jusqu'à `relancesMax`, sinon rappel du jour, sinon rappel N jours avant, rattrapé si la tâche a manqué un jour), `apresRappel`, `prochainRappel` (affiché sur la fiche), `penaliteDue` (une fois par tranche, après le délai de grâce, fixe ou % de la tranche), `schemaParametresRappels`.
+- Réglages sur `Commerce` (`rappelJoursAvant`, `relancesMax`, `canalRappels`, `penaliteActive`, `penaliteType`, `penaliteValeur`, `penaliteGrace`) : `GET /api/credits/parametres` (gestion), `PUT` (propriétaire, audit `PARAMETRES_RAPPELS`), aussi dans `profil.commerce.rappels`. `Echeance.dernierRappelLe` (minuit UTC du jour de la boutique), `nombreRelances`.
+- `api/src/credits/rappels.service.ts` : tâche BullMQ (`upsertJobScheduler`, 9 h Africa/Conakry ; jours comptés au fuseau du commerce) sur les commerces en service et boutiques ouvertes ; pénalités (audit `PENALITE_APPLIQUEE`) puis rappel par `MessagesService` (`RAPPEL_ECHEANCE` / `RETARD_ECHEANCE`), journal des tranches. `executer(date, commerces)` pour les tests. « Relancer maintenant » : `POST /api/credits/:id/relancer` (gestion, audit `RELANCE_MANUELLE`).
+- App : écran `rappels` (propriétaire ; lecture seule pour les gérants), prochain rappel, pénalités et bouton de relance sur `credit/[id]`.
+
 ## Factures, reçus et garantie
 
 - Documents construits sur l'appareil depuis la base locale (`app/src/lib/documents.ts` → `DocumentVente`), donc imprimables hors ligne. Mise en page dans `packages/commun/src/documents.ts` : `lignesRecu` (58 mm = 32 colonnes, 80 mm = 48), `recuHtml`, `factureHtml` (A4), `texteMessage` (WhatsApp/SMS), `etatGarantie`, `mentionGarantie` ; dates au fuseau du commerce (`profil.commerce.fuseau`).

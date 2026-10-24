@@ -200,6 +200,11 @@ enum StatutInventaire {
   ANNULE
 }
 
+enum TypePenalite {
+  FIXE
+  POURCENTAGE
+}
+
 enum CanalMessage {
   SMS
   WHATSAPP
@@ -253,6 +258,17 @@ model Commerce {
   delaiRetourJours  Int            @default(7)
   /// Hausse maximale (en %) de la valeur de reprise proposée qu'un vendeur accorde sans le gérant.
   repriseMaxVendeur Int            @default(10)
+  /// Rappel des tranches N jours avant l'échéance (0 : aucun).
+  rappelJoursAvant  Int            @default(3)
+  /// Relances de retard au plus par tranche (une tous les 7 jours).
+  relancesMax       Int            @default(4)
+  canalRappels      CanalMessage   @default(SMS)
+  /// Pénalité de retard (activée par le propriétaire) : montant fixe ou % de la tranche.
+  penaliteActive    Boolean        @default(false)
+  penaliteType      TypePenalite   @default(FIXE)
+  penaliteValeur    Int            @default(0)
+  /// Jours de retard tolérés avant la pénalité.
+  penaliteGrace     Int            @default(3)
   creeLe            DateTime       @default(now())
   modifieLe         DateTime       @updatedAt
 
@@ -1085,8 +1101,11 @@ model Echeance {
   montantPaye     BigInt    @default(0)
   penalite        BigInt    @default(0)
   soldeeLe        DateTime?
+  /// Jour du dernier rappel (minuit UTC du jour de la boutique).
   dernierRappelLe DateTime?
   nombreRappels   Int       @default(0)
+  /// Relances de retard envoyées (au plus Commerce.relancesMax).
+  nombreRelances  Int       @default(0)
   modifieLe       DateTime  @updatedAt
 
   credit Credit @relation(fields: [creditId], references: [id])

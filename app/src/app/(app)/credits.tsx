@@ -9,7 +9,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Choix } from '@/components/choix';
-import { Ecran, Indicateur, Texte } from '@/components/ui';
+import { Bouton, Ecran, Indicateur, Texte } from '@/components/ui';
 import { type FiltreCredits, listeCredits, totauxCredits } from '@/lib/credits';
 import { FUSEAU_PAR_DEFAUT } from '@/lib/documents';
 import { useSession } from '@/lib/session';
@@ -76,6 +76,14 @@ export default function Credits() {
           couleur={c.danger}
         />
       </View>
+      {profil.role !== 'VENDEUR' ? (
+        <Bouton
+          titre="Rappels et pénalités"
+          icone="notifications-outline"
+          variante="secondaire"
+          onPress={() => router.push('/rappels')}
+        />
+      ) : null}
       <Choix
         libelle="Afficher"
         options={FILTRES}

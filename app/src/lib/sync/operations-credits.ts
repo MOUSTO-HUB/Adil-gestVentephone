@@ -92,6 +92,8 @@ export async function creditEnregistrer(
       montantPaye: 0,
       penalite: 0,
       soldeeLe: null,
+      dernierRappel: null,
+      nombreRelances: 0,
     });
   }
 }
