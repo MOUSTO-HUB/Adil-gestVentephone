@@ -244,6 +244,12 @@ export default function Accueil() {
           <Section titre="Gestion" />
           <Grille>
             <Tuile
+              titre="Tableau de bord"
+              icone="speedometer"
+              couleur={c.primaire}
+              onPress={aller('/tableau')}
+            />
+            <Tuile
               titre="Rapports"
               icone="bar-chart"
               couleur={c.succes}

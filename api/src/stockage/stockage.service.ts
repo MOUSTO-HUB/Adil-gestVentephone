@@ -33,7 +33,7 @@ export const nomPhotoValide = (nom: string) => NOM_VALIDE.test(nom);
  * « justificatifs » (photos des dépenses, servies à la gestion), « trocs » (état des
  * appareils repris, servies au personnel de la boutique).
  */
-export type DossierStockage = 'photos' | 'pieces' | 'justificatifs' | 'trocs';
+export type DossierStockage = 'photos' | 'pieces' | 'justificatifs' | 'trocs' | 'rapports';
 
 /** Images enregistrées dans le dossier STOCKAGE_DIR. */
 @Injectable()
@@ -60,6 +60,19 @@ export class StockageService {
   async lirePhoto(nom: string, dossier: DossierStockage = 'photos'): Promise<Buffer | null> {
     if (!nomPhotoValide(nom)) return null;
     return readFile(join(this.racine, dossier, nom)).catch(() => null);
+  }
+
+  /** Rapport consolidé (Excel) produit par le serveur, sous un nom aléatoire. */
+  async enregistrerRapport(octets: Buffer): Promise<string> {
+    await mkdir(join(this.racine, 'rapports'), { recursive: true });
+    const nom = `${randomUUID()}.xlsx`;
+    await writeFile(join(this.racine, 'rapports', nom), octets);
+    return nom;
+  }
+
+  async lireRapport(nom: string): Promise<Buffer | null> {
+    if (!/^[0-9a-f-]{36}.xlsx$/.test(nom)) return null;
+    return readFile(join(this.racine, 'rapports', nom)).catch(() => null);
   }
 
   async supprimerPhoto(nom: string | null, dossier: DossierStockage = 'photos'): Promise<void> {

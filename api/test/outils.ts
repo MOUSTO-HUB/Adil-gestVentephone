@@ -97,6 +97,7 @@ export async function supprimerCommerce(prisma: PrismaService, commerceId: strin
   await prisma.utilisateurBoutique.deleteMany({ where: { utilisateur: { commerceId } } });
   await prisma.utilisateur.deleteMany({ where: { commerceId } });
   await prisma.boutique.deleteMany({ where: { commerceId } });
+  await prisma.rapportArchive.deleteMany({ where: { commerceId } });
   await prisma.commerce.delete({ where: { id: commerceId } });
 }
 

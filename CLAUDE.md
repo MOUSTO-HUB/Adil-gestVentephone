@@ -136,6 +136,13 @@ PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (vent
 - Serveur `api/src/transferts/transferts.ecritures.ts` ; le journal écrit le transfert et ses lignes pour chacune des deux boutiques ; à la réception, le téléphone quitte les appareils du départ (`donnees: null`) puis arrive chez ceux de l'arrivée. `LigneTransfertSync.imei` permet le scan à l'arrivée. Fiche IMEI : numéro et boutiques du transfert. `GET /api/boutiques` : noms des boutiques ouvertes du commerce (gardés dans `meta` pour le hors ligne).
 - App : `lib/transferts.ts`, `lib/sync/operations-transferts.ts`, écrans `transferts` (à recevoir, à préparer, tous ; badge sur l'accueil), `transfert/nouveau` (demande, envoi direct), `transfert/[id]` (préparation, réception par scan avec écarts, annulation). `SaisieImei` accepte un contrôle `refus`.
 
+## Tableau de bord consolidé
+
+- `packages/commun/src/tableau.ts` : `ChiffresBoutique`, `totaliser` (la synchronisation la plus ancienne ressort), `periodePrecedente`, `evolution`, `situationTrocs` (repris, réparés, en vente, revendus, marge = revente − reprise).
+- `api/src/tableau` : `GET /api/tableau` (propriétaire : toutes ses boutiques ; gérant : les siennes ; `boutiqueId` facultatif ; période d'un an au plus) en requêtes SQL agrégées par boutique (chiffre d'affaires arrondi par ligne comme `rapportVentes`, donc identique aux rapports par boutique ; index `Vente(boutiqueId, dateVente)`, `Retour(boutiqueId, dateRetour)`, `OperationSync(boutiqueId, recueLe)`, `Credit(boutiqueId, statut)`), période précédente, séries par période et boutique ; `GET /api/tableau/trocs` ; `GET /api/tableau/excel`. Dernière synchronisation d'une boutique : dernière opération reçue d'un de ses appareils.
+- Exports planifiés : `RapportsPlanifiesService`, tâche BullMQ chaque jour à 7 h (Conakry) qui crée, une seule fois, le classeur de la dernière semaine et du dernier mois complets de chaque commerce (`RapportArchive`, fichiers `STOCKAGE_DIR/rapports`) ; `GET /api/tableau/archives` (propriétaire). Pas de vue matérialisée : les agrégats indexés suffisent aux volumes d'une boutique.
+- App : écran `tableau` (en ligne : période, boutique, indicateurs, barres par boutique, évolution, trocs, PDF par `rapportHtml`, Excel, rapports planifiés).
+
 ## Authentification et sécurité
 
 - `api/src/auth` : toutes les routes exigent un jeton, sauf celles marquées `@Public()`. Restreindre par rôle avec `@Roles(Role.X)`. Toute route qui prend un identifiant de boutique porte `@UseGuards(BoutiqueGuard)` (+ `@ParamBoutique('id')` si le paramètre ne s'appelle pas `boutiqueId`). Utilisateur courant : `@UtilisateurCourant()` (`id`, `role`, `commerceId`, `appareilId`, `boutiqueIds`) ; toujours filtrer par `commerceId`.

@@ -30,7 +30,7 @@ Référence : [Cahier des charges](CAHIER_DES_CHARGES.md).
 | 17  | 2 · Troc et crédit  | Rappels automatiques et pénalités             | ☑    |
 | 18  | 3 · Multi-boutiques | Boutiques multiples, employés et prix         | ☑    |
 | 19  | 3 · Multi-boutiques | Transferts entre boutiques                    | ☑    |
-| 20  | 3 · Multi-boutiques | Tableau de bord consolidé et rapports avancés | ☐    |
+| 20  | 3 · Multi-boutiques | Tableau de bord consolidé et rapports avancés | ☑    |
 | 21  | 3 · Multi-boutiques | Sécurité, performance et recette finale       | ☐    |
 | 22  | 3 · Multi-boutiques | Documentation utilisateur et formation        | ☐    |
 | 23  | Option              | Abonnement pour d'autres commerçants          | ☐    |

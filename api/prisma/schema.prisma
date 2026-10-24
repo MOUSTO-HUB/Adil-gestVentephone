@@ -272,34 +272,35 @@ model Commerce {
   creeLe            DateTime       @default(now())
   modifieLe         DateTime       @updatedAt
 
-  boutiques       Boutique[]
-  utilisateurs    Utilisateur[]
-  appareils       Appareil[]
-  marques         Marque[]
-  modeles         Modele[]
-  categories      Categorie[]
-  produits        Produit[]
-  articles        Article[]
-  clients         Client[]
-  fournisseurs    Fournisseur[]
-  achats          Achat[]
-  ventes          Vente[]
-  retours         Retour[]
-  caisses         Caisse[]
-  depenses        Depense[]
-  trocs           Troc[]
-  grillesReprise  GrilleReprise[]
-  imeiSignales    ImeiSignale[]
-  credits         Credit[]
-  encaissements   Encaissement[]
-  transferts      Transfert[]
-  inventaires     Inventaire[]
-  mouvementsStock MouvementStock[]
-  messages        Message[]
-  modelesMessages ModeleMessage[]
-  journalAudit    JournalAudit[]
-  operationsSync  OperationSync[]
-  changements     Changement[]
+  boutiques        Boutique[]
+  utilisateurs     Utilisateur[]
+  appareils        Appareil[]
+  marques          Marque[]
+  modeles          Modele[]
+  categories       Categorie[]
+  produits         Produit[]
+  articles         Article[]
+  clients          Client[]
+  fournisseurs     Fournisseur[]
+  achats           Achat[]
+  ventes           Vente[]
+  retours          Retour[]
+  caisses          Caisse[]
+  depenses         Depense[]
+  trocs            Troc[]
+  grillesReprise   GrilleReprise[]
+  imeiSignales     ImeiSignale[]
+  credits          Credit[]
+  encaissements    Encaissement[]
+  transferts       Transfert[]
+  inventaires      Inventaire[]
+  mouvementsStock  MouvementStock[]
+  messages         Message[]
+  modelesMessages  ModeleMessage[]
+  rapportsArchives RapportArchive[]
+  journalAudit     JournalAudit[]
+  operationsSync   OperationSync[]
+  changements      Changement[]
 }
 
 model Boutique {
@@ -819,6 +820,7 @@ model Vente {
   @@index([commerceId, dateVente])
   @@index([clientId])
   @@index([vendeurId])
+  @@index([boutiqueId, dateVente])
 }
 
 model LigneVente {
@@ -895,6 +897,7 @@ model Retour {
   lignes       LigneRetour[]
 
   @@index([venteId])
+  @@index([boutiqueId, dateRetour])
 }
 
 model LigneRetour {
@@ -1090,6 +1093,7 @@ model Credit {
 
   @@index([commerceId, statut])
   @@index([clientId])
+  @@index([boutiqueId, statut])
 }
 
 model Echeance {
@@ -1132,6 +1136,7 @@ model Encaissement {
   caisse   Caisse?  @relation(fields: [caisseId], references: [id])
 
   @@index([creditId])
+  @@index([caisseId])
 }
 
 // ─── Transferts (phase 3) ────────────────────────────────────────────────────
@@ -1275,6 +1280,7 @@ model OperationSync {
 
   @@index([commerceId, statut])
   @@index([appareilId])
+  @@index([boutiqueId, recueLe])
 }
 
 /// Journal des changements des données synchronisées (descente vers les appareils).
@@ -1307,4 +1313,22 @@ model Concepteur {
   derniereConnexion DateTime?
   creeLe            DateTime  @default(now())
   modifieLe         DateTime  @updatedAt
+}
+
+/// Rapport consolidé produit automatiquement (chaque semaine, chaque mois), à télécharger.
+model RapportArchive {
+  id         String   @id @default(uuid())
+  commerceId String
+  /// SEMAINE ou MOIS.
+  frequence  String
+  du         DateTime
+  au         DateTime
+  /// Fichier Excel dans STOCKAGE_DIR/rapports.
+  fichierCle String
+  taille     Int
+  creeLe     DateTime @default(now())
+
+  commerce Commerce @relation(fields: [commerceId], references: [id])
+
+  @@unique([commerceId, frequence, du])
 }
