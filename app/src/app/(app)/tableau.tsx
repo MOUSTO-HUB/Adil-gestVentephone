@@ -245,6 +245,7 @@ export default function TableauDeBord() {
               valeur={m(tableau.total.stockVente)}
               detail={`achat ${m(tableau.total.stockAchat)}`}
               icone="cube"
+              large
             />
             <Indicateur
               libelle="Crédits en cours"

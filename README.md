@@ -7,6 +7,8 @@ Gestion de vente de téléphones et d'accessoires pour commerçants : catalogue,
 - [Cahier des charges](docs/CAHIER_DES_CHARGES.md)
 - [Étapes et prompts de développement](docs/PROMPTS.md)
 - [Mise en production](docs/DEPLOIEMENT.md)
+- [Guide d'utilisation](docs/guide/README.md) (vendeur, gérant, propriétaire) et [formation des vendeurs](docs/guide/formation-vendeurs.md) ; PDF dans [docs/guide/pdf](docs/guide/pdf)
+- [Recette, sécurité et performances](docs/RECETTE.md)
 
 ## Structure
 

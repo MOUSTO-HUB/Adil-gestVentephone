@@ -4,6 +4,8 @@ Application de gestion de vente de téléphones et d'accessoires : catalogue, st
 
 Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de développement : `docs/PROMPTS.md`.
 
+Guide utilisateur : `docs/guide/` (une fiche par tâche et par rôle, formation des vendeurs, aide-mémoire ; captures dans `docs/guide/images`, au format téléphone). Après une modification d'écran, mettre à jour la fiche concernée et régénérer les PDF : `node scripts/guide-pdf.mjs` (Edge ou Chrome sans fenêtre, `NAVIGATEUR=` sinon). Aide rapide dans l'application : écran `aide`.
+
 ## Stack
 
 - Monorepo pnpm

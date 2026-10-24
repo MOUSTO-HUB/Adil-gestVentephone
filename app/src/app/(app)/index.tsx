@@ -282,6 +282,7 @@ export default function Accueil() {
 
       <Section titre="Réglages" />
       <Grille>
+        <Tuile titre="Aide" icone="help-buoy" couleur={c.accent} onPress={aller('/aide')} />
         <Tuile titre="Imprimante" icone="print" onPress={aller('/imprimante')} />
         <Tuile
           titre="Synchronisation"
