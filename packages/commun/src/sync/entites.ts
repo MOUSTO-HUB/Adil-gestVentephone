@@ -31,6 +31,8 @@ export const ENTITES_SYNC = [
   'credit',
   'echeance',
   'encaissement',
+  'transfert',
+  'ligneTransfert',
 ] as const;
 export type EntiteSync = (typeof ENTITES_SYNC)[number];
 
@@ -377,6 +379,33 @@ export interface EncaissementSync {
   creeParId: string | null;
 }
 
+/** Transfert entre deux boutiques (connu des appareils des deux boutiques). */
+export interface TransfertSync {
+  id: string;
+  numero: string;
+  boutiqueDepartId: string;
+  boutiqueArriveeId: string;
+  statut: 'DEMANDE' | 'ENVOYE' | 'RECU' | 'ANNULE';
+  note: string | null;
+  noteReception: string | null;
+  envoyeLe: string | null;
+  recuLe: string | null;
+  creeLe: string;
+  creeParId: string | null;
+}
+
+export interface LigneTransfertSync {
+  id: string;
+  transfertId: string;
+  produitId: string;
+  articleId: string | null;
+  /** IMEI du téléphone (scan à l'arrivée, l'article n'étant pas encore dans la boutique). */
+  imei: string | null;
+  quantite: number;
+  /** Nul tant que le transfert n'est pas reçu. */
+  quantiteRecue: number | null;
+}
+
 export interface DonneesEntites {
   marque: MarqueSync;
   modele: ModeleSync;
@@ -404,6 +433,8 @@ export interface DonneesEntites {
   credit: CreditSync;
   echeance: EcheanceSync;
   encaissement: EncaissementSync;
+  transfert: TransfertSync;
+  ligneTransfert: LigneTransfertSync;
 }
 
 /** Un changement du journal du serveur (descente vers les appareils). */

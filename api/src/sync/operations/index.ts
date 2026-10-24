@@ -27,6 +27,12 @@ import { articleSortir, stockAjuster } from './stock.operations.js';
 import { messageEnvoyer } from './messages.operations.js';
 import { retourEnregistrer } from './retours.operations.js';
 import {
+  transfertAnnuler,
+  transfertDemander,
+  transfertEnvoyer,
+  transfertRecevoir,
+} from './transferts.operations.js';
+import {
   articleRemettreEnVente,
   grilleRepriseEnregistrer,
   imeiSignaler,
@@ -62,4 +68,8 @@ export const GESTIONNAIRES: { [T in TypeOperation]: Gestionnaire<T> } = {
   IMEI_SIGNALER: imeiSignaler,
   ARTICLE_REMETTRE_EN_VENTE: articleRemettreEnVente,
   CREDIT_ENCAISSER: creditEncaisser,
+  TRANSFERT_DEMANDER: transfertDemander,
+  TRANSFERT_ENVOYER: transfertEnvoyer,
+  TRANSFERT_RECEVOIR: transfertRecevoir,
+  TRANSFERT_ANNULER: transfertAnnuler,
 };

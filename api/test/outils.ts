@@ -78,6 +78,8 @@ export async function supprimerCommerce(prisma: PrismaService, commerceId: strin
   await prisma.caisse.deleteMany({ where: { commerceId } });
   await prisma.ligneInventaire.deleteMany({ where: { inventaire: { commerceId } } });
   await prisma.inventaire.deleteMany({ where: { commerceId } });
+  await prisma.ligneTransfert.deleteMany({ where: { transfert: { commerceId } } });
+  await prisma.transfert.deleteMany({ where: { commerceId } });
   await prisma.article.deleteMany({ where: { commerceId } });
   await prisma.ligneAchat.deleteMany({ where: { achat: { commerceId } } });
   await prisma.achat.deleteMany({ where: { commerceId } });

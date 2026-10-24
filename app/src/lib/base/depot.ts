@@ -229,6 +229,28 @@ const COLONNES: { [E in EntiteSync]: (keyof DonneesEntites[E] & string)[] } = {
     'creeLe',
     'creeParId',
   ],
+  transfert: [
+    'id',
+    'numero',
+    'boutiqueDepartId',
+    'boutiqueArriveeId',
+    'statut',
+    'note',
+    'noteReception',
+    'envoyeLe',
+    'recuLe',
+    'creeLe',
+    'creeParId',
+  ],
+  ligneTransfert: [
+    'id',
+    'transfertId',
+    'produitId',
+    'articleId',
+    'imei',
+    'quantite',
+    'quantiteRecue',
+  ],
 };
 
 const versSql = (valeur: unknown): ValeurSql => {

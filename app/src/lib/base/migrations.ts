@@ -354,6 +354,34 @@ export const MIGRATIONS: string[] = [
   ALTER TABLE echeance ADD COLUMN dernierRappel TEXT;
   ALTER TABLE echeance ADD COLUMN nombreRelances INTEGER NOT NULL DEFAULT 0;
   `,
+  // Transferts entre boutiques.
+  `
+  CREATE TABLE transfert (
+    id TEXT PRIMARY KEY,
+    numero TEXT NOT NULL,
+    boutiqueDepartId TEXT NOT NULL,
+    boutiqueArriveeId TEXT NOT NULL,
+    statut TEXT NOT NULL,
+    note TEXT,
+    noteReception TEXT,
+    envoyeLe TEXT,
+    recuLe TEXT,
+    creeLe TEXT NOT NULL,
+    creeParId TEXT
+  );
+  CREATE INDEX transfert_depart ON transfert (boutiqueDepartId, statut);
+  CREATE INDEX transfert_arrivee ON transfert (boutiqueArriveeId, statut);
+  CREATE TABLE ligneTransfert (
+    id TEXT PRIMARY KEY,
+    transfertId TEXT NOT NULL,
+    produitId TEXT NOT NULL,
+    articleId TEXT,
+    imei TEXT,
+    quantite INTEGER NOT NULL,
+    quantiteRecue INTEGER
+  );
+  CREATE INDEX ligne_transfert ON ligneTransfert (transfertId);
+  `,
 ];
 
 /**

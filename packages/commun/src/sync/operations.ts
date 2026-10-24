@@ -24,6 +24,12 @@ import {
 } from '../caisse.js';
 import { schemaEnvoiMessage } from '../messages.js';
 import { schemaRetour } from '../retours.js';
+import {
+  schemaAnnulationTransfert,
+  schemaDemandeTransfert,
+  schemaEnvoiTransfert,
+  schemaReceptionTransfert,
+} from '../transferts.js';
 import { schemaGrilleReprise, schemaImeiSignale, schemaRemiseEnVente } from '../troc.js';
 import { schemaAnnulationVente, schemaVente } from '../ventes.js';
 import type { Changement } from './entites.js';
@@ -97,6 +103,14 @@ export const schemasContenus = {
   ARTICLE_REMETTRE_EN_VENTE: schemaRemiseEnVente,
   /** Encaissement d'une tranche de crédit (même hors ligne) : tout le personnel. */
   CREDIT_ENCAISSER: schemaEncaissement,
+  /** Demande de stock par la boutique qui reçoit : gérant ou propriétaire. */
+  TRANSFERT_DEMANDER: schemaDemandeTransfert,
+  /** Envoi par la boutique de départ (préparation d'une demande, ou envoi direct du propriétaire). */
+  TRANSFERT_ENVOYER: schemaEnvoiTransfert,
+  /** Réception par scan à l'arrivée : tout le personnel de la boutique. */
+  TRANSFERT_RECEVOIR: schemaReceptionTransfert,
+  /** Annulation d'une demande, ou d'un envoi pas encore reçu : gérant ou propriétaire. */
+  TRANSFERT_ANNULER: schemaAnnulationTransfert,
 } as const;
 
 export type TypeOperation = keyof typeof schemasContenus;
@@ -131,6 +145,10 @@ export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   IMEI_SIGNALER: 'IMEI signalé',
   ARTICLE_REMETTRE_EN_VENTE: 'Remise en vente',
   CREDIT_ENCAISSER: 'Encaissement d’une tranche',
+  TRANSFERT_DEMANDER: 'Demande de transfert',
+  TRANSFERT_ENVOYER: 'Envoi d’un transfert',
+  TRANSFERT_RECEVOIR: 'Réception d’un transfert',
+  TRANSFERT_ANNULER: 'Annulation d’un transfert',
 };
 
 /** Enveloppe commune à toutes les opérations. */

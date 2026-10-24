@@ -54,6 +54,19 @@ export default function Accueil() {
     [boutiqueId, profil?.id, gestion],
   );
   const sousSeuil = useLecture((base) => produitsSousSeuil(base, boutiqueId), [boutiqueId]);
+  // Transferts qui attendent cette boutique : à recevoir, ou demandes à préparer.
+  const transfertsEnAttente = useLecture(
+    async (base) =>
+      (
+        await base.premier<{ nombre: number }>(
+          `SELECT COUNT(*) AS nombre FROM transfert
+            WHERE (boutiqueArriveeId = ? AND statut = 'ENVOYE')
+               OR (boutiqueDepartId = ? AND statut = 'DEMANDE')`,
+          [boutiqueId, boutiqueId],
+        )
+      )?.nombre ?? 0,
+    [boutiqueId],
+  );
   // Crédits avec une tranche échue non payée (badge de la tuile).
   const creditsEnRetard = useLecture(
     async (base) =>
@@ -199,6 +212,13 @@ export default function Accueil() {
       <Grille>
         <Tuile titre="Stock" icone="cube" onPress={aller('/stock')} badge={sousSeuil?.length} />
         <Tuile titre="Fiche IMEI" icone="barcode" onPress={aller('/imei')} />
+        <Tuile
+          titre="Transferts"
+          icone="git-compare"
+          couleur={c.primaire}
+          onPress={aller('/transferts')}
+          badge={transfertsEnAttente}
+        />
         <Tuile
           titre="Garantie"
           icone="shield-checkmark"

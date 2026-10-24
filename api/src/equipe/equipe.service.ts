@@ -53,6 +53,14 @@ export class EquipeService {
 
   // ─── Boutiques ─────────────────────────────────────────────────────────────
 
+  boutiquesDuCommerce(commerceId: string) {
+    return this.prisma.boutique.findMany({
+      where: { commerceId, ...BOUTIQUE_OUVERTE },
+      select: { id: true, nom: true, prefixe: true },
+      orderBy: { nom: 'asc' },
+    });
+  }
+
   async creerBoutique(acteur: UtilisateurConnecte, d: NouvelleBoutique) {
     const prefixe = d.prefixe.trim().toUpperCase();
     if (

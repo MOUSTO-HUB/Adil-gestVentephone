@@ -16,6 +16,7 @@ export function SaisieImei({
   surChangement,
   dejaConnu = () => false,
   maximum,
+  refus,
 }: {
   libelle: string;
   imeis: string[];
@@ -23,6 +24,8 @@ export function SaisieImei({
   /** IMEI déjà enregistré dans le commerce (réception) : refusé. */
   dejaConnu?: (imei: string) => boolean;
   maximum?: number;
+  /** Contrôle propre à l'écran (ex. téléphone absent du transfert) : message, ou null. */
+  refus?: (imei: string) => string | null;
 }) {
   const { colors } = useTheme();
   const [saisie, setSaisie] = useState('');
@@ -39,6 +42,7 @@ export function SaisieImei({
     else if (controle.doublons.includes(imei)) setErreur(`${imei} est déjà dans la liste.`);
     else if (controle.dejaConnus.includes(imei))
       setErreur(`${imei} est déjà enregistré dans le stock.`);
+    else if (refus?.(imei)) setErreur(refus(imei));
     else if (maximum !== undefined && imeis.length >= maximum)
       setErreur(`${maximum} IMEI attendus au plus.`);
     else {

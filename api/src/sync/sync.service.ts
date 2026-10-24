@@ -51,6 +51,8 @@ import {
   versCredit,
   versEcheance,
   versEncaissement,
+  versLigneTransfert,
+  versTransfert,
   versLigneRetour,
 } from './serialisation.js';
 
@@ -282,6 +284,18 @@ export class SyncService {
           where: { commerceId, boutiqueId: { in: boutiqueIds }, creeLe: { gte: depuis } },
         });
         const grille = await tx.grilleReprise.findMany({ where: { commerceId } });
+        // Transferts touchant ses boutiques : en cours, ou récents.
+        const transferts = await tx.transfert.findMany({
+          where: {
+            commerceId,
+            OR: [
+              { boutiqueDepartId: { in: boutiqueIds } },
+              { boutiqueArriveeId: { in: boutiqueIds } },
+            ],
+            AND: [{ OR: [{ statut: { in: ['DEMANDE', 'ENVOYE'] } }, { creeLe: { gte: depuis } }] }],
+          },
+          include: { lignes: { include: { article: { select: { imei: true } } } } },
+        });
         // Crédits : tous ceux en cours, les autres récents ; leurs tranches et encaissements.
         const credits = await tx.credit.findMany({
           where: {
@@ -347,6 +361,8 @@ export class SyncService {
             credit: credits.map(versCredit),
             echeance: credits.flatMap((c) => c.echeances.map(versEcheance)),
             encaissement: credits.flatMap((c) => c.encaissements.map(versEncaissement)),
+            transfert: transferts.map(versTransfert),
+            ligneTransfert: transferts.flatMap((t) => t.lignes.map(versLigneTransfert)),
           },
         };
       },

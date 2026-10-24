@@ -82,6 +82,16 @@ export class ArticlesController {
         lignesVente: { include: { vente: { include: { client: true, boutique: true } } } },
         lignesRetour: { include: { retour: { include: { boutique: true } } } },
         trocs: { include: { client: true, boutique: true }, orderBy: { creeLe: 'desc' } },
+        lignesTransfert: {
+          include: {
+            transfert: {
+              include: {
+                boutiqueDepart: { select: { nom: true } },
+                boutiqueArrivee: { select: { nom: true } },
+              },
+            },
+          },
+        },
         mouvementsStock: { include: { boutique: true }, orderBy: { creeLe: 'asc' } },
       },
     });
@@ -111,6 +121,17 @@ export class ArticlesController {
       const troc = article.trocs.find((t) => t.id === m.referenceId);
       if (m.type === 'TROC_ENTREE' && troc) {
         detail = `Repris à ${troc.client.nom} pour ${Number(troc.valeurRetenue)}`;
+      }
+      const transfert = article.lignesTransfert.find(
+        (l) => l.transfertId === m.referenceId,
+      )?.transfert;
+      if (transfert && m.type === 'TRANSFERT_SORTIE') {
+        detail = `${transfert.numero} vers ${transfert.boutiqueArrivee.nom}`;
+      }
+      if (transfert && m.type === 'TRANSFERT_ENTREE') {
+        detail = m.motif
+          ? `${transfert.numero} · ${m.motif}`
+          : `${transfert.numero} depuis ${transfert.boutiqueDepart.nom}`;
       }
       return {
         date: m.creeLe,

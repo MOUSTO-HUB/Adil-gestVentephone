@@ -113,6 +113,14 @@ class AccesProvisoireDto {
 export class EquipeController {
   constructor(private readonly equipe: EquipeService) {}
 
+  /** Boutiques ouvertes du commerce (noms), pour choisir l'autre boutique d'un transfert. */
+  @Get('boutiques')
+  @Roles(Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR)
+  @ApiOkResponse({ type: [BoutiqueCreeeDto] })
+  boutiques(@UtilisateurCourant() u: UtilisateurConnecte) {
+    return this.equipe.boutiquesDuCommerce(u.commerceId);
+  }
+
   @Post('boutiques')
   @Roles(Role.PROPRIETAIRE)
   @ApiOkResponse({ type: BoutiqueCreeeDto })

@@ -16,6 +16,7 @@ import * as clients from './operations-clients';
 import * as credits from './operations-credits';
 import * as messages from './operations-messages';
 import * as retours from './operations-retours';
+import * as transferts from './operations-transferts';
 import * as trocs from './operations-trocs';
 import * as ventes from './operations-ventes';
 
@@ -111,6 +112,14 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
     trocs.articleRemettreEnVente(tx, boutiqueId, contenu),
   CREDIT_ENCAISSER: (tx, boutiqueId, contenu, _id, contexte) =>
     credits.creditEncaisser(tx, boutiqueId, contenu, contexte.utilisateurId),
+  TRANSFERT_DEMANDER: (tx, boutiqueId, contenu, _id, contexte) =>
+    transferts.transfertDemander(tx, boutiqueId, contenu, contexte.utilisateurId),
+  TRANSFERT_ENVOYER: (tx, boutiqueId, contenu, id, contexte) =>
+    transferts.transfertEnvoyer(tx, boutiqueId, contenu, contexte.utilisateurId, id),
+  TRANSFERT_RECEVOIR: (tx, boutiqueId, contenu, id) =>
+    transferts.transfertRecevoir(tx, boutiqueId, contenu, id),
+  TRANSFERT_ANNULER: (tx, boutiqueId, contenu, id) =>
+    transferts.transfertAnnuler(tx, boutiqueId, contenu, id),
 };
 
 export interface NouvelleOperation<T extends TypeOperation> {

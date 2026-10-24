@@ -1144,6 +1144,9 @@ model Transfert {
   boutiqueArriveeId String
   statut            StatutTransfert @default(DEMANDE)
   note              String?
+  /// Remarque de la boutique d'arrivée (écarts constatés).
+  noteReception     String?
+  motifAnnulation   String?
   envoyeLe          DateTime?
   envoyeParId       String?
   recuLe            DateTime?

@@ -257,6 +257,10 @@ export const LIBELLES_ACTIONS_AUDIT: Record<string, string> = {
   EMPLOYE_CREE: 'Employé créé',
   EMPLOYE_MODIFIE: 'Employé modifié (rôle, boutiques, accès)',
   MOT_DE_PASSE_REINITIALISE: 'Mot de passe réinitialisé',
+  TRANSFERT_ENVOYE: 'Transfert envoyé',
+  TRANSFERT_RECU: 'Transfert reçu',
+  TRANSFERT_ECART: 'Écart à la réception d’un transfert',
+  TRANSFERT_ANNULE: 'Transfert annulé',
 };
 
 /** Familles d'actions proposées comme filtre dans l'écran du journal. */
@@ -284,7 +288,16 @@ export const FAMILLES_AUDIT: Record<string, string[]> = {
     'SORTIE_ARTICLE',
     'RETOUR_ENREGISTRE',
   ],
-  Stock: ['AJUSTEMENT_STOCK', 'INVENTAIRE_VALIDE', 'RECEPTION_ACHAT', 'SORTIE_ARTICLE'],
+  Stock: [
+    'AJUSTEMENT_STOCK',
+    'INVENTAIRE_VALIDE',
+    'RECEPTION_ACHAT',
+    'SORTIE_ARTICLE',
+    'TRANSFERT_ENVOYE',
+    'TRANSFERT_RECU',
+    'TRANSFERT_ECART',
+    'TRANSFERT_ANNULE',
+  ],
   Caisse: ['CAISSE_OUVERTE', 'CAISSE_CLOTUREE', 'CAISSE_VALIDEE', 'DEPENSE_ENREGISTREE'],
   Troc: [
     'TROC_ENREGISTRE',

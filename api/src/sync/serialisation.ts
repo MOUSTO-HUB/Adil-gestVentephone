@@ -27,8 +27,12 @@ import type {
   CreditSync,
   EcheanceSync,
   EncaissementSync,
+  LigneTransfertSync,
+  TransfertSync,
 } from '@gestvente/commun';
 import type {
+  LigneTransfert,
+  Transfert,
   Credit,
   Echeance,
   Encaissement,
@@ -381,6 +385,32 @@ export const versEncaissement = (e: Encaissement): EncaissementSync => ({
   reference: e.reference,
   creeLe: e.creeLe.toISOString(),
   creeParId: e.creeParId,
+});
+
+export const versTransfert = (t: Transfert): TransfertSync => ({
+  id: t.id,
+  numero: t.numero,
+  boutiqueDepartId: t.boutiqueDepartId,
+  boutiqueArriveeId: t.boutiqueArriveeId,
+  statut: t.statut,
+  note: t.note,
+  noteReception: t.noteReception,
+  envoyeLe: t.envoyeLe?.toISOString() ?? null,
+  recuLe: t.recuLe?.toISOString() ?? null,
+  creeLe: t.creeLe.toISOString(),
+  creeParId: t.creeParId,
+});
+
+export const versLigneTransfert = (
+  l: LigneTransfert & { article: { imei: string } | null },
+): LigneTransfertSync => ({
+  id: l.id,
+  transfertId: l.transfertId,
+  produitId: l.produitId,
+  articleId: l.articleId,
+  imei: l.article?.imei ?? null,
+  quantite: l.quantite,
+  quantiteRecue: l.quantiteRecue,
 });
 
 export function masquerPourRole<E extends EntiteSync>(
