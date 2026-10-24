@@ -382,6 +382,11 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX ligne_transfert ON ligneTransfert (transfertId);
   `,
+  // Performance : numéro de facture unique par boutique, ventes d'un téléphone.
+  `
+  CREATE INDEX vente_numero ON vente (boutiqueId, numero);
+  CREATE INDEX ligne_vente_article ON ligneVente (articleId);
+  `,
 ];
 
 /**

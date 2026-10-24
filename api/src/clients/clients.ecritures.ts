@@ -135,11 +135,25 @@ export async function enregistrerClient(
       tx,
     );
   }
+  if (existant && existant.archive !== d.archive) {
+    await audit.journaliser(
+      {
+        commerceId,
+        action: ACTIONS_AUDIT.ARCHIVAGE,
+        utilisateurId: utilisateur.id,
+        appareilId: utilisateur.appareilId,
+        entite: 'Client',
+        entiteId: client.id,
+        details: { nom: client.nom, archive: d.archive },
+      },
+      tx,
+    );
+  }
   return OK;
 }
 
 export async function enregistrerFournisseur(
-  { tx, utilisateur, journal }: ContexteCatalogue,
+  { tx, utilisateur, journal, audit }: ContexteCatalogue,
   d: FournisseurSaisi,
 ): Promise<Controle> {
   const { commerceId } = utilisateur;
@@ -169,5 +183,19 @@ export async function enregistrerFournisseur(
       donnees: versFournisseur(fournisseur, await detteFournisseur(tx, fournisseur.id)),
     },
   ]);
+  if (existant && existant.archive !== d.archive) {
+    await audit.journaliser(
+      {
+        commerceId,
+        action: ACTIONS_AUDIT.ARCHIVAGE,
+        utilisateurId: utilisateur.id,
+        appareilId: utilisateur.appareilId,
+        entite: 'Fournisseur',
+        entiteId: fournisseur.id,
+        details: { nom: fournisseur.nom, archive: d.archive },
+      },
+      tx,
+    );
+  }
   return OK;
 }

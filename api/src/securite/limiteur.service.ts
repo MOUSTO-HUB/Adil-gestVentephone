@@ -25,6 +25,20 @@ export const LIMITES = {
     fenetreS: 15 * 60,
     message: 'Trop de tentatives pour ce compte. Réessayez dans 15 minutes.',
   },
+  /** Toutes les requêtes d'une adresse IP (une boutique entière derrière une même box). */
+  requetesIp: {
+    nom: 'requetes-ip',
+    max: 600,
+    fenetreS: 60,
+    message: 'Trop de requêtes depuis cette connexion. Réessayez dans une minute.',
+  },
+  /** Lien public des factures : codes aléatoires à ne pas laisser deviner. */
+  facturePublique: {
+    nom: 'facture-ip',
+    max: 60,
+    fenetreS: 60,
+    message: 'Trop de consultations. Réessayez dans une minute.',
+  },
   pinUtilisateur: {
     nom: 'pin-utilisateur',
     max: 5,

@@ -183,13 +183,13 @@ Livrables : code source, application mobile et ordinateur, serveur déployé, do
 
 ### Critères de recette
 
-- [ ] Une vente faite hors ligne apparaît sur le serveur après reconnexion, sans doublon.
-- [ ] Un IMEI vendu ne peut plus être vendu, même depuis une autre boutique.
-- [ ] Un troc réduit le prix du neuf et ajoute l'ancien appareil au stock occasion.
-- [ ] Une tranche encaissée met à jour le solde et produit un reçu.
-- [ ] Un client en retard reçoit un rappel automatique.
-- [ ] Un transfert entre boutiques déplace le stock une fois la réception confirmée.
-- [ ] Le propriétaire voit les chiffres de toutes ses boutiques sur un seul écran.
+- [x] Une vente faite hors ligne apparaît sur le serveur après reconnexion, sans doublon.
+- [x] Un IMEI vendu ne peut plus être vendu, même depuis une autre boutique.
+- [x] Un troc réduit le prix du neuf et ajoute l'ancien appareil au stock occasion.
+- [x] Une tranche encaissée met à jour le solde et produit un reçu.
+- [x] Un client en retard reçoit un rappel automatique.
+- [x] Un transfert entre boutiques déplace le stock une fois la réception confirmée.
+- [x] Le propriétaire voit les chiffres de toutes ses boutiques sur un seul écran.
 
 ### Questions ouvertes
 

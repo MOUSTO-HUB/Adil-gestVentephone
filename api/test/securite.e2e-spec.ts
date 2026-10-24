@@ -49,6 +49,14 @@ describe('Sécurité des routes (e2e)', () => {
     }
   });
 
+  it('en-têtes de sécurité sur les réponses de l’API', async () => {
+    const reponse = await request(app.getHttpServer()).get('/api/sante').expect(200);
+    expect(reponse.headers['content-security-policy']).toMatch(/default-src 'none'/);
+    expect(reponse.headers['content-security-policy']).toMatch(/frame-ancestors 'none'/);
+    expect(reponse.headers['x-content-type-options']).toBe('nosniff');
+    expect(reponse.headers['x-powered-by']).toBeUndefined();
+  });
+
   it('les routes publiques déclarées existent', async () => {
     const doc = await request(app.getHttpServer()).get('/api/docs-json').expect(200);
     for (const cle of Object.keys(ROUTES_PUBLIQUES)) {

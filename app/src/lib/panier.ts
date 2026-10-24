@@ -60,13 +60,18 @@ export async function prochainNumeroFacture(
   dernierConnu = 0,
 ): Promise<string> {
   const cle = `ordre-facture:${appareilId}`;
-  const ventes = await base.tous<{ numero: string }>(
-    'SELECT numero FROM vente WHERE numero LIKE ?',
-    [`%-${codeAppareil(appareilId)}-%`],
-  );
+  const compteur = await lireMeta(base, cle);
+  // Compteur perdu (base locale recréée) : on repart des factures connues de l'appareil.
+  // Sinon il suffit : pas de lecture de toutes les ventes à chaque encaissement.
+  const ventes =
+    compteur === null
+      ? await base.tous<{ numero: string }>('SELECT numero FROM vente WHERE numero LIKE ?', [
+          `%-${codeAppareil(appareilId)}-%`,
+        ])
+      : [];
   const ordre =
     Math.max(
-      Number((await lireMeta(base, cle)) ?? '0'),
+      Number(compteur ?? '0'),
       dernierConnu,
       ...ventes.map((v) => ordreFacture(v.numero) ?? 0),
     ) + 1;

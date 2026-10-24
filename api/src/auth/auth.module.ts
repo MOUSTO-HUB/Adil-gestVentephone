@@ -7,6 +7,7 @@ import { AuthService } from './auth.service.js';
 import { BoutiqueGuard } from './guards/boutique.guard.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { RolesGuard } from './guards/roles.guard.js';
+import { DebitGuard } from '../securite/debit.guard.js';
 import { DUREE_ACCES } from './jetons.js';
 
 @Global()
@@ -28,7 +29,8 @@ import { DUREE_ACCES } from './jetons.js';
   providers: [
     AuthService,
     BoutiqueGuard,
-    // Ordre d'exécution : authentification, puis rôles.
+    // Ordre d'exécution : débit par IP, authentification, puis rôles.
+    { provide: APP_GUARD, useClass: DebitGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

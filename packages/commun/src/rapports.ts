@@ -261,6 +261,7 @@ export const LIBELLES_ACTIONS_AUDIT: Record<string, string> = {
   TRANSFERT_RECU: 'Transfert reçu',
   TRANSFERT_ECART: 'Écart à la réception d’un transfert',
   TRANSFERT_ANNULE: 'Transfert annulé',
+  ARCHIVAGE: 'Client ou fournisseur archivé (ou restauré)',
 };
 
 /** Familles d'actions proposées comme filtre dans l'écran du journal. */
@@ -285,6 +286,7 @@ export const FAMILLES_AUDIT: Record<string, string[]> = {
     'VENTE_ANNULEE',
     'ANNULATION_ACHAT',
     'PRODUIT_ARCHIVE',
+    'ARCHIVAGE',
     'SORTIE_ARTICLE',
     'RETOUR_ENREGISTRE',
   ],

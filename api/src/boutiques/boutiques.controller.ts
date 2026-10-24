@@ -1,7 +1,9 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiForbiddenResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { BoutiqueResumeDto } from '../auth/auth.dto.js';
+import { Roles } from '../auth/decorateurs.js';
 import { BoutiqueGuard } from '../auth/guards/boutique.guard.js';
+import { Role } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 const CHAMPS = { id: true, nom: true, prefixe: true, adresse: true, telephone: true } as const;
@@ -14,6 +16,7 @@ export class BoutiquesController {
 
   /** Une boutique accessible à l'utilisateur (rattachement vérifié par BoutiqueGuard). */
   @Get(':boutiqueId')
+  @Roles(Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR)
   @UseGuards(BoutiqueGuard)
   @ApiOkResponse({ type: BoutiqueResumeDto })
   @ApiForbiddenResponse({ description: 'Boutique à laquelle vous n’êtes pas rattaché.' })

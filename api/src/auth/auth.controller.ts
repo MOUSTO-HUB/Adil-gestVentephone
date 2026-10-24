@@ -28,7 +28,8 @@ import {
 } from './auth.dto.js';
 import { AuthService } from './auth.service.js';
 import type { UtilisateurConnecte } from './auth.types.js';
-import { Public, UtilisateurCourant } from './decorateurs.js';
+import { Role } from '../generated/prisma/enums.js';
+import { Public, Roles, UtilisateurCourant } from './decorateurs.js';
 
 @ApiTags('Authentification')
 @Controller('auth')
@@ -69,6 +70,7 @@ export class AuthController {
   }
 
   /** Ferme la session de cet appareil. */
+  @Roles(Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR)
   @Post('deconnexion')
   @HttpCode(204)
   @ApiBearerAuth()
@@ -78,6 +80,7 @@ export class AuthController {
   }
 
   /** Profil, commerce et boutiques accessibles de l'utilisateur connecté. */
+  @Roles(Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR)
   @Get('moi')
   @ApiBearerAuth()
   @ApiOkResponse({ type: ProfilDto })
@@ -86,6 +89,7 @@ export class AuthController {
   }
 
   /** Définit le code PIN (le changer exige le mot de passe). */
+  @Roles(Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR)
   @Put('pin')
   @HttpCode(204)
   @ApiBearerAuth()
@@ -98,6 +102,7 @@ export class AuthController {
   }
 
   /** Vérifie le code PIN sur un nouvel appareil (5 essais par quart d'heure). */
+  @Roles(Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR)
   @Post('pin/verification')
   @HttpCode(200)
   @ApiBearerAuth()

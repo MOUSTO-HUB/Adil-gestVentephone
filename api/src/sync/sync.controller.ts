@@ -16,6 +16,8 @@ import { SyncService } from './sync.service.js';
 
 @ApiTags('Synchronisation')
 @ApiBearerAuth()
+/** Tout le personnel synchronise ; les conflits sont réservés à la gestion (rôles par méthode). */
+@Roles(Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR)
 @Controller('sync')
 export class SyncController {
   constructor(private readonly sync: SyncService) {}

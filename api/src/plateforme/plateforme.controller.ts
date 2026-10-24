@@ -3,11 +3,13 @@ import {
   Controller,
   Get,
   HttpCode,
+  Ip,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -28,6 +30,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { Public } from '../auth/decorateurs.js';
+import { LIMITES, LimiteurService } from '../securite/limiteur.service.js';
 import type { StatutCommerce } from '../generated/prisma/enums.js';
 import { ConcepteurCourant, type ConcepteurConnecte, ConcepteurGuard } from './concepteur.guard.js';
 import { PlateformeService } from './plateforme.service.js';
@@ -107,14 +110,26 @@ class FiltreCommercesDto {
 @ApiTags('Plateforme (concepteur)')
 @Controller('plateforme')
 export class PlateformeController {
-  constructor(private readonly plateforme: PlateformeService) {}
+  constructor(
+    private readonly plateforme: PlateformeService,
+    private readonly limiteur: LimiteurService,
+  ) {}
 
   @Post('connexion')
   @Public()
   @HttpCode(200)
   @ApiOkResponse({ description: 'Jeton de session du concepteur (10 heures).' })
-  connexion(@Body() dto: ConnexionConcepteurDto) {
-    return this.plateforme.connexion(dto.identifiant, dto.motDePasse);
+  async connexion(@Body() dto: ConnexionConcepteurDto, @Ip() ip: string) {
+    // Comme pour les commerçants : les échecs depuis une même IP sont limités.
+    await this.limiteur.controler(LIMITES.connexionIp, ip);
+    try {
+      return await this.plateforme.connexion(dto.identifiant, dto.motDePasse);
+    } catch (erreur) {
+      if (erreur instanceof UnauthorizedException) {
+        await this.limiteur.verifier(LIMITES.connexionIp, ip);
+      }
+      throw erreur;
+    }
   }
 
   @Get('commerces')
