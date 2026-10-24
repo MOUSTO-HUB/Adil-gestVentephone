@@ -241,6 +241,15 @@ export default function Accueil() {
               icone="phone-portrait"
               onPress={aller('/appareils')}
             />
+            <Tuile titre="Équipe" icone="people-circle" onPress={aller('/equipe')} />
+            {profil.role === 'PROPRIETAIRE' ? (
+              <Tuile
+                titre="Boutiques"
+                icone="storefront"
+                couleur={c.accent}
+                onPress={aller('/boutiques')}
+              />
+            ) : null}
           </Grille>
         </>
       ) : null}

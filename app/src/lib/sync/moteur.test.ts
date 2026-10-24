@@ -51,6 +51,7 @@ const stock = (quantite: number): StockSync => ({
 
 const instantane: Instantane = {
   curseur: 10,
+  boutiques: [BOUTIQUE],
   donnees: {
     marque: [],
     modele: [],
@@ -94,6 +95,8 @@ class ServeurFactice implements ServeurSync {
   malFormee: string | null = null;
   avantChangements?: () => Promise<void>;
   instantanes = 0;
+  /** Boutiques de l'utilisateur selon le serveur. */
+  boutiques = [BOUTIQUE];
 
   async requete<T>(
     chemin: string,
@@ -102,7 +105,7 @@ class ServeurFactice implements ServeurSync {
     if (this.hors) throw new ErreurReseau();
     if (chemin === '/sync/instantane') {
       this.instantanes++;
-      return instantane as T;
+      return { ...instantane, boutiques: this.boutiques } as T;
     }
     if (chemin.startsWith('/sync/changements')) {
       await this.avantChangements?.();
@@ -110,7 +113,7 @@ class ServeurFactice implements ServeurSync {
       const curseur = Number(new URL(`http://x${chemin}`).searchParams.get('curseur'));
       const suivants = this.changements.filter((c) => c.seq > curseur);
       const fin = Math.max(curseur, ...this.changements.map((c) => c.seq));
-      return { changements: suivants, curseur: fin, plus: false } as T;
+      return { changements: suivants, curseur: fin, plus: false, boutiques: this.boutiques } as T;
     }
     if (chemin === '/sync/operations' && options.methode === 'POST') {
       const { operations } = options.corps as { operations: Operation[] };
@@ -215,6 +218,15 @@ describe('synchronisation', () => {
     expect(serveur.instantanes).toBe(1);
     expect(await quantiteLocale(base)).toBe(7);
     expect(await lireMeta(base, 'curseur')).toBe('11');
+  });
+
+  it('boutique ajoutée ou retirée à l’utilisateur : reprise complète par un instantané', async () => {
+    serveur.boutiques = [BOUTIQUE, 'autre-boutique'];
+    await moteur.synchroniser();
+    expect(serveur.instantanes).toBe(2);
+    expect(await lireMeta(base, 'boutiques')).toBe(`${BOUTIQUE},autre-boutique`);
+    await moteur.synchroniser();
+    expect(serveur.instantanes).toBe(2);
   });
 
   it("enregistre l'effet local et l'opération dans la même transaction", async () => {

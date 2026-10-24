@@ -124,6 +124,12 @@ Spécifications : `docs/CAHIER_DES_CHARGES.md` · Étapes et prompts de dévelop
 
 PROPRIETAIRE (toutes ses boutiques), GERANT (sa ou ses boutiques), VENDEUR (ventes, trocs, encaissements ; jamais de modification de prix).
 
+## Boutiques et équipe
+
+- `api/src/equipe` : le propriétaire crée des boutiques sans limite (`POST /api/boutiques`, préfixe unique et définitif ; `PATCH /api/boutiques/:id` nom et coordonnées) et gère les employés (`/api/employes` : création avec mot de passe provisoire affiché une fois, rôle GERANT ou VENDEUR, une ou plusieurs boutiques, désactivation qui révoque les appareils, `POST /api/employes/:id/mot-de-passe`) ; le gérant lit l'équipe de ses boutiques. Audit `BOUTIQUE_CREEE`, `BOUTIQUE_MODIFIEE`, `EMPLOYE_CREE`, `EMPLOYE_MODIFIE`, `MOT_DE_PASSE_REINITIALISE`.
+- Rattachements relus à chaque requête (`JwtAuthGuard`) ; `Instantane` et `PageChangements` portent `boutiques` : quand la liste change, le moteur de l'appareil (`meta.boutiques`) reprend un instantané complet. Prix communs sur `Produit`, prix de boutique (`PrixBoutique`) prioritaires.
+- `api/test/isolation.e2e-spec.ts` parcourt toutes les routes de la documentation qui prennent une boutique (chemin, requête ou corps) avec un employé d'une autre boutique : 403 ou 404 attendu. App : écrans `boutiques` (propriétaire) et `equipe`.
+
 ## Authentification et sécurité
 
 - `api/src/auth` : toutes les routes exigent un jeton, sauf celles marquées `@Public()`. Restreindre par rôle avec `@Roles(Role.X)`. Toute route qui prend un identifiant de boutique porte `@UseGuards(BoutiqueGuard)` (+ `@ParamBoutique('id')` si le paramètre ne s'appelle pas `boutiqueId`). Utilisateur courant : `@UtilisateurCourant()` (`id`, `role`, `commerceId`, `appareilId`, `boutiqueIds`) ; toujours filtrer par `commerceId`.

@@ -252,10 +252,22 @@ export const LIBELLES_ACTIONS_AUDIT: Record<string, string> = {
   PENALITE_APPLIQUEE: 'Pénalité de retard',
   RELANCE_MANUELLE: 'Relance d’un client',
   PARAMETRES_RAPPELS: 'Réglages des rappels et pénalités',
+  BOUTIQUE_CREEE: 'Boutique créée',
+  BOUTIQUE_MODIFIEE: 'Boutique modifiée',
+  EMPLOYE_CREE: 'Employé créé',
+  EMPLOYE_MODIFIE: 'Employé modifié (rôle, boutiques, accès)',
+  MOT_DE_PASSE_REINITIALISE: 'Mot de passe réinitialisé',
 };
 
 /** Familles d'actions proposées comme filtre dans l'écran du journal. */
 export const FAMILLES_AUDIT: Record<string, string[]> = {
+  Équipe: [
+    'BOUTIQUE_CREEE',
+    'BOUTIQUE_MODIFIEE',
+    'EMPLOYE_CREE',
+    'EMPLOYE_MODIFIE',
+    'MOT_DE_PASSE_REINITIALISE',
+  ],
   Connexions: [
     'CONNEXION',
     'CONNEXION_ECHEC',

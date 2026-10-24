@@ -13,6 +13,8 @@ export const TAILLE_LOT = 50;
 /** Tours envoi + réception au plus par synchronisation (des opérations arrivent pendant l'envoi). */
 const TOURS_MAX = 5;
 const CLE_CURSEUR = 'curseur';
+/** Boutiques de l'utilisateur lors de la dernière descente (« id,id »). */
+const CLE_BOUTIQUES = 'boutiques';
 
 /** Ce dont le moteur a besoin pour parler au serveur (le client API de l'application). */
 export interface ServeurSync {
@@ -174,6 +176,7 @@ export class MoteurSync {
       await this.siFileVide(async (tx) => {
         await remplacerTout(tx, instantane);
         await ecrireMeta(tx, CLE_CURSEUR, String(instantane.curseur));
+        await ecrireMeta(tx, CLE_BOUTIQUES, instantane.boutiques.join(','));
       });
       return;
     }
@@ -182,6 +185,17 @@ export class MoteurSync {
       const page = await this.serveur.requete<PageChangements>(
         `/sync/changements?curseur=${position}`,
       );
+      // Rattachements changés (boutique ajoutée ou retirée) : tout reprendre depuis un instantané.
+      const connues = await lireMeta(this.base, CLE_BOUTIQUES);
+      const actuelles = page.boutiques.join(',');
+      if (connues !== actuelles) {
+        if (connues === null) {
+          await ecrireMeta(this.base, CLE_BOUTIQUES, actuelles);
+        } else {
+          await this.base.executer('DELETE FROM meta WHERE cle = ?', [CLE_CURSEUR]);
+          return this.recevoir();
+        }
+      }
       const appliquee = await this.siFileVide(async (tx) => {
         await appliquerChangements(tx, page.changements);
         await ecrireMeta(tx, CLE_CURSEUR, String(page.curseur));

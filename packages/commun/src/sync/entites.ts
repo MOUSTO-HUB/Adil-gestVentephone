@@ -420,11 +420,15 @@ export type Changement = {
 /** État complet pour un premier remplissage de la base locale. */
 export interface Instantane {
   curseur: number;
+  /** Boutiques de l'utilisateur (triées) : si elles changent, l'appareil reprend tout. */
+  boutiques: string[];
   donnees: { [E in EntiteSync]: DonneesEntites[E][] };
 }
 
 export interface PageChangements {
   changements: Changement[];
+  /** Boutiques de l'utilisateur (triées). */
+  boutiques: string[];
   curseur: number;
   /** D'autres changements attendent : redemander avec le nouveau curseur. */
   plus: boolean;

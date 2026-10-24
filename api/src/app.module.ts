@@ -13,6 +13,7 @@ import { StockModule } from './stock/stock.module.js';
 import { SyncModule } from './sync/sync.module.js';
 import { CaisseModule } from './caisse/caisse.module.js';
 import { CreditsModule } from './credits/credits.module.js';
+import { EquipeModule } from './equipe/equipe.module.js';
 import { TrocsModule } from './trocs/trocs.module.js';
 import { MessagesModule } from './messages/messages.module.js';
 import { PlateformeModule } from './plateforme/plateforme.module.js';
@@ -34,6 +35,7 @@ import { VentesModule } from './ventes/ventes.module.js';
     CaisseModule,
     TrocsModule,
     CreditsModule,
+    EquipeModule,
     RapportsModule,
     MessagesModule,
     PlateformeModule,

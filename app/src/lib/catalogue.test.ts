@@ -146,7 +146,8 @@ describe('recherche locale', () => {
     expect(parImei).toHaveLength(1);
     expect(parCode).not.toBeNull();
     expect(duree).toBeLessThan(1000);
-  });
+    // Le remplissage de 30 000 lignes peut être lent sur une machine chargée ; seule la recherche est chronométrée.
+  }, 30_000);
 });
 
 describe('opérations du catalogue (effet local)', () => {

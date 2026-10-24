@@ -310,6 +310,7 @@ export class SyncService {
         });
         return {
           curseur: Number(dernier._max.seq ?? 0n),
+          boutiques: [...boutiqueIds].sort(),
           donnees: {
             marque: marques.map(versMarque),
             modele: modeles.map(versModele),
@@ -392,6 +393,7 @@ export class SyncService {
       ),
       curseur: plus ? Number(lignes[lignes.length - 1].seq) : Math.max(curseur, Number(borne)),
       plus,
+      boutiques: [...boutiqueIds].sort(),
     };
   }
 
