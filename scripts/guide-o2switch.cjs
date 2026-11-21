@@ -430,7 +430,7 @@ ajouter(
       [
         '`MOT_DE_PASSE_REDIS`',
         'Mot de passe de l’instance Redis.',
-        'cPanel › outil **Redis** › page d’état, ligne **Mot de passe** (ou dans la commande `redis-cli` affichée, après `-a`).',
+        'cPanel › outil **Redis** › page d’état, ligne **Mot de passe**.',
         '13, 22',
       ],
       [
@@ -894,18 +894,37 @@ ajouter(
     'À la première ouverture : version **7**, mode **Port** (plus simple à configurer que le mode Socket). Validez.',
     'Sur la page d’état, notez le **port** (`PORT_REDIS`, dans la fiche) et le **mot de passe** (`MOT_DE_PASSE_REDIS`, dans le gestionnaire).',
   ]),
+  P(
+    'Le programme `redis-cli` n’est pas installé pour les comptes o2switch (« command not found ») : le test passe directement par le shell. Copiez la commande en une seule ligne, en remplaçant `PORT_REDIS` et `MOT_DE_PASSE_REDIS` (gardez les apostrophes autour du mot de passe) :',
+  ),
   ...ssh(`
-redis-cli -h 127.0.0.1 -p PORT_REDIS -a 'MOT_DE_PASSE_REDIS' ping
+exec 3<>/dev/tcp/127.0.0.1/PORT_REDIS && printf 'AUTH %s\\r\\nPING\\r\\n' 'MOT_DE_PASSE_REDIS' >&3 && timeout 2 cat <&3; exec 3>&-
 `),
-  resultat(
-    '`PONG` (un avertissement sur le mot de passe en ligne de commande peut s’afficher avant : sans importance).',
+  resultat('deux lignes : `+OK` (mot de passe accepté) puis `+PONG` (Redis répond).'),
+  ...tableau(
+    ['Message affiché', 'Cause et solution'],
+    [
+      [
+        '`Connexion refusée` / `Connection refused`',
+        'L’instance n’est pas démarrée ou le port est faux : rouvrez cPanel › **Redis**, vérifiez l’état « en marche » et recopiez le port.',
+      ],
+      [
+        '`-WRONGPASS` ou `-ERR invalid password`',
+        'Mot de passe mal recopié : recopiez-le depuis la page d’état de l’outil Redis.',
+      ],
+      [
+        'Rien ne s’affiche',
+        'Mode **Socket** choisi au lieu de **Port** : dans l’outil Redis, arrêtez l’instance et recréez-la en mode Port.',
+      ],
+    ],
+    [35, 65],
   ),
   ...encadre(
     'info',
     'GestVente préfixe ses clés par `gestvente` : la même instance Redis peut servir à un autre site sans conflit.',
   ),
   ...encadre('verif', [
-    '**Fin de la partie B.** Vous devez avoir : la double authentification sur cPanel ; une connexion `ssh o2switch` qui fonctionne ; `app.mondomaine.com` et `api.mondomaine.com` en HTTPS ; `select version()` qui répond 9.6 ; `PONG` de Redis.',
+    '**Fin de la partie B.** Vous devez avoir : la double authentification sur cPanel ; une connexion `ssh o2switch` qui fonctionne ; `app.mondomaine.com` et `api.mondomaine.com` en HTTPS ; `select version()` qui répond 9.6 ; `+PONG` de Redis.',
   ]),
 );
 
@@ -1703,6 +1722,11 @@ ajouter(
         'SSH : « Connection timed out »',
         'Adresse IP non autorisée (elle a changé)',
         'Ajouter l’IP actuelle dans **Autorisation SSH**, attendre 5 minutes.',
+      ],
+      [
+        '`redis-cli: command not found`',
+        '`redis-cli` n’est pas installé pour les comptes o2switch',
+        'Utiliser le test de l’étape 13 (`exec 3<>/dev/tcp/…`), qui doit afficher `+OK` puis `+PONG`.',
       ],
       [
         'SSH : « Could not resolve hostname o2switch »',
