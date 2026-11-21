@@ -1055,10 +1055,14 @@ pnpm --version
   ETAPE('Installer les dépendances', '5 à 10 min'),
   ...ssh(`
 cd ~/gestvente/source
-pnpm install --frozen-lockfile --filter "@gestvente/api..."
+NODE_ENV=development pnpm install --frozen-lockfile --filter "@gestvente/api..."
 `),
   resultat(
     'la dernière ligne indique `Done in …`. Des avertissements jaunes (« WARN ») sont normaux ; une ligne rouge « ERR_PNPM » ne l’est pas.',
+  ),
+  ...encadre(
+    'attention',
+    'Ne retirez pas `NODE_ENV=development` au début de la commande. L’application Node.js de cPanel est en mode Production : sans ce préfixe, pnpm n’installe pas les outils de construction (Prisma, NestJS, TypeScript) et l’installation échoue avec `prisma: command not found`. Le préfixe ne vaut que pour cette commande ; l’API tourne bien en production.',
   ),
   ETAPE('Construire le code partagé et l’API', '5 min'),
   ...ssh(`
@@ -1536,7 +1540,7 @@ echo "2/5 Récupération du code"
 cd "$HOME/gestvente/source"
 git pull --ff-only
 echo "3/5 Dépendances et construction"
-pnpm install --frozen-lockfile --filter "@gestvente/api..."
+NODE_ENV=development pnpm install --frozen-lockfile --filter "@gestvente/api..."
 pnpm --filter @gestvente/commun build
 pnpm --filter @gestvente/api exec prisma generate
 pnpm --filter @gestvente/api build
@@ -1573,7 +1577,7 @@ ${ACTIVER}
 cd ~/gestvente/source
 git log --oneline -5              # repérer la version précédente (7 caractères)
 git checkout IDENTIFIANT_VERSION
-pnpm install --frozen-lockfile --filter "@gestvente/api..."
+NODE_ENV=development pnpm install --frozen-lockfile --filter "@gestvente/api..."
 pnpm --filter @gestvente/commun build
 pnpm --filter @gestvente/api exec prisma generate
 pnpm --filter @gestvente/api build
@@ -1722,6 +1726,11 @@ ajouter(
         'SSH : « Connection timed out »',
         'Adresse IP non autorisée (elle a changé)',
         'Ajouter l’IP actuelle dans **Autorisation SSH**, attendre 5 minutes.',
+      ],
+      [
+        '`prisma: command not found` puis `ERR_PNPM_EXECUTOR_LIFECYCLE_SCRIPT_FAILED` pendant `pnpm install`',
+        'Le mode Production de cPanel (`NODE_ENV=production`) empêche l’installation des outils de construction',
+        'Relancer l’installation avec le préfixe : `NODE_ENV=development pnpm install --frozen-lockfile --filter "@gestvente/api..."` (étape 19).',
       ],
       [
         '`redis-cli: command not found`',
