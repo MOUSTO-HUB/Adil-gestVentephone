@@ -589,20 +589,33 @@ Get-Content $env:USERPROFILE\\.ssh\\id_ed25519.pub
     'danger',
     'Le fichier `id_ed25519` **sans extension** est la clé **privée** : ne l’envoyez jamais à personne, ne le copiez pas sur le serveur. Seule la clé `.pub` se partage.',
   ),
-  ETAPE('Se connecter en SSH pour la première fois', '5 min'),
-  P('Créez le fichier de raccourci `C:\\Users\\<vous>\\.ssh\\config` (sans extension) :'),
-  ...ps(`
-notepad $env:USERPROFILE\\.ssh\\config
-`),
+  ETAPE('Se connecter en SSH pour la première fois', '10 min'),
   P(
-    'Collez le texte suivant (en remplaçant les deux valeurs), enregistrez. Si le Bloc-notes ajoute `.txt`, renommez le fichier en `config`.',
+    'On crée un **raccourci** nommé `o2switch` : ensuite, `ssh o2switch` suffira pour se connecter. Il vise le **nom du serveur** o2switch, qui fonctionne tout de suite (le nom de domaine, lui, n’est relié qu’à l’étape 8).',
   ),
-  ...code(`
+  ...actions([
+    'Dans cPanel, colonne de droite **Informations générales** : notez le **Nom du serveur** (Server Name), de la forme `xxxxx.o2switch.net`. Il figure aussi dans l’e-mail de bienvenue d’o2switch.',
+    'Copiez le bloc ci-dessous dans le Bloc-notes, remplacez `NOM_DU_SERVEUR` et `IDENTIFIANT`, puis collez le tout dans PowerShell et appuyez sur Entrée.',
+  ]),
+  ...ps(`
+@"
 Host o2switch
-    HostName mondomaine.com
+    HostName NOM_DU_SERVEUR
     User IDENTIFIANT
     IdentityFile ~/.ssh/id_ed25519
+"@ | Set-Content -Path $env:USERPROFILE\\.ssh\\config -Encoding ascii
 `),
+  P('Vérifiez que le raccourci est bien lu :'),
+  ...ps(`
+Get-ChildItem $env:USERPROFILE\\.ssh
+ssh -G o2switch | Select-String "^hostname|^user "
+`),
+  resultat(
+    'la liste contient un fichier **config** (sans `.txt`) à côté de `id_ed25519` et `id_ed25519.pub` ; puis `hostname xxxxx.o2switch.net` et `user IDENTIFIANT` avec vos valeurs. Si `hostname o2switch` s’affiche, le fichier n’est pas lu : voir le Dépannage.',
+  ),
+  P(
+    'Connectez-vous, **toujours depuis PowerShell sur votre ordinateur**, jamais depuis le Terminal de cPanel :',
+  ),
   ...ps(`
 ssh o2switch
 `),
@@ -1521,6 +1534,16 @@ ajouter(
         'SSH : « Connection timed out »',
         'Adresse IP non autorisée (elle a changé)',
         'Ajouter l’IP actuelle dans **Autorisation SSH**, attendre 5 minutes.',
+      ],
+      [
+        'SSH : « Could not resolve hostname o2switch »',
+        'Le raccourci `.ssh\\config` n’est pas lu (fichier `config.txt`, mauvais dossier) ou la commande est tapée dans le Terminal de cPanel',
+        'Recréer le fichier avec la commande de l’étape 7 ; `ssh -G o2switch` doit afficher le nom du serveur. Taper `ssh o2switch` dans PowerShell, sur le PC.',
+      ],
+      [
+        'SSH : « Could not resolve hostname mondomaine.com »',
+        'Domaine pas encore relié à l’hébergement',
+        'Dans `.ssh\\config`, `HostName` = nom du serveur o2switch (`xxxxx.o2switch.net`).',
       ],
       [
         'SSH : « Permission denied (publickey) »',
