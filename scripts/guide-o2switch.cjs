@@ -352,26 +352,192 @@ ajouter(
     ],
     [3.5, 6.5],
   ),
-  H2('1.2 Les valeurs à remplacer'),
-  P('Les exemples utilisent des valeurs fictives. Remplacez-les **partout** par les vôtres :'),
-  ...tableau(
-    ['Dans le guide', 'Signification', 'Exemple'],
-    [
-      ['`IDENTIFIANT`', 'Votre identifiant cPanel (e-mail de bienvenue d’o2switch)', '`adilph`'],
-      ['`mondomaine.com`', 'Votre nom de domaine', '`adilphone.com`'],
-      ['`api.mondomaine.com`', 'Sous-domaine de l’API (serveur)', '`api.adilphone.com`'],
-      ['`app.mondomaine.com`', 'Sous-domaine du site (application)', '`app.adilphone.com`'],
-      ['`MOT_DE_PASSE_PG`', 'Mot de passe de la base PostgreSQL (étape 11)', '—'],
-      ['`PORT_REDIS`, `MOT_DE_PASSE_REDIS`', 'Port et mot de passe Redis (étape 13)', '`35481`, —'],
-      ['`~`', 'Votre dossier personnel sur le serveur', '`/home/adilph`'],
-    ],
-    [3.2, 4.4, 2.4],
+  H2('1.2 Les valeurs à remplacer et où les trouver'),
+  P(
+    'Les commandes du guide contiennent des valeurs **fictives**, écrites en MAJUSCULES ou sous la forme `mondomaine.com`. Avant de taper une commande, remplacez **chacune** par votre propre valeur. Le tableau ci-dessous indique, pour chaque valeur, **où la trouver exactement** et à quelle étape elle sert. Notez celles qui ne sont pas secrètes dans la fiche du chapitre 3.1 ; les secrets vont dans le gestionnaire de mots de passe.',
   ),
+  H2('1.3 Valeurs de l’hébergement (à connaître avant de commencer)'),
+  ...tableau(
+    ['Dans le guide', 'Ce que c’est', 'Où la trouver exactement', 'Étapes'],
+    [
+      [
+        '`IDENTIFIANT`\n(ex. `adilph`)',
+        'Votre identifiant cPanel : c’est aussi votre nom d’utilisateur SSH.',
+        '• E-mail de bienvenue d’o2switch, ligne « Identifiant ».\n• cPanel › colonne de droite **Informations générales** › **Nom d’utilisateur actuel**.\n• En SSH : `whoami`',
+        '7, 11, 17, 22, 30, 31, 39',
+      ],
+      [
+        '`NOM_DU_SERVEUR`\n(ex. `xxxxx.o2switch.net`)',
+        'Nom du serveur o2switch qui héberge votre compte.',
+        '• cPanel › **Informations générales** › **Nom du serveur**.\n• E-mail de bienvenue d’o2switch.\n• En SSH : `hostname`',
+        '7',
+      ],
+      [
+        '`~`\n(ex. `/home/adilph`)',
+        'Votre dossier personnel sur le serveur. `~` est un raccourci : ne le remplacez pas dans les commandes SSH.',
+        '• En SSH : `echo $HOME`\n• Il vaut toujours `/home/IDENTIFIANT`. Écrivez le chemin complet là où le guide l’écrit en entier (Cron, `.env`, scripts).',
+        '22, 30, 31, 39',
+      ],
+      [
+        '`mondomaine.com`\n(ex. `adilphone.com`)',
+        'Votre nom de domaine principal.',
+        '• Espace client o2switch › rubrique des domaines.\n• cPanel › **Domaines** : le domaine marqué « principal ».\n• E-mail de bienvenue d’o2switch.\n• En SSH : `uapi DomainInfo list_domains`, ligne `main_domain` (si la commande n’existe pas, utilisez cPanel).',
+        '8 à 10, 22, 26 à 29, 31, 39',
+      ],
+      [
+        '`app.mondomaine.com`\n`api.mondomaine.com`',
+        'Les deux sous-domaines que vous créez : site et API. Ils se déduisent du domaine.',
+        'Vous les créez vous-même à l’étape 9. Remplacez seulement `mondomaine.com` : gardez `app.` et `api.` devant.',
+        '9, 10, 17, 22, 25 à 29, 31',
+      ],
+      [
+        'Adresse IP partagée',
+        'Adresse du serveur, utile seulement si votre domaine est géré ailleurs que chez o2switch.',
+        'cPanel › **Informations générales** › **Adresse IP partagée**.',
+        '8',
+      ],
+      [
+        'Votre adresse IP',
+        'Adresse Internet de votre connexion, à autoriser pour le SSH.',
+        'Proposée automatiquement par l’outil **Autorisation SSH** ; sinon le site mon-ip.io.',
+        '5',
+      ],
+    ],
+    [2.3, 2.6, 4.1, 1.5],
+  ),
+  H2('1.4 Valeurs que vous créez pendant l’installation'),
+  ...tableau(
+    ['Dans le guide', 'Ce que c’est', 'Où la trouver exactement', 'Étapes'],
+    [
+      [
+        '`IDENTIFIANT_gestvente`',
+        'Nom réel de la base **et** de l’utilisateur PostgreSQL : cPanel ajoute votre identifiant et `_` devant le nom choisi.',
+        'cPanel › **Bases de données PostgreSQL** › tableau **Bases de données actuelles** (colonnes Base et Utilisateurs). Recopiez-le exactement tel qu’affiché.',
+        '11, 12, 22, 30',
+      ],
+      [
+        '`MOT_DE_PASSE_PG`',
+        'Mot de passe de l’utilisateur PostgreSQL.',
+        'Vous le générez à l’étape 11 (commande `openssl`) et le rangez dans le gestionnaire. Il n’est affiché nulle part ensuite ; s’il est perdu, changez-le dans cPanel (Bases de données PostgreSQL › utilisateur › Changer le mot de passe) puis dans `.env` et `sauvegarde.env`.',
+        '11, 12, 22, 30',
+      ],
+      [
+        '`PORT_REDIS`\n(ex. `35481`)',
+        'Port de votre instance Redis privée.',
+        'cPanel › outil **Redis** › page d’état, ligne **Port** (visible après le démarrage de l’instance).',
+        '13, 22',
+      ],
+      [
+        '`MOT_DE_PASSE_REDIS`',
+        'Mot de passe de l’instance Redis.',
+        'cPanel › outil **Redis** › page d’état, ligne **Mot de passe** (ou dans la commande `redis-cli` affichée, après `-a`).',
+        '13, 22',
+      ],
+      [
+        'Nom d’utilisateur GitHub',
+        'Votre compte GitHub, demandé par `git clone`.',
+        'github.com › photo de profil en haut à droite : le nom affiché en gras.',
+        '15',
+      ],
+      [
+        'Jeton GitHub (`github_pat_…`)',
+        'Remplace votre mot de passe GitHub pour `git`.',
+        'Créé à l’étape 14 ; affiché une seule fois : copiez-le aussitôt dans le gestionnaire. Perdu : en créer un nouveau (même étape).',
+        '15',
+      ],
+      [
+        'Commande `source …/bin/activate` et version `24`',
+        'Active Node.js en SSH. Le `24` du chemin est la version de Node choisie.',
+        '• cPanel › **Setup Node.js App** › crayon de l’application : commande en haut de la page.\n• En SSH : `ls ~/nodevenv/gestvente/source/api/` affiche la version (`24` ou `22`). Si c’est `22`, remplacez `/24/` par `/22/` partout (étapes 18, 23, 39, annexe B).',
+        '17, 18, 23, 39',
+      ],
+      [
+        '`PREMIER_SECRET_DE_48_CARACTERES`',
+        'Valeur de `JWT_SECRET` : signe les sessions des utilisateurs.',
+        'Première ligne affichée par l’étape 21 ; rangée dans le gestionnaire sous le nom `JWT_SECRET`.',
+        '21, 22',
+      ],
+      [
+        '`SECOND_SECRET_DE_48_CARACTERES`',
+        'Valeur de `SAUVEGARDE_CLE` : chiffre les sauvegardes.',
+        'Seconde ligne affichée par l’étape 21 ; rangée dans le gestionnaire sous le nom `SAUVEGARDE_CLE`.',
+        '21, 30',
+      ],
+      [
+        'Identifiant et mot de passe du concepteur',
+        'Votre compte d’administration de la plateforme.',
+        'L’identifiant, vous le choisissez à l’étape 24 ; le mot de passe est affiché une seule fois par cette étape.',
+        '24, 32',
+      ],
+      [
+        'Commerce : nom, téléphone `+224…`, préfixe `MAD`, identifiant `adil`',
+        'Les informations d’Adil Phone et de son propriétaire.',
+        'Vos choix. Le téléphone au format international (`+224` puis le numéro sans le 0 initial) ; le préfixe des factures : 2 à 5 lettres propres à chaque boutique.',
+        '33',
+      ],
+    ],
+    [2.3, 2.6, 4.1, 1.5],
+  ),
+  H2('1.5 Valeurs à retrouver plus tard (administration)'),
+  ...tableau(
+    ['Dans le guide', 'Ce que c’est', 'Où la trouver exactement', 'Chapitre'],
+    [
+      [
+        '`20261127-023000`',
+        'Date et heure d’une sauvegarde, dans le nom de son fichier.',
+        'En SSH : `ls -lh ~/gestvente/sauvegardes` ; recopiez la partie `AAAAMMJJ-HHMMSS` du fichier voulu.',
+        '17.4',
+      ],
+      [
+        '`IDENTIFIANT_VERSION`',
+        'Version du code vers laquelle revenir.',
+        'En SSH : `cd ~/gestvente/source && git log --oneline -5` ; les 7 premiers caractères de la ligne voulue.',
+        '16.2',
+      ],
+      [
+        'Adresse e-mail des tâches Cron',
+        'Reçoit les erreurs des tâches planifiées.',
+        'Votre propre adresse e-mail, lue régulièrement.',
+        'Étape 31',
+      ],
+      [
+        '`SMS_URL`, `SMS_CLE`, `SMS_EXPEDITEUR`',
+        'Accès à la passerelle d’envoi de SMS.',
+        'Fournis par votre opérateur ou agrégateur SMS (contrat, espace client de la passerelle, section « API »). L’expéditeur doit souvent être validé par lui.',
+        'Étape 37',
+      ],
+      [
+        '`WHATSAPP_NUMERO_ID`, `WHATSAPP_JETON`',
+        'Accès à WhatsApp Business Cloud.',
+        'developers.facebook.com › votre application › **WhatsApp** › **Configuration de l’API** : « Identifiant du numéro de téléphone ». Jeton permanent : Meta Business Suite › **Paramètres d’entreprise** › **Utilisateurs système** › Générer un jeton.',
+        'Étape 37',
+      ],
+      [
+        '`C:\\Users\\mamad\\Pictures\\github\\Adil-gestVentephone`',
+        'Dossier du projet sur votre ordinateur.',
+        'Ne changez rien si le projet est à cet endroit. Sinon : dans l’Explorateur, ouvrez le dossier du projet, cliquez dans la barre d’adresse et copiez le chemin.',
+        'Étapes 2, 26',
+      ],
+    ],
+    [2.3, 2.6, 4.1, 1.5],
+  ),
+  H2('1.6 Retrouver vos valeurs en SSH'),
+  P(
+    'Une fois connecté (étape 7), ces commandes affichent la plupart des valeurs de l’hébergement :',
+  ),
+  ...ssh(`
+whoami                                  # IDENTIFIANT
+hostname                                # NOM_DU_SERVEUR
+echo $HOME                              # dossier personnel (~)
+uapi DomainInfo list_domains            # mondomaine.com (ligne main_domain)
+ls ~/nodevenv/gestvente/source/api/     # version de Node (après l'étape 17)
+ls -lh ~/gestvente/sauvegardes          # noms des sauvegardes (après l'étape 30)
+`),
   ...encadre('info', [
     'Astuce : pour remplacer d’un coup les valeurs dans une commande, copiez-la d’abord dans le Bloc-notes, utilisez **Édition › Remplacer** (Ctrl+H), puis collez-la dans le terminal.',
     'Dans un terminal SSH, le collage se fait par **clic droit** (ou Ctrl+Maj+V), pas toujours par Ctrl+V.',
   ]),
-  H2('1.3 Durée totale'),
+  H2('1.7 Durée totale'),
   ...tableau(
     ['Partie', 'Contenu', 'Durée'],
     [
@@ -503,12 +669,15 @@ git pull
     ['Information', 'Valeur'],
     [
       ['Identifiant cPanel (`IDENTIFIANT`)', ''],
+      ['Nom du serveur (`NOM_DU_SERVEUR`)', ''],
       ['Adresse de cPanel', ''],
-      ['Nom de domaine', ''],
-      ['Nom de la base et de l’utilisateur PostgreSQL', ''],
-      ['Port Redis', ''],
+      ['Nom de domaine (`mondomaine.com`)', ''],
+      ['Base et utilisateur PostgreSQL (`IDENTIFIANT_gestvente`)', ''],
+      ['Port Redis (`PORT_REDIS`)', ''],
+      ['Nom d’utilisateur GitHub', ''],
       ['Commande « source » de l’application Node.js (étape 17)', ''],
       ['Identifiant du concepteur', ''],
+      ['Identifiant du propriétaire d’Adil Phone', ''],
       ['Date de mise en service', ''],
       ['Date d’expiration du jeton GitHub', ''],
       ['Date de renouvellement de l’offre o2switch', ''],
