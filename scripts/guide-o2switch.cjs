@@ -807,7 +807,26 @@ pwd
 ajouter(
   H1('5. Domaine, sous-domaines et HTTPS'),
   ETAPE('Relier le domaine à l’hébergement', '5 min (+ propagation)'),
-  P('**Cas 1 — domaine commandé chez o2switch** : il est déjà relié, passez à l’étape suivante.'),
+  ...encadre('attention', [
+    '**Ajouter un domaine dans cPanel ne l’achète pas.** cPanel › **Domaines** dit seulement au serveur quoi faire du domaine ; le domaine doit aussi être **enregistré** (acheté) auprès d’un registraire, sinon il n’existe pas sur Internet et le navigateur affiche « Ce site est inaccessible ».',
+    'Vérifiez depuis PowerShell : `Resolve-DnsName mondomaine.com -Server 1.1.1.1`. La réponse « Le nom DNS n’existe pas » veut dire que le domaine n’est pas enregistré (ou qu’il est mal orthographié).',
+  ]),
+  P(
+    '**Cas 0 — vous n’avez pas encore de domaine** : l’Offre Cloud inclut **un nom de domaine offert** (.com, .fr, .net, .org…) tant que l’hébergement est actif.',
+  ),
+  ...actions([
+    'Connectez-vous à l’**espace client o2switch** (pas cPanel) et ouvrez la partie **Domaines**.',
+    'Cherchez le nom voulu (par exemple `mondomaine.com`) et vérifiez qu’il est **disponible**.',
+    'Commandez-le en tant que domaine offert avec l’hébergement, et remplissez les coordonnées du titulaire (les vôtres ou celles de l’entreprise) : elles doivent être exactes.',
+    'Si le domaine offert n’apparaît pas ou qu’un prix est demandé, contactez le support o2switch (ticket ou téléphone) en indiquant votre identifiant cPanel et le domaine voulu : ils le rattachent à votre hébergement.',
+    'Confirmez l’**e-mail de vérification du titulaire** reçu dans les jours suivants : sans cela, le domaine est suspendu au bout de 15 jours.',
+  ]),
+  resultat(
+    'l’espace client montre le domaine à l’état **Actif**, et quelques heures plus tard `Resolve-DnsName mondomaine.com -Server 1.1.1.1` affiche l’adresse IP de l’hébergement. Le domaine commandé chez o2switch utilise automatiquement ses serveurs DNS : passez au cas 1.',
+  ),
+  P(
+    '**Cas 1 — domaine commandé chez o2switch** : il est déjà relié ; s’il n’apparaît pas encore dans cPanel › **Domaines**, ajoutez-le (**Créer un domaine**, sans cocher « Partager la racine du document »). Passez à l’étape suivante.',
+  ),
   P(
     '**Cas 2 — domaine chez un autre registraire** : chez ce registraire, choisissez l’une des deux solutions :',
   ),
@@ -816,7 +835,7 @@ ajouter(
     [
       [
         'Serveurs DNS d’o2switch (conseillé)',
-        'Remplacer les serveurs de noms par ceux indiqués dans l’e-mail de bienvenue d’o2switch.',
+        'Remplacer les serveurs de noms par ceux d’o2switch : `ns1.o2switch.net` et `ns2.o2switch.net` (à confirmer dans l’e-mail de bienvenue).',
       ],
       [
         'Enregistrements A',
