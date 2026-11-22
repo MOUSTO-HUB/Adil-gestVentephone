@@ -1332,6 +1332,7 @@ dir dist-web
   ...encadre('attention', [
     'Si PowerShell répond **« Impossible de charger le fichier … pnpm.ps1, car l’exécution de scripts est désactivée sur ce système »** (`PSSecurityException`), Windows bloque les scripts `.ps1` installés par npm. Deux solutions :',
     '• sans rien changer : tapez `pnpm.cmd` au lieu de `pnpm` et `npx.cmd` au lieu de `npx` dans les commandes ci-dessus ;',
+    '• si `pnpm.cmd` affiche « Cette application ne peut pas s’exécuter sur votre PC » ou « Accès refusé » (fichier `pnpm.exe` bloqué), lancez pnpm par Node : `node "$env:APPDATA\\npm\\node_modules\\pnpm\\bin\\pnpm.mjs" install` (même chose pour `--filter … build`), et `cmd /c npx expo export --platform web --output-dir dist-web` ;',
     '• ou autorisez une fois pour toutes les scripts locaux pour votre compte : `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, répondez `O`, puis fermez et rouvrez PowerShell. Seuls les scripts téléchargés et non signés restent bloqués.',
   ]),
   resultat(
