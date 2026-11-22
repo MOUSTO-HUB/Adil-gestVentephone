@@ -610,7 +610,7 @@ ajouter(
 `),
   H2('2.3 Ce qu’il faut savoir avant de commencer'),
   ...encadre('ok', [
-    '**PostgreSQL 9.6 testé.** L’Offre Cloud fournit PostgreSQL en version **9.6**. Le 27 octobre 2026, les 14 migrations de la base et les 155 tests de bout en bout de l’API ont réussi sur PostgreSQL 9.6.24 : l’application fonctionne avec cette version.',
+    '**PostgreSQL 9.6 testé.** L’Offre Cloud fournit PostgreSQL en version **9.6**. Le 27 octobre 2026, les 13 migrations de la base et les 155 tests de bout en bout de l’API ont réussi sur PostgreSQL 9.6.24 : l’application fonctionne avec cette version.',
   ]),
   ...encadre('attention', [
     '**PostgreSQL pourrait disparaître de l’offre.** La FAQ o2switch indique qu’il est « probable » qu’o2switch arrête PostgreSQL (version figée par cPanel). La 9.6 ne reçoit plus de correctifs de sécurité ; elle n’est joignable que depuis le serveur lui-même (127.0.0.1), ce qui limite le risque. Plan de secours au chapitre 20 ; les sauvegardes quotidiennes permettent de déménager à tout moment.',
@@ -1179,7 +1179,43 @@ ${ACTIVER}
 cd ~/gestvente/source/api
 pnpm exec prisma migrate deploy
 `),
-  resultat('la liste des 14 migrations puis `All migrations have been successfully applied.`'),
+  resultat('la liste des 13 migrations puis `All migrations have been successfully applied.`'),
+  P(
+    'En cas d’erreur `P1000: Authentication failed`, la ligne `DATABASE_URL` du fichier `.env` est fausse. Affichez-la (le mot de passe est masqué par des étoiles) et testez-la avec `psql` :',
+  ),
+  ...ssh(`
+echo "Variable du shell : \${DATABASE_URL:-(aucune)}" | sed -E 's#(://[^:/@]*:)[^@]*@#\\1****@#'
+grep -n "DATABASE_URL" .env | sed -E 's#(://[^:/@]*:)[^@]*@#\\1****@#'
+psql "$(sed -n 's/^DATABASE_URL=//p' .env | sed 's/?schema=public//')" -c "select current_user;"
+`),
+  P('La deuxième commande doit afficher exactement cette forme, avec vos valeurs :'),
+  ...code(`
+1:DATABASE_URL=postgresql://IDENTIFIANT_gestvente:****@127.0.0.1:5432/
+IDENTIFIANT_gestvente?schema=public
+`),
+  P('(une seule ligne sur le serveur ; coupée ici pour tenir sur la page)'),
+  ...tableau(
+    ['Ce que vous voyez', 'Correction'],
+    [
+      [
+        '`Variable du shell` affiche autre chose que `(aucune)`',
+        'Une ancienne valeur a été définie dans le terminal et passe avant le `.env` : tapez `unset DATABASE_URL`, puis relancez la migration.',
+      ],
+      [
+        'La ligne `DATABASE_URL` n’a pas cette forme, ou l’utilisateur manque (`postgresql://:****@…`)',
+        'Corrigez-la avec `nano .env` : rien avant `DATABASE_URL`, pas d’espace ni de guillemets, l’utilisateur complet (avec le préfixe `IDENTIFIANT_`) avant les `:`. Si Prisma affiche `(not available)` au lieu du nom d’utilisateur, c’est cette partie qui manque.',
+      ],
+      [
+        '`psql` répond `password authentication failed`',
+        'Le mot de passe du `.env` n’est pas celui de cPanel. Dans cPanel › **Bases de données PostgreSQL** › **Utilisateurs actuels**, cliquez sur **Changer le mot de passe** pour `IDENTIFIANT_gestvente`, collez `MOT_DE_PASSE_PG` du gestionnaire, puis recopiez-le dans `.env`.',
+      ],
+      [
+        '`psql` affiche `IDENTIFIANT_gestvente` (une ligne `current_user`)',
+        'Le `.env` est bon : relancez `pnpm exec prisma migrate deploy` depuis `~/gestvente/source/api`.',
+      ],
+    ],
+    [4, 6],
+  ),
   ETAPE('Créer le compte du concepteur', '3 min'),
   P(
     'Le **concepteur** (vous) administre la plateforme : il crée les commerces et leur propriétaire, enregistre les abonnements. Il ne voit jamais les ventes ni les clients.',
@@ -1836,6 +1872,11 @@ ajouter(
         'Commerçant : « L’abonnement … a pris fin »',
         'Échéance + 7 jours dépassés',
         'Enregistrer le paiement dans l’espace concepteur.',
+      ],
+      [
+        '`P1000: Authentication failed … (not available)`',
+        'Ligne `DATABASE_URL` du `.env` fausse (utilisateur absent ou mal écrit, mot de passe différent de cPanel)',
+        'Suivre le tableau de l’étape 23 (affichage masqué de la ligne et test `psql`).',
       ],
       [
         '`prisma migrate deploy` échoue',
