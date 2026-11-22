@@ -1408,6 +1408,23 @@ curl -sI https://app.mondomaine.com/ | grep -i "cross-origin"
     'Touche **F12** › onglet **Console** : aucune erreur rouge mentionnant « CORS » ou « Cross-Origin ».',
   ]),
   resultat('l’écran de connexion, sans erreur. Si l’écran reste blanc, voir le Dépannage.'),
+  P(
+    '**Ouvrir l’application depuis le domaine seul.** Les trois adresses ont chacune leur rôle : `app.mondomaine.com` est le site (écran de connexion), `api.mondomaine.com` le serveur que le site interroge (pas une page à ouvrir), et `mondomaine.com` n’affiche rien. Pour que `mondomaine.com` et `www.mondomaine.com` mènent directement à l’écran de connexion, créez cette redirection en SSH :',
+  ),
+  ...ssh(`
+cat > ~/mondomaine.com/.htaccess <<'FIN'
+# Le domaine seul (et www) renvoie vers l'application.
+Options -Indexes
+RewriteEngine On
+# Laisser passer la vérification des certificats HTTPS (AutoSSL).
+RewriteCond %{REQUEST_URI} !^/\\.well-known/
+RewriteRule ^ https://app.mondomaine.com/ [L,R=302]
+FIN
+curl -sI https://mondomaine.com/ | grep -i "^location"
+`),
+  resultat(
+    '`location: https://app.mondomaine.com/`. Le dossier `~/mondomaine.com` est celui de la racine du domaine dans cPanel › **Domaines** (s’il est différent, adaptez la 1re ligne).',
+  ),
   ...encadre(
     'verif',
     '**Fin de la partie D.** L’application s’ouvre en HTTPS sur `app.mondomaine.com` et la console n’affiche pas d’erreur.',
