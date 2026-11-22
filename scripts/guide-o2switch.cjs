@@ -1026,7 +1026,7 @@ cat ~/gestvente/source/api/passenger.cjs
     'Ne touchez pas à **Environment variables** : la configuration sera dans un fichier `.env` (étape 22).',
     'Cliquez sur **Create**.',
     'En haut de la page apparaît une commande du type `source /home/IDENTIFIANT/nodevenv/gestvente/source/api/24/bin/activate && cd /home/IDENTIFIANT/gestvente/source/api`. **Copiez-la dans la fiche** : elle active Node.js en SSH avant chaque intervention.',
-    'Ne cliquez **jamais** sur **Run NPM Install** : le projet utilise pnpm (étape suivante).',
+    'Ne cliquez **jamais** sur **Run NPM Install** : le projet utilise pnpm (étape 19). L’outil crée aussi un lien `api/node_modules` vers `~/nodevenv/…` ; l’étape 19 le remplace par un vrai dossier.',
     'Cliquez sur **Stop App** : l’API ne peut pas démarrer avant d’être construite.',
   ]),
   resultat('l’application apparaît dans la liste de **Setup Node.js App**, état **stopped**.'),
@@ -1055,15 +1055,23 @@ pnpm --version
   ETAPE('Installer les dépendances', '5 à 10 min'),
   ...ssh(`
 cd ~/gestvente/source
+if [ -L api/node_modules ]; then rm api/node_modules; fi
 NODE_ENV=development pnpm install --frozen-lockfile --filter "@gestvente/api..."
 `),
   resultat(
     'la dernière ligne indique `Done in …`. Des avertissements jaunes (« WARN ») sont normaux ; une ligne rouge « ERR_PNPM » ne l’est pas.',
   ),
-  ...encadre(
-    'attention',
-    'Ne retirez pas `NODE_ENV=development` au début de la commande. L’application Node.js de cPanel est en mode Production : sans ce préfixe, pnpm n’installe pas les outils de construction (Prisma, NestJS, TypeScript) et l’installation échoue avec `prisma: command not found`. Le préfixe ne vaut que pour cette commande ; l’API tourne bien en production.',
+  ...encadre('attention', [
+    'Ne sautez aucune des deux lignes, sinon l’installation échoue avec `sh: prisma: command not found` puis `ERR_PNPM_EXECUTOR_LIFECYCLE_SCRIPT_FAILED` :',
+    '• `if [ -L api/node_modules ] …` : à l’étape 17, Setup Node.js App a remplacé le dossier `api/node_modules` par un **lien** vers `~/nodevenv/…`. pnpm installerait alors au mauvais endroit. La ligne supprime ce lien (seulement le lien, rien d’autre) ; pnpm crée ensuite un vrai dossier.',
+    '• `NODE_ENV=development` : l’application est en mode Production ; sans ce préfixe, pnpm n’installe pas les outils de construction (Prisma, NestJS, TypeScript). Il ne vaut que pour cette commande : l’API tourne bien en production.',
+  ]),
+  P(
+    'Contrôle : la commande suivante doit afficher un **dossier** (ligne commençant par `d`), pas un lien (`l`) :',
   ),
+  ...ssh(`
+ls -ld api/node_modules
+`),
   ETAPE('Construire le code partagé et l’API', '5 min'),
   ...ssh(`
 pnpm --filter @gestvente/commun build
@@ -1540,6 +1548,7 @@ echo "2/5 Récupération du code"
 cd "$HOME/gestvente/source"
 git pull --ff-only
 echo "3/5 Dépendances et construction"
+if [ -L api/node_modules ]; then rm api/node_modules; fi
 NODE_ENV=development pnpm install --frozen-lockfile --filter "@gestvente/api..."
 pnpm --filter @gestvente/commun build
 pnpm --filter @gestvente/api exec prisma generate
@@ -1577,6 +1586,7 @@ ${ACTIVER}
 cd ~/gestvente/source
 git log --oneline -5              # repérer la version précédente (7 caractères)
 git checkout IDENTIFIANT_VERSION
+if [ -L api/node_modules ]; then rm api/node_modules; fi
 NODE_ENV=development pnpm install --frozen-lockfile --filter "@gestvente/api..."
 pnpm --filter @gestvente/commun build
 pnpm --filter @gestvente/api exec prisma generate
@@ -1729,8 +1739,8 @@ ajouter(
       ],
       [
         '`prisma: command not found` puis `ERR_PNPM_EXECUTOR_LIFECYCLE_SCRIPT_FAILED` pendant `pnpm install`',
-        'Le mode Production de cPanel (`NODE_ENV=production`) empêche l’installation des outils de construction',
-        'Relancer l’installation avec le préfixe : `NODE_ENV=development pnpm install --frozen-lockfile --filter "@gestvente/api..."` (étape 19).',
+        '`api/node_modules` est encore le lien créé par Setup Node.js App, ou le préfixe `NODE_ENV=development` manque',
+        'Retaper les deux lignes de l’étape 19 : `if [ -L api/node_modules ]; then rm api/node_modules; fi` puis `NODE_ENV=development pnpm install …`. `ls -ld api/node_modules` doit commencer par `d`.',
       ],
       [
         '`redis-cli: command not found`',
@@ -1808,9 +1818,9 @@ ajouter(
         'Fin du `.htaccess` (renvoi vers `index.html`).',
       ],
       [
-        'Setup Node.js App signale `node_modules`',
-        'L’outil veut gérer les dépendances',
-        'Normal avec pnpm : ne pas utiliser **Run NPM Install**.',
+        'Setup Node.js App refuse d’enregistrer une modification à cause de `node_modules`',
+        'L’outil veut un lien `node_modules` vers `~/nodevenv`, or pnpm a besoin d’un vrai dossier',
+        'Ne jamais utiliser **Run NPM Install**. Pour modifier l’application : `mv api/node_modules api/node_modules.pnpm`, faire la modification dans cPanel, puis `rm -f api/node_modules` et `mv api/node_modules.pnpm api/node_modules`, et enfin `touch api/tmp/restart.txt`.',
       ],
       [
         '« out of memory », « fork failed »',
