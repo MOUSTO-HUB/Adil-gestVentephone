@@ -1283,6 +1283,21 @@ Resolve-DnsName api.mondomaine.com -Server 1.1.1.1
     [3.5, 6.5],
   ),
   P(
+    'Si la page affiche **« Not Found – The requested URL was not found on this server »** (et que `https://api.mondomaine.com/` montre une liste vide « Index of / »), l’API n’est pas reliée au sous-domaine : Passenger ne la lance pas, et `api.log` n’existe pas. C’est le cas si l’application de l’étape 17 a été créée avant le sous-domaine `api` (étape 9). Vérifiez en SSH :',
+  ),
+  ...ssh(`
+cat ~/api.mondomaine.com/.htaccess
+`),
+  P(
+    'Le fichier doit contenir `PassengerAppRoot "/home/IDENTIFIANT/gestvente/source/api"`. S’il est absent ou ne contient pas de lignes `Passenger` :',
+  ),
+  ...actions([
+    'cPanel › **Setup Node.js App** › crayon de l’application.',
+    '**Application URL** : choisissez `api.mondomaine.com`, chemin vide. Vérifiez aussi **Application root** (`gestvente/source/api`) et **Application startup file** (`passenger.cjs`).',
+    '**Save** puis **Restart**. Si l’outil refuse à cause de `node_modules`, suivez la ligne « Setup Node.js App refuse… » du Dépannage.',
+    'Relancez `cat ~/api.mondomaine.com/.htaccess` : les lignes `Passenger…` sont là. Rechargez `/api/sante`.',
+  ]),
+  P(
     'Si une page d’erreur du serveur s’affiche (503, « Incomplete response »…), lisez le journal :',
   ),
   ...ssh(`
@@ -1893,6 +1908,11 @@ ajouter(
         'Site : page blanche, base locale impossible',
         'En-têtes COOP/COEP absents ou pas de HTTPS',
         'Vérifier le `.htaccess` (étape 28) et le certificat ; Ctrl+F5.',
+      ],
+      [
+        'API : « Not Found », `/` affiche « Index of / », `api.log` absent',
+        'Application Node.js pas reliée au sous-domaine `api` (pas de lignes `Passenger` dans `~/api.mondomaine.com/.htaccess`)',
+        'Setup Node.js App › crayon › **Application URL** = `api.mondomaine.com` › **Save** › **Restart** (étape 25).',
       ],
       [
         'Site : 404 en rechargeant une page',
