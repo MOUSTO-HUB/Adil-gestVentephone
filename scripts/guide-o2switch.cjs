@@ -812,7 +812,7 @@ ajouter(
     'Vérifiez depuis PowerShell : `Resolve-DnsName mondomaine.com -Server 1.1.1.1`. La réponse « Le nom DNS n’existe pas » veut dire que le domaine n’est pas enregistré (ou qu’il est mal orthographié).',
   ]),
   P(
-    '**Cas 0 — vous n’avez pas encore de domaine** : l’Offre Cloud inclut **un nom de domaine offert** (.com, .fr, .net, .org…) tant que l’hébergement est actif.',
+    '**Cas 0 — vous n’avez pas encore de domaine** : l’Offre Cloud inclut **un nom de domaine offert** (.com, .fr, .net, .org…) tant que l’hébergement est actif. Indice : si l’espace client › **Domaines configurés** affiche comme **Domaine principal** une adresse du type `IDENTIFIANT.odns.fr` (domaine technique fourni par o2switch), le domaine offert n’a pas encore été utilisé.',
   ),
   ...actions([
     'Connectez-vous à l’**espace client o2switch** (pas cPanel) et ouvrez la partie **Domaines**.',
