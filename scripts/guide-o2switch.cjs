@@ -1293,7 +1293,7 @@ cat ~/api.mondomaine.com/.htaccess
   ),
   ...actions([
     'cPanel › **Setup Node.js App** › crayon de l’application.',
-    '**Application URL** : choisissez `api.mondomaine.com`, chemin vide. Vérifiez aussi **Application root** (`gestvente/source/api`) et **Application startup file** (`passenger.cjs`).',
+    '**Application URL** : choisissez `api.mondomaine.com` dans la liste et laissez **vide** la case du chemin à droite (n’y retapez pas le nom du domaine : l’API serait alors à l’adresse `https://api.mondomaine.com/api.mondomaine.com/`). Contrôle en SSH : `cloudlinux-selector get --json --interpreter nodejs` doit montrer `"app_uri": ""`. Vérifiez aussi **Application root** (`gestvente/source/api`), **Application startup file** (`passenger.cjs`) et **Passenger log file** (`/home/IDENTIFIANT/gestvente/journaux/api.log` ; s’il est vide, `"passenger_log_file": null`, aucun journal n’est écrit).',
     '**Save** puis **Restart**. Si l’outil refuse à cause de `node_modules`, suivez la ligne « Setup Node.js App refuse… » du Dépannage.',
     'Relancez `cat ~/api.mondomaine.com/.htaccess` : les lignes `Passenger…` sont là. Rechargez `/api/sante`.',
   ]),
