@@ -1,0 +1,63 @@
+# Construit le site (export web Expo) à chaque envoi sur main et le range
+# dans la branche « site-en-ligne », que le serveur récupère avec
+# deploy/o2switch/mettre-a-jour.sh. L'adresse de l'API vient de la variable
+# du dépôt SITE_API_URL (Settings › Secrets and variables › Actions › Variables),
+# par exemple https://api.mondomaine.com/api.
+name: Site en ligne
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: site-en-ligne
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  construire:
+    name: Construire le site
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Adresse de l'API
+        env:
+          SITE_API_URL: ${{ vars.SITE_API_URL }}
+        run: |
+          if [ -z "$SITE_API_URL" ]; then
+            echo "::error::Variable SITE_API_URL absente (Settings › Secrets and variables › Actions › Variables)."
+            exit 1
+          fi
+          case "$SITE_API_URL" in
+            https://*/api) ;;
+            *) echo "::error::SITE_API_URL doit être de la forme https://api.mondomaine.com/api" ; exit 1 ;;
+          esac
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Dépendances
+        run: pnpm install --frozen-lockfile --filter "@gestvente/app..."
+      - name: Code partagé
+        run: pnpm --filter @gestvente/commun build
+      - name: Export web
+        working-directory: app
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.SITE_API_URL }}
+          CI: 1
+        run: npx expo export --platform web --output-dir dist-web
+      - name: Publier dans la branche site-en-ligne
+        working-directory: app/dist-web
+        run: |
+          echo "${GITHUB_SHA}" > version-source.txt
+          git init -q -b site-en-ligne
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Site construit depuis ${GITHUB_SHA::7}"
+          git push -q --force "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" site-en-ligne

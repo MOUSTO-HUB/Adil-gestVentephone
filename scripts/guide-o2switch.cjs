@@ -1661,50 +1661,67 @@ grep -i "error" ~/gestvente/journaux/api.log | tail -n 20
 
 ajouter(
   H1('16. Mettre à jour l’application'),
-  ETAPE('Créer le script de mise à jour de l’API (une seule fois)', '5 min'),
+  P(
+    'Une correction du code suit toujours le même chemin : elle est faite sur l’ordinateur, **commitée et poussée** sur GitHub (branche `main`) ; GitHub **construit alors le site tout seul** (onglet **Actions**, « Site en ligne », 3 à 5 minutes) et le range dans la branche `site-en-ligne`. Sur le serveur, **une seule commande** met ensuite à jour l’API puis le site.',
+  ),
+  ETAPE('Préparer la mise à jour en une commande (une seule fois)', '10 min'),
+  P(
+    '**1. Sur GitHub**, indiquez l’adresse de l’API au site construit par GitHub : dépôt › **Settings** › **Secrets and variables** › **Actions** › onglet **Variables** › **New repository variable**.',
+  ),
+  ...tableau(
+    ['Champ', 'Valeur'],
+    [
+      ['Name', '`SITE_API_URL`'],
+      ['Value', '`https://api.mondomaine.com/api` (avec `/api`, sans barre finale)'],
+    ],
+    [3, 7],
+  ),
+  ...actions([
+    'Onglet **Actions** › « Site en ligne » › **Run workflow** › **Run workflow**.',
+    'Attendez la coche verte (3 à 5 minutes). Une croix rouge « SITE_API_URL absente » : la variable est mal nommée.',
+  ]),
+  P('**2. Sur le serveur**, en SSH : récupérez le script et créez le raccourci.'),
   ...ssh(`
+cd ~/gestvente/source && git pull --ff-only
 cat > ~/gestvente/scripts/mettre-a-jour.sh <<'FIN'
 #!/bin/bash
-# Mise à jour de l'API : sauvegarde, code, construction, migrations, redémarrage.
-set -euo pipefail
-source /home/IDENTIFIANT/nodevenv/gestvente/source/api/24/bin/activate
-echo "1/5 Sauvegarde avant mise à jour"
-"$HOME/gestvente/scripts/sauvegarde.sh"
-echo "2/5 Récupération du code"
-cd "$HOME/gestvente/source"
-git pull --ff-only
-echo "3/5 Dépendances et construction"
-if [ -L api/node_modules ]; then rm api/node_modules; fi
-NODE_ENV=development pnpm install --frozen-lockfile --filter "@gestvente/api..."
-pnpm --filter @gestvente/commun build
-pnpm --filter @gestvente/api exec prisma generate
-pnpm --filter @gestvente/api build
-echo "4/5 Migrations de la base"
-cd api
-pnpm exec prisma migrate deploy
-echo "5/5 Redémarrage"
-mkdir -p tmp && touch tmp/restart.txt
-sleep 5
-curl -fsS https://api.mondomaine.com/api/sante && echo " : API en service"
+# Raccourci : le vrai script est dans le dépôt (deploy/o2switch/mettre-a-jour.sh).
+exec bash "$HOME/gestvente/source/deploy/o2switch/mettre-a-jour.sh" "$@"
 FIN
 chmod 700 ~/gestvente/scripts/mettre-a-jour.sh
-nano ~/gestvente/scripts/mettre-a-jour.sh
+~/gestvente/scripts/mettre-a-jour.sh
 `),
-  P(
-    'Dans `nano`, remplacez `IDENTIFIANT` (ligne `source`) par votre commande d’activation exacte et `mondomaine.com` (dernière ligne), puis Ctrl+O, Entrée, Ctrl+X.',
+  resultat(
+    'les étapes défilent (API 1/4 à 4/4, puis Site), avec `API en service`, `Site en ligne : version …` et `Mise à jour terminée`. Le script lit les adresses dans `api/.env` (`URL_PUBLIQUE`, `APP_ORIGIN`) : rien à remplacer.',
   ),
   H2('16.1 À chaque nouvelle version'),
   ...actions([
-    'Prévenez les boutiques et choisissez un moment **hors heures d’ouverture**. Les appareils continuent hors ligne pendant l’opération : rien n’est perdu.',
-    'Mettez à jour l’**API** :',
+    'Sur l’ordinateur : corrigez, vérifiez, **commitez et poussez** sur `main`.',
+    'Choisissez un moment **hors heures d’ouverture** : les appareils continuent hors ligne pendant l’opération, rien n’est perdu.',
+    'En SSH, une seule commande :',
   ]),
   ...ssh(`
 ~/gestvente/scripts/mettre-a-jour.sh
 `),
-  resultat('les étapes 1/5 à 5/5 défilent et la dernière ligne indique `: API en service`.'),
-  ...actions([
-    'Si la version modifie des écrans, reconstruisez et renvoyez le **site** (étapes 26 et 27), **après** l’API. Ne touchez pas au `.htaccess`.',
-    'Ouvrez l’application, vérifiez une vente test, puis prévenez les boutiques. Les postes reçoivent la nouvelle version en rouvrant l’application.',
+  resultat(
+    '`Mise à jour terminée`. Si le site n’est pas encore construit par GitHub, le script affiche « Construction du site en cours sur GitHub, attente » et patiente (15 minutes au plus).',
+  ),
+  ...tableau(
+    ['Commande', 'Effet'],
+    [
+      ['`~/gestvente/scripts/mettre-a-jour.sh`', 'API (si le code a changé) puis site.'],
+      [
+        '`~/gestvente/scripts/mettre-a-jour.sh api`',
+        'API seule : sauvegarde, code, construction, migrations, redémarrage.',
+      ],
+      ['`~/gestvente/scripts/mettre-a-jour.sh site`', 'Site seul ; le `.htaccess` est conservé.'],
+    ],
+    [4.5, 5.5],
+  ),
+  ...encadre('attention', [
+    'Le script fait une **sauvegarde de la base** avant de toucher à l’API dès que l’étape 30 est faite ; avant, il l’indique et continue.',
+    'Une erreur rouge arrête tout : rien n’est à moitié fait côté site. Lisez le message (il dit quoi vérifier), puis relancez la commande.',
+    'Ouvrez ensuite l’application, vérifiez une vente test et prévenez les boutiques : les postes reçoivent la nouvelle version en rouvrant l’application.',
   ]),
   H2('16.2 Revenir à la version précédente'),
   ...ssh(`
@@ -2067,7 +2084,7 @@ ajouter(
     [
       ['Se connecter au serveur', '`ssh o2switch`'],
       ['Activer Node.js', `\`${ACTIVER}\``],
-      ['Mettre à jour l’API', '`~/gestvente/scripts/mettre-a-jour.sh`'],
+      ['Mettre à jour l’API et le site', '`~/gestvente/scripts/mettre-a-jour.sh`'],
       ['Redémarrer l’API', '`touch ~/gestvente/source/api/tmp/restart.txt`'],
       ['Journal de l’API', '`tail -n 100 ~/gestvente/journaux/api.log`'],
       ['Sauvegarde immédiate', '`~/gestvente/scripts/sauvegarde.sh`'],

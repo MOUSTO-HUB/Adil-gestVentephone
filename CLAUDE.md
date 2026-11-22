@@ -115,6 +115,7 @@ Guide utilisateur : `docs/guide/` (une fiche par tâche et par rôle, formation 
 - Premier compte : `node dist/cli/initialiser.js` crée le concepteur (mot de passe affiché une fois) ; les commerçants se créent dans l'espace concepteur.
 - Site installable : `app/public` (`index.html`, `manifest.json`, `sw.js` : coquille hors ligne, jamais l'API en cache, `icones/`). Application mobile : `app/eas.json` (APK `preview`, AAB et iOS `production`, canaux EAS Update), `runtimeVersion` = version de l'application.
 - CI : `.github/workflows/ci.yml` (lint, types, format, tests, e2e avec PostgreSQL et Redis, compilation, export web, images Docker). Recette de la phase 1 : `api/test/recette.e2e-spec.ts`.
+- Hébergement o2switch (guide `docs/Guide-deploiement-o2switch.docx`, généré par `scripts/guide-o2switch.cjs`) : `.github/workflows/site.yml` construit le site à chaque envoi sur `main` (variable du dépôt `SITE_API_URL`) et le range dans la branche `site-en-ligne` ; sur le serveur, `deploy/o2switch/mettre-a-jour.sh [api|site]` met à jour l'API puis copie le site (adresses lues dans `api/.env`, `.htaccess` conservé). Documentation OpenAPI masquée en production sauf `DOCS_API=publique`.
 
 ## Espace concepteur (plateforme)
 
