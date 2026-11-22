@@ -1255,7 +1255,7 @@ node dist/cli/initialiser.js
     'Dans le navigateur, ouvrez `https://api.mondomaine.com/api/sante`.',
   ]),
   resultat(
-    '`{"statut":"ok","service":"adil-gestventephone-api"}`. La documentation de l’API est aussi visible sur `https://api.mondomaine.com/api/docs`.',
+    '`{"statut":"ok","service":"adil-gestventephone-api"}`. La documentation de l’API (`/api/docs`) est **masquée en production** et répond « 404 » : c’est voulu, elle décrirait toutes les routes. Pour la consulter un moment, ajoutez `DOCS_API=publique` au `.env`, redémarrez l’API, puis retirez la ligne.',
   ),
   P(
     'Si le navigateur affiche **« Ce site est inaccessible »** (ou `DNS_PROBE_FINISHED_NXDOMAIN`), la demande n’atteint pas le serveur : l’API n’est pas en cause, et le journal n’existe pas encore (Passenger ne démarre l’API qu’à la première visite). Vérifiez l’adresse depuis PowerShell, sur le PC :',

@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { convertirBigIntEnJson } from './common/bigint.js';
+import { documentationPublique } from './common/documentation.js';
 import { memoriserRequete } from './securite/contexte-requete.js';
 
 /** Configuration commune à main.ts et aux tests e2e. */
@@ -24,16 +25,19 @@ export function configurerApplication(app: INestApplication): void {
   );
 
   // Documentation OpenAPI : /api/docs (page) et /api/docs-json (fichier).
-  const document = SwaggerModule.createDocument(
-    app,
-    new DocumentBuilder()
-      .setTitle('Adil-gestVentephone')
-      .setDescription('API de gestion de vente de téléphones et d’accessoires')
-      .setVersion('0.1.0')
-      .addBearerAuth()
-      .build(),
-  );
-  SwaggerModule.setup('api/docs', app, document);
+  // Masquée en production (DOCS_API=publique pour la rouvrir) : elle décrit toutes les routes.
+  if (documentationPublique()) {
+    const document = SwaggerModule.createDocument(
+      app,
+      new DocumentBuilder()
+        .setTitle('Adil-gestVentephone')
+        .setDescription('API de gestion de vente de téléphones et d’accessoires')
+        .setVersion('0.1.0')
+        .addBearerAuth()
+        .build(),
+    );
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   // En-têtes de sécurité ; la page de documentation a besoin de ses styles et scripts.
   const entetesSecurite = helmet({
