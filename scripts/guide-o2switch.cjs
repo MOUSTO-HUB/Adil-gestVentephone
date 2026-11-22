@@ -1238,7 +1238,34 @@ node dist/cli/initialiser.js
   resultat(
     '`{"statut":"ok","service":"adil-gestventephone-api"}`. La documentation de l’API est aussi visible sur `https://api.mondomaine.com/api/docs`.',
   ),
-  P('Si ce n’est pas le cas, lisez le journal :'),
+  P(
+    'Si le navigateur affiche **« Ce site est inaccessible »** (ou `DNS_PROBE_FINISHED_NXDOMAIN`), la demande n’atteint pas le serveur : l’API n’est pas en cause, et le journal n’existe pas encore (Passenger ne démarre l’API qu’à la première visite). Vérifiez l’adresse depuis PowerShell, sur le PC :',
+  ),
+  ...ps(`
+Resolve-DnsName mondomaine.com -Server 1.1.1.1
+Resolve-DnsName api.mondomaine.com -Server 1.1.1.1
+`),
+  ...tableau(
+    ['Réponse', 'Cause et solution'],
+    [
+      [
+        '`mondomaine.com : Le nom DNS n’existe pas`',
+        'Le domaine lui-même n’existe pas sur Internet : faute de frappe (comparez avec cPanel › **Domaines**), ou enregistrement du domaine pas encore fait ou pas encore payé (espace client o2switch › **Domaines** : état « Actif » attendu ; compter quelques heures après la commande).',
+      ],
+      [
+        'Le domaine répond, mais pas `api.mondomaine.com`',
+        'Le sous-domaine manque : refaites l’étape 9. Si le domaine est géré ailleurs, ajoutez l’enregistrement A de l’étape 8. Attendez jusqu’à 1 heure.',
+      ],
+      [
+        'Les deux répondent par l’adresse IP de cPanel (Informations générales)',
+        'Les DNS sont bons : videz le cache (`ipconfig /flushdns`) ou essayez sur le téléphone en 4G ; vérifiez le certificat HTTPS (étape 10).',
+      ],
+    ],
+    [3.5, 6.5],
+  ),
+  P(
+    'Si une page d’erreur du serveur s’affiche (503, « Incomplete response »…), lisez le journal :',
+  ),
   ...ssh(`
 tail -n 50 ~/gestvente/journaux/api.log
 `),
@@ -1872,6 +1899,11 @@ ajouter(
         'Commerçant : « L’abonnement … a pris fin »',
         'Échéance + 7 jours dépassés',
         'Enregistrer le paiement dans l’espace concepteur.',
+      ],
+      [
+        'Navigateur : « Ce site est inaccessible » et `api.log` absent',
+        'Le domaine ou le sous-domaine n’existe pas dans les DNS (faute de frappe, domaine pas encore enregistré, sous-domaine manquant)',
+        'Suivre le tableau de l’étape 25 (`Resolve-DnsName` depuis le PC).',
       ],
       [
         '`P1000: Authentication failed … (not available)`',
