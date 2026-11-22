@@ -1347,8 +1347,13 @@ dir dist-web
   ...ps(`
 ssh o2switch "rm -rf ~/app.mondomaine.com/_expo ~/app.mondomaine.com/assets"
 scp -r dist-web/* o2switch:app.mondomaine.com/
+ssh o2switch "find ~/app.mondomaine.com -type d -exec chmod 755 {} + ; find ~/app.mondomaine.com -type f -exec chmod 644 {} +"
 `),
   resultat('la liste des fichiers envoyés défile, sans erreur.'),
+  ...encadre(
+    'attention',
+    'La 3e commande est **indispensable** : envoyés depuis Windows, les sous-dossiers (`_expo`, `assets`, `icones`) arrivent avec des droits trop fermés. Sans elle, le serveur répond « 403 » pour leurs fichiers et le site reste un **écran bleu foncé, sans page de connexion** (console du navigateur, F12 : « Refused to execute script … MIME type text/html »).',
+  ),
   P('**Méthode B — par le Gestionnaire de fichiers de cPanel** :'),
   ...ps(`
 Compress-Archive -Path dist-web\\* -DestinationPath ..\\site-web.zip -Force
@@ -1357,6 +1362,7 @@ Compress-Archive -Path dist-web\\* -DestinationPath ..\\site-web.zip -Force
     'cPanel › **Gestionnaire de fichiers** › dossier `app.mondomaine.com`. Supprimez les anciens fichiers **sauf** `.htaccess` (pour voir les fichiers cachés : **Paramètres** › **Afficher les fichiers cachés**).',
     '**Charger** › choisissez `site-web.zip` › attendez 100 % › **Retour**.',
     'Clic droit sur `site-web.zip` › **Extraire** › dossier `/app.mondomaine.com` › **Extraire les fichiers**. Supprimez ensuite le `.zip`.',
+    'Si l’écran reste bleu foncé, lancez en SSH la 3e commande de la méthode A (sans `ssh o2switch` ni guillemets).',
   ]),
   ETAPE('Créer le fichier .htaccess du site', '5 min'),
   P(
@@ -1909,6 +1915,11 @@ ajouter(
         'Site : l’application appelle localhost',
         'Site construit sans `EXPO_PUBLIC_API_URL`',
         'Reconstruire (étape 26) puis renvoyer (étape 27).',
+      ],
+      [
+        'Site : écran bleu foncé, pas de page de connexion ; F12 : 403, « MIME type text/html »',
+        'Sous-dossiers envoyés depuis Windows avec des droits trop fermés',
+        'En SSH : `find ~/app.mondomaine.com -type d -exec chmod 755 {} +` puis `find ~/app.mondomaine.com -type f -exec chmod 644 {} +` (étape 27) ; Ctrl+F5.',
       ],
       [
         'Site : page blanche, base locale impossible',
