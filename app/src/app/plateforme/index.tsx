@@ -55,12 +55,6 @@ function ConnexionConcepteur() {
       />
       <Message texte={erreur} />
       <Bouton titre="Se connecter" onPress={valider} chargement={envoi} />
-      <Bouton
-        titre="Retour à la connexion commerçant"
-        variante="secondaire"
-        icone="arrow-back"
-        onPress={() => router.replace('/connexion')}
-      />
     </Ecran>
   );
 }
