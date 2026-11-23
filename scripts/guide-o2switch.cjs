@@ -1327,6 +1327,7 @@ cd app
 $env:EXPO_PUBLIC_API_URL = "https://api.mondomaine.com/api"
 $env:CI = "1"
 npx expo export --platform web --output-dir dist-web
+node scripts/sans-dossiers-caches.cjs dist-web
 dir dist-web
 `),
   ...encadre('attention', [

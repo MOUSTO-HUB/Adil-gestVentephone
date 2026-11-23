@@ -51,6 +51,9 @@ jobs:
           EXPO_PUBLIC_API_URL: ${{ vars.SITE_API_URL }}
           CI: 1
         run: npx expo export --platform web --output-dir dist-web
+      - name: Sans dossiers à point (refusés par o2switch)
+        working-directory: app
+        run: node scripts/sans-dossiers-caches.cjs dist-web
       - name: Publier dans la branche site-en-ligne
         working-directory: app/dist-web
         run: |
