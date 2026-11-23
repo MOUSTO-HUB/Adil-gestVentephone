@@ -20,12 +20,31 @@ const CLE = 'gestvente.concepteur';
 interface SessionConcepteur {
   jeton: string;
   nom: string;
+  /** Mot de passe provisoire : à changer avant tout (écran Mon compte). */
+  doitChangerMotDePasse?: boolean;
+  /** Double authentification par application active sur ce compte. */
+  doubleAuth?: boolean;
 }
+
+/** Réponse de connexion : session, ou code de l'application d'authentification demandé. */
+type ReponseConnexion =
+  | { doubleAuth: true }
+  | {
+      jeton: string;
+      concepteur: { nom: string; doitChangerMotDePasse?: boolean; doubleAuth?: boolean };
+    };
 
 interface ValeurPlateforme {
   chargement: boolean;
   session: SessionConcepteur | null;
-  connexion: (identifiant: string, motDePasse: string) => Promise<void>;
+  /** « code » : le mot de passe est bon, il faut le code à 6 chiffres de l'application. */
+  connexion: (
+    identifiant: string,
+    motDePasse: string,
+    code?: string,
+  ) => Promise<'connecte' | 'code'>;
+  /** Met à jour la session (mot de passe changé, double authentification activée…). */
+  majSession: (changement: Partial<Omit<SessionConcepteur, 'jeton'>>) => Promise<void>;
   deconnexion: () => Promise<void>;
   requete: <T>(chemin: string, options?: Options) => Promise<T>;
 }
@@ -51,12 +70,25 @@ export function FournisseurPlateforme({ children }: { children: ReactNode }) {
     () => ({
       chargement,
       session,
-      async connexion(identifiant, motDePasse) {
-        const r = await appeler<{ jeton: string; concepteur: { nom: string } }>(
-          '/plateforme/connexion',
-          { methode: 'POST', corps: { identifiant, motDePasse } },
-        );
-        const nouvelle = { jeton: r.jeton, nom: r.concepteur.nom };
+      async connexion(identifiant, motDePasse, code) {
+        const r = await appeler<ReponseConnexion>('/plateforme/connexion', {
+          methode: 'POST',
+          corps: { identifiant, motDePasse, ...(code ? { code } : {}) },
+        });
+        if ('doubleAuth' in r) return 'code';
+        const nouvelle: SessionConcepteur = {
+          jeton: r.jeton,
+          nom: r.concepteur.nom,
+          doitChangerMotDePasse: !!r.concepteur.doitChangerMotDePasse,
+          doubleAuth: !!r.concepteur.doubleAuth,
+        };
+        await ecrire(CLE, nouvelle);
+        setSession(nouvelle);
+        return 'connecte';
+      },
+      async majSession(changement) {
+        if (!session) return;
+        const nouvelle = { ...session, ...changement };
         await ecrire(CLE, nouvelle);
         setSession(nouvelle);
       },

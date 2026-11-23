@@ -1820,6 +1820,10 @@ ajouter(
         'Le compte cPanel donne accès à toutes les données.',
       ],
       [
+        'Double authentification des comptes concepteur (Comptes › Mon compte, Google Authenticator) ; un deuxième compte concepteur de secours',
+        'Le concepteur pilote tous les commerçants ; un collègue peut vous redonner l’accès si vous perdez votre téléphone.',
+      ],
+      [
         'Clé SSH avec phrase de passe ; autorisations IP tenues à jour',
         'Limite l’accès au terminal du serveur.',
       ],

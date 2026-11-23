@@ -139,7 +139,7 @@ export function BarreCommercant() {
   );
 }
 
-/** Espace concepteur : Commerçants, Nouveau (au centre), Tableau de bord, Quitter. */
+/** Espace concepteur : Commerçants, Tableau, Nouveau (au centre), Comptes, Quitter. */
 export function BarreConcepteur() {
   const { deconnexion } = usePlateforme();
   return (
@@ -153,6 +153,13 @@ export function BarreConcepteur() {
           prefixes: ['/plateforme/commerce'],
         },
         {
+          chemin: '/plateforme/tableau',
+          titre: 'Tableau',
+          icone: 'stats-chart-outline',
+          iconeActive: 'stats-chart',
+          prefixes: ['/plateforme/tableau'],
+        },
+        {
           chemin: '/plateforme/nouveau',
           titre: 'Nouveau',
           icone: 'add-circle-outline',
@@ -161,11 +168,11 @@ export function BarreConcepteur() {
           central: true,
         },
         {
-          chemin: '/plateforme/tableau',
-          titre: 'Tableau de bord',
-          icone: 'stats-chart-outline',
-          iconeActive: 'stats-chart',
-          prefixes: ['/plateforme/tableau'],
+          chemin: '/plateforme/concepteurs',
+          titre: 'Comptes',
+          icone: 'people-circle-outline',
+          iconeActive: 'people-circle',
+          prefixes: ['/plateforme/concepteurs', '/plateforme/compte'],
         },
         {
           titre: 'Quitter',

@@ -24,6 +24,7 @@ import { Role } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { LIMITES, LimiteurService } from '../securite/limiteur.service.js';
 import { JournalService } from '../sync/journal.service.js';
+import { ComptesConcepteurService } from './comptes.service.js';
 import type { ChargeConcepteur, ConcepteurConnecte } from './concepteur.guard.js';
 
 /** Session du concepteur : une journée de travail. */
@@ -64,15 +65,28 @@ export class PlateformeService {
     private readonly limiteur: LimiteurService,
     private readonly audit: AuditService,
     private readonly journal: JournalService,
+    private readonly comptes: ComptesConcepteurService,
   ) {}
 
-  async connexion(identifiantSaisi: string, motDePasse: string) {
+  /**
+   * Connexion : mot de passe, puis code de l'application d'authentification si la double
+   * authentification est active (réponse `{ doubleAuth: true }` tant que le code manque).
+   */
+  async connexion(identifiantSaisi: string, motDePasse: string, code?: string) {
     const identifiant = identifiantSaisi.trim().toLowerCase();
     await this.limiteur.verifier(LIMITES.connexionIdentifiant, `concepteur:${identifiant}`);
     const concepteur = await this.prisma.concepteur.findUnique({ where: { identifiant } });
     const valide = concepteur ? await verify(concepteur.motDePasseHash, motDePasse) : false;
-    if (!concepteur || !valide || !concepteur.actif) {
+    if (!concepteur || !valide || !concepteur.actif || concepteur.supprimeLe) {
       throw new UnauthorizedException('Identifiant ou mot de passe incorrect.');
+    }
+    if (concepteur.totpActif) {
+      if (!code?.trim()) return { doubleAuth: true as const };
+      if (!(await this.comptes.verifierCode(concepteur.id, code))) {
+        throw new UnauthorizedException(
+          'Code de vérification incorrect. Saisissez le code affiché par l’application.',
+        );
+      }
     }
     await this.limiteur.reinitialiser(LIMITES.connexionIdentifiant, `concepteur:${identifiant}`);
     await this.prisma.concepteur.update({
@@ -82,7 +96,11 @@ export class PlateformeService {
     const charge: ChargeConcepteur = { type: 'concepteur', sub: concepteur.id };
     return {
       jeton: await this.jwt.signAsync(charge, { expiresIn: DUREE_SESSION }),
-      concepteur: { nom: concepteur.nom },
+      concepteur: {
+        nom: concepteur.nom,
+        doitChangerMotDePasse: concepteur.doitChangerMotDePasse,
+        doubleAuth: concepteur.totpActif,
+      },
     };
   }
 

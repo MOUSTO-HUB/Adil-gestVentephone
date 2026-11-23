@@ -25,6 +25,15 @@ l'écran des commerçants). Barre du bas : **Commerçants**, gros bouton **+ Nou
 **Tableau de bord**, **Quitter**. Création d'un commerçant, abonnements, verrouillage d'une
 boutique et nouveau mot de passe du propriétaire se font depuis la fiche du commerce.
 
+- **Comptes** (onglet du bas) : créer un autre concepteur (mot de passe provisoire affiché une
+  fois, à changer à la première connexion), l'aider à se reconnecter (nouveau mot de passe
+  provisoire ; « téléphone perdu » retire aussi sa double authentification), le désactiver
+  ou supprimer son compte. Supprimer un compte ne supprime rien de ce qu'il a créé
+  (commerces, abonnements…). Il reste toujours au moins un concepteur actif.
+- **Mon compte** : changer son mot de passe (10 caractères, lettres et chiffres) et activer la
+  **double authentification** : installez Google Authenticator, scannez le code QR, saisissez
+  le code à 6 chiffres. Ensuite, chaque connexion demande ce code après le mot de passe.
+
 ## Vendeur
 
 1. [Vendre](vendeur/01-vendre.md)

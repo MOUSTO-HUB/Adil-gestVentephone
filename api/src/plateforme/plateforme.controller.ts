@@ -44,6 +44,13 @@ const STATUTS = ['ACTIF', 'SUSPENDU', 'SUPPRIME'] as const;
 class ConnexionConcepteurDto {
   @ApiProperty() @IsString() @Length(1, 60) identifiant: string;
   @ApiProperty() @IsString() @Length(1, 200) motDePasse: string;
+  @ApiPropertyOptional({
+    description: 'Code à 6 chiffres de l’application (double authentification).',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(0, 10)
+  code?: string;
 }
 
 class NouveauCommerceDto {
@@ -145,12 +152,15 @@ export class PlateformeController {
   @Post('connexion')
   @Public()
   @HttpCode(200)
-  @ApiOkResponse({ description: 'Jeton de session du concepteur (10 heures).' })
+  @ApiOkResponse({
+    description:
+      'Jeton de session du concepteur (10 heures), ou { doubleAuth: true } si le code de l’application est requis.',
+  })
   async connexion(@Body() dto: ConnexionConcepteurDto, @Ip() ip: string) {
     // Comme pour les commerçants : les échecs depuis une même IP sont limités.
     await this.limiteur.controler(LIMITES.connexionIp, ip);
     try {
-      return await this.plateforme.connexion(dto.identifiant, dto.motDePasse);
+      return await this.plateforme.connexion(dto.identifiant, dto.motDePasse, dto.code);
     } catch (erreur) {
       if (erreur instanceof UnauthorizedException) {
         await this.limiteur.verifier(LIMITES.connexionIp, ip);

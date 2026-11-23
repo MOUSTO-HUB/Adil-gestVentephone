@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
@@ -27,6 +27,9 @@ function ConnexionConcepteur() {
   const { connexion } = usePlateforme();
   const [identifiant, setIdentifiant] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
+  // Deuxième étape : code à 6 chiffres de l'application d'authentification.
+  const [etape, setEtape] = useState<'mot-de-passe' | 'code'>('mot-de-passe');
+  const [code, setCode] = useState('');
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
 
@@ -35,15 +38,64 @@ function ConnexionConcepteur() {
       setErreur('Saisissez votre identifiant et votre mot de passe.');
       return;
     }
+    if (etape === 'code' && !/^\d{6}$/.test(code.trim())) {
+      setErreur('Saisissez les 6 chiffres affichés par l’application.');
+      return;
+    }
     setEnvoi(true);
     setErreur(null);
     try {
-      await connexion(identifiant.trim(), motDePasse.trim());
+      const resultat = await connexion(
+        identifiant.trim(),
+        motDePasse.trim(),
+        etape === 'code' ? code.trim() : undefined,
+      );
+      if (resultat === 'code') {
+        setEtape('code');
+        setEnvoi(false);
+      }
     } catch (e) {
       setErreur(messageErreur(e));
+      setCode('');
       setEnvoi(false);
     }
   };
+
+  if (etape === 'code') {
+    return (
+      <Ecran titre="Code de vérification" sousTitre="Double authentification du concepteur">
+        <Message
+          type="info"
+          texte="Ouvrez Google Authenticator (ou votre application d’authentification) et saisissez le code à 6 chiffres de « Gestion vente Phone »."
+        />
+        <Champ
+          libelle="Code à 6 chiffres"
+          value={code}
+          onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 6))}
+          keyboardType="number-pad"
+          autoComplete="one-time-code"
+          textContentType="oneTimeCode"
+          autoFocus
+          onSubmitEditing={valider}
+        />
+        <Message texte={erreur} />
+        <Bouton titre="Valider" icone="shield-checkmark" onPress={valider} chargement={envoi} />
+        <Bouton
+          titre="Revenir"
+          variante="secondaire"
+          onPress={() => {
+            setEtape('mot-de-passe');
+            setCode('');
+            setErreur(null);
+          }}
+        />
+        <Texte discret>
+          Téléphone perdu ? Un autre concepteur peut retirer votre double authentification (Comptes
+          › votre compte › Aider à se reconnecter).
+        </Texte>
+      </Ecran>
+    );
+  }
 
   return (
     <Ecran titre="Espace concepteur" sousTitre="Gestion des commerçants abonnés à la plateforme.">
@@ -106,8 +158,22 @@ function Commerces() {
   const boutiques = total.reduce((t, x) => t + x.boutiques, 0);
   const actifs = total.filter((x) => x.ventes30Jours > 0).length;
 
+  // Mot de passe provisoire : il se change avant tout le reste.
+  if (session?.doitChangerMotDePasse) return <Redirect href="/plateforme/compte" />;
+
   return (
     <Ecran enHaut large retour={false} titre="Espace concepteur" sousTitre={session?.nom}>
+      {session && !session.doubleAuth ? (
+        <>
+          <Message texte="Protégez votre compte : activez la double authentification (code de Google Authenticator à chaque connexion)." />
+          <Bouton
+            titre="Activer la double authentification"
+            icone="shield-checkmark"
+            variante="secondaire"
+            onPress={() => router.push('/plateforme/compte')}
+          />
+        </>
+      ) : null}
       <Grille>
         <Indicateur
           compact

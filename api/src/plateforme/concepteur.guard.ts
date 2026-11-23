@@ -2,6 +2,7 @@ import {
   type CanActivate,
   createParamDecorator,
   type ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -49,7 +50,11 @@ export class ConcepteurGuard implements CanActivate {
     if (charge.type !== 'concepteur')
       throw new UnauthorizedException('Connexion du concepteur requise.');
     const concepteur = await this.prisma.concepteur.findUnique({ where: { id: charge.sub } });
-    if (!concepteur?.actif) throw new UnauthorizedException('Compte de concepteur désactivé.');
+    if (!concepteur?.actif || concepteur.supprimeLe)
+      throw new UnauthorizedException('Compte de concepteur désactivé.');
+    // Mot de passe provisoire : seul « Mon compte » reste ouvert jusqu'au changement.
+    if (concepteur.doitChangerMotDePasse && !/\/plateforme\/moi(\/|$)/.test(requete.path))
+      throw new ForbiddenException('Choisissez d’abord votre nouveau mot de passe (Mon compte).');
     requete.concepteur = { id: concepteur.id, nom: concepteur.nom };
     return true;
   }

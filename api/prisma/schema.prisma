@@ -1322,6 +1322,17 @@ model Concepteur {
   derniereConnexion DateTime?
   creeLe            DateTime  @default(now())
   modifieLe         DateTime  @updatedAt
+  /// Mot de passe provisoire (créé ou réinitialisé par un autre concepteur) : à changer.
+  doitChangerMotDePasse Boolean @default(false)
+  /// Double authentification (application TOTP) : secret chiffré, actif une fois confirmé.
+  totpSecret        String?
+  totpActif         Boolean   @default(false)
+  /// Dernier pas de 30 s accepté : un même code ne sert qu'une fois.
+  totpDernierPas    Int?
+  /// Compte supprimé : plus de connexion ; ce qu'il a créé (commerces…) est gardé.
+  supprimeLe        DateTime?
+  /// Concepteur qui a créé ce compte (null : ligne de commande).
+  creeParId         String?
 }
 
 /// Rapport consolidé produit automatiquement (chaque semaine, chaque mois), à télécharger.

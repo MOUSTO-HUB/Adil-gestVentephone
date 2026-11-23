@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
+import { ComptesConcepteurController } from './comptes.controller.js';
+import { ComptesConcepteurService } from './comptes.service.js';
 import { ConcepteurGuard } from './concepteur.guard.js';
 import { PlateformeController } from './plateforme.controller.js';
 import { PlateformeService } from './plateforme.service.js';
 
 /** Espace concepteur : gestion des commerces abonnés à la plateforme. */
 @Module({
-  controllers: [PlateformeController],
-  providers: [PlateformeService, ConcepteurGuard],
+  controllers: [PlateformeController, ComptesConcepteurController],
+  providers: [PlateformeService, ComptesConcepteurService, ConcepteurGuard],
 })
 export class PlateformeModule {}
