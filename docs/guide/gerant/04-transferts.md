@@ -5,7 +5,7 @@
 
 ## 1. La boutique qui manque de stock demande
 
-Accueil → **Transferts** → **Demander du stock à une autre boutique** : choisissez la
+Menu → **Transferts** → **Demander du stock à une autre boutique** : choisissez la
 boutique qui envoie, les produits et les quantités, puis **Envoyer la demande**.
 
 ![Demande de stock](../images/transfert-demande.png)
@@ -27,7 +27,7 @@ Le propriétaire peut aussi **envoyer directement**, sans demande.
 
 ## 3. La boutique d'arrivée réceptionne
 
-Onglet **À recevoir** (un badge apparaît sur la tuile de l'accueil), ouvrez le transfert :
+Onglet **À recevoir** (un badge apparaît sur la tuile du Menu), ouvrez le transfert :
 
 1. **Scannez chaque téléphone** reçu ; comptez les accessoires.
 2. Les **écarts** s'affichent avant de confirmer (téléphone manquant, coque cassée…) :

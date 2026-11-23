@@ -4,7 +4,7 @@
 
 ## Le tableau de bord
 
-Accueil → **Tableau de bord** (en ligne). Choisissez la **période** (7 jours, 30 jours, ce
+Menu → **Tableau de bord** (en ligne). Choisissez la **période** (7 jours, 30 jours, ce
 mois, mois précédent) et **toutes les boutiques** ou une seule.
 
 ![Tableau de bord](../images/tableau-de-bord.png)
@@ -26,7 +26,7 @@ semaine et chaque mois) sont prêts à télécharger sans rien faire.
 
 ## Les rapports d'une boutique
 
-Accueil → **Rapports** (fonctionne hors ligne, sur les données de l'appareil) :
+Menu → **Rapports** (fonctionne hors ligne, sur les données de l'appareil) :
 
 - **Ventes** : chiffre d'affaires net, bénéfice brut, **par période**, **par vendeur**,
   **meilleures ventes** ;
@@ -39,7 +39,7 @@ Accueil → **Rapports** (fonctionne hors ligne, sur les données de l'appareil)
 
 ## Le journal d'audit
 
-Accueil → **Journal d'audit** : remises, changements de prix, annulations, archivages,
+Menu → **Journal** : remises, changements de prix, annulations, archivages,
 ajustements de stock, connexions, crédits, trocs, transferts, équipe. Filtres par
 personne, boutique, famille d'actions et période.
 

@@ -2,7 +2,7 @@
 
 **Qui :** gérant et propriétaire (le vendeur consulte seulement).
 
-L'accueil du gérant regroupe le stock, les achats, l'inventaire et les transferts.
+Le **Menu** (onglet en bas à droite) regroupe le stock, les achats, l'inventaire et les transferts ; le stock est aussi un onglet de la barre du bas.
 
 ![Accueil du gérant](../images/accueil-gerant.png)
 
@@ -28,7 +28,7 @@ Touchez un produit : quantité en stock, téléphones présents avec leur IMEI, 
 
 ## Recevoir une commande fournisseur
 
-Accueil → **Achats** → **Nouveau bon d'achat** : fournisseur, produits, quantités, prix
+Menu → **Achats** → **Nouveau bon d'achat** : fournisseur, produits, quantités, prix
 d'achat. À la livraison, ouvrez le bon et **réceptionnez** : scannez les IMEI des
 téléphones (en rafale), comptez les accessoires. Le stock augmente à la réception.
 
@@ -36,14 +36,14 @@ téléphones (en rafale), comptez les accessoires. Le stock augmente à la réce
 
 ## Fiche IMEI
 
-Accueil → **Fiche IMEI** : l'historique complet d'un téléphone (achat, ventes, retours,
+Menu → **Chercher IMEI** : l'historique complet d'un téléphone (achat, ventes, retours,
 troc, transferts, garantie).
 
 ![Fiche IMEI](../images/fiche-imei.png)
 
 ## IMEI signalés
 
-Accueil → **IMEI signalés** : la liste des téléphones volés ou bloqués connus du
+Menu → **Volés (IMEI)** : la liste des téléphones volés ou bloqués connus du
 commerce. Un IMEI de cette liste ne peut pas être repris en troc. Le gérant ajoute un
 IMEI (motif, note) ou lève un signalement.
 

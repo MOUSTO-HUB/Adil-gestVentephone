@@ -7,6 +7,15 @@ l'appareil et part au serveur dès le retour de la connexion.
 
 Chaque fiche explique **une tâche**, pas à pas, avec l'écran correspondant.
 
+## Se repérer dans l'application
+
+- **La barre du bas** est toujours visible : **Accueil**, **Stock**, le gros bouton jaune
+  **Vendre** au centre, **Clients** et **Menu**. Un appui ramène toujours au même écran.
+- **L'accueil** montre les chiffres du jour et 8 grandes tuiles pour les gestes de tous les
+  jours : Vendre, Caisse, Ventes, Crédits, Stock, Clients, Retours, Dépenses.
+- **Le Menu** range toutes les autres options par thème (vente, troc, stock, clients,
+  gestion, réglages). Une pastille rouge signale ce qui attend une action.
+
 ## Vendeur
 
 1. [Vendre](vendeur/01-vendre.md)

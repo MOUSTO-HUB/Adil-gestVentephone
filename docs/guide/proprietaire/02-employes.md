@@ -3,7 +3,7 @@
 **Qui :** le propriétaire (le gérant consulte l'équipe de ses boutiques). **Réseau :**
 nécessaire.
 
-Accueil → **Équipe**.
+Menu → **Équipe**.
 
 ![Équipe](../images/equipe.png)
 

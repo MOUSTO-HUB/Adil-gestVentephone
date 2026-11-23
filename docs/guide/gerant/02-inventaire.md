@@ -6,7 +6,7 @@ Compter ce qui est réellement en rayon et corriger le stock de l'application.
 
 ## Pas à pas
 
-1. Accueil → **Inventaire**. Choisissez le moment : une boutique calme (avant
+1. Menu → **Inventaire**. Choisissez le moment : une boutique calme (avant
    l'ouverture ou après la fermeture), car les ventes faites pendant le comptage
    faussent le résultat.
 2. **Ajouter un produit à compter** : cherchez-le, puis :

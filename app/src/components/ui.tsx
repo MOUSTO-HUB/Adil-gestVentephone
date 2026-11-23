@@ -11,6 +11,7 @@ import {
   Text,
   TextInput,
   type TextInputProps,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -59,7 +60,7 @@ export function Ecran({
   const flecheRetour = enHaut && retour && router.canGoBack();
   return (
     <SafeAreaView
-      edges={enHaut ? ['left', 'right', 'bottom'] : undefined}
+      edges={enHaut ? ['left', 'right'] : undefined}
       style={[styles.ecran, { backgroundColor: c.fond }]}
     >
       <KeyboardAvoidingView
@@ -395,6 +396,81 @@ export function Tuile({
   );
 }
 
+/**
+ * Grande tuile d'action (accueil) : gros pictogramme sur fond coloré et un mot court,
+ * lisible sans savoir bien lire. 2 par ligne sur téléphone, 4 sur ordinateur.
+ */
+export function GrandeTuile({
+  titre,
+  icone,
+  onPress,
+  couleur,
+  badge,
+  plein = false,
+  petite = false,
+}: {
+  titre: string;
+  icone: NomIcone;
+  onPress: () => void;
+  couleur?: string;
+  badge?: number;
+  /** Fond entièrement coloré (action principale, ex. Vendre). */
+  plein?: boolean;
+  /** Version réduite (écran Menu) : 3 par ligne sur téléphone, 6 sur ordinateur. */
+  petite?: boolean;
+}) {
+  const c = useCouleurs();
+  const { width } = useWindowDimensions();
+  // Largeur fixe selon l'écran : une tuile seule sur sa ligne ne s'étire pas.
+  const colonnes = petite ? (width < 520 ? 3 : width < 900 ? 4 : 6) : width < 700 ? 2 : 4;
+  // Sur ordinateur, la barre de défilement mange une partie de la largeur de la fenêtre.
+  const grille = Math.min(width - (Platform.OS === 'web' ? 18 : 0), LARGEUR_LARGE) - 32;
+  const cote = Math.floor((grille - ECART_GRILLE * (colonnes - 1)) / colonnes);
+  const taille = { width: cote, height: petite ? Math.min(cote, 120) : Math.min(cote / 1.15, 180) };
+  const teinte = couleur ?? c.primaire;
+  const texte = plein ? '#FFFFFF' : c.texte;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={badge ? `${titre} (${badge})` : titre}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.grandeTuile,
+        petite && styles.petiteTuile,
+        taille,
+        ombre(c.ombre, petite ? 1 : 2),
+        {
+          backgroundColor: plein ? teinte : c.carte,
+          borderColor: plein ? teinte : `${teinte}66`,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+          opacity: pressed ? 0.9 : 1,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.iconeGrandeTuile,
+          petite && styles.iconePetiteTuile,
+          { backgroundColor: plein ? 'rgba(255,255,255,0.22)' : `${teinte}22` },
+        ]}
+      >
+        <Ionicons name={icone} size={petite ? 26 : 38} color={plein ? '#FFFFFF' : teinte} />
+      </View>
+      <Text
+        style={[styles.texteGrandeTuile, petite && styles.textePetiteTuile, { color: texte }]}
+        numberOfLines={2}
+      >
+        {titre}
+      </Text>
+      {badge ? (
+        <View style={[styles.badgeGrandeTuile, { backgroundColor: c.boutonDanger }]}>
+          <Text style={styles.texteBadge}>{badge > 99 ? '99+' : badge}</Text>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
 /** Grille de tuiles qui s'adapte à la largeur (2 colonnes sur téléphone, plus sur ordinateur). */
 export function Grille({ children }: { children: ReactNode }) {
   return <View style={styles.grille}>{children}</View>;
@@ -408,6 +484,7 @@ export function Indicateur({
   icone,
   couleur,
   large = false,
+  compact = false,
 }: {
   libelle: string;
   valeur: string;
@@ -416,6 +493,8 @@ export function Indicateur({
   couleur?: string;
   /** Toute la largeur (montants longs). */
   large?: boolean;
+  /** Plus petit (accueil sur téléphone : les actions restent visibles sans défiler). */
+  compact?: boolean;
 }) {
   const c = useCouleurs();
   const teinte = couleur ?? c.primaire;
@@ -424,6 +503,7 @@ export function Indicateur({
       style={[
         styles.indicateur,
         large && styles.indicateurLarge,
+        compact && styles.indicateurCompact,
         ombre(c.ombre, 1),
         { backgroundColor: c.carte, borderColor: c.bordure },
       ]}
@@ -434,7 +514,10 @@ export function Indicateur({
           {libelle}
         </Text>
       </View>
-      <Text style={[styles.valeurIndicateur, { color: c.texte }]} numberOfLines={1}>
+      <Text
+        style={[styles.valeurIndicateur, compact && styles.valeurCompacte, { color: c.texte }]}
+        numberOfLines={1}
+      >
         {valeur}
       </Text>
       {detail ? (
@@ -446,12 +529,16 @@ export function Indicateur({
   );
 }
 
+/** Largeur maximale de la colonne large (accueil, menu) et écart des grilles. */
+const LARGEUR_LARGE = 1040;
+const ECART_GRILLE = 10;
+
 const styles = StyleSheet.create({
   ecran: { flex: 1 },
   defilement: { flexGrow: 1, justifyContent: 'center', paddingBottom: 28 },
   defilementHaut: { justifyContent: 'flex-start' },
   colonne: { width: '100%', maxWidth: 720, alignSelf: 'center' },
-  colonneLarge: { maxWidth: 1040 },
+  colonneLarge: { maxWidth: LARGEUR_LARGE },
   colonneEtroite: { maxWidth: 460 },
   contenu: { gap: 14, paddingHorizontal: 16, paddingTop: 18 },
   enTete: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 },
@@ -512,7 +599,7 @@ const styles = StyleSheet.create({
   barreSection: { width: 4, height: 20, borderRadius: 2 },
   section: { fontSize: 16, fontWeight: '800' },
   filetSection: { flex: 1, height: 1, marginLeft: 4 },
-  grille: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  grille: { flexDirection: 'row', flexWrap: 'wrap', gap: ECART_GRILLE },
   tuile: {
     flexGrow: 1,
     flexBasis: '30%',
@@ -543,6 +630,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   texteBadge: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  grandeTuile: {
+    borderWidth: 2,
+    borderRadius: 20,
+    padding: 12,
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconeGrandeTuile: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  texteGrandeTuile: { fontSize: 18, fontWeight: '800', textAlign: 'center' },
+  petiteTuile: {
+    borderWidth: 1.5,
+    borderRadius: 16,
+    padding: 8,
+    gap: 6,
+  },
+  iconePetiteTuile: { width: 50, height: 50, borderRadius: 25 },
+  textePetiteTuile: { fontSize: 14, fontWeight: '700' },
+  badgeGrandeTuile: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    minWidth: 28,
+    height: 28,
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   indicateur: {
     flexGrow: 1,
     flexBasis: '22%',
@@ -553,6 +675,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   indicateurLarge: { flexBasis: '100%' },
+  indicateurCompact: { paddingVertical: 10, paddingHorizontal: 12, gap: 2, minWidth: 130 },
+  valeurCompacte: { fontSize: 19 },
   libelleIndicateur: { fontSize: 13, fontWeight: '600', flexShrink: 1 },
   valeurIndicateur: { fontSize: 22, fontWeight: '800' },
   detailIndicateur: { fontSize: 13, fontWeight: '600' },

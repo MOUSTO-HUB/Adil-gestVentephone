@@ -14,7 +14,7 @@ PIN (en ligne). **Réseau :** pas nécessaire pour le gérant.
 
 ## Pas à pas
 
-1. Accueil → **Retours et échanges**.
+1. Accueil → **Retours**.
 2. Retrouvez la vente : **n° de facture, IMEI, nom ou téléphone du client** (ou
    **Scanner l'IMEI**).
 

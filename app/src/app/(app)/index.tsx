@@ -1,31 +1,24 @@
-import {
-  avertissementAbonnement,
-  formaterMontant,
-  LIBELLES_ROLES,
-  peutGererSessions,
-  jourLocal,
-} from '@gestvente/commun';
+import { avertissementAbonnement, formaterMontant, LIBELLES_ROLES } from '@gestvente/commun';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Bouton, Ecran, Grille, Indicateur, Message, Section, Tuile } from '@/components/ui';
-import { produitsSousSeuil } from '@/lib/achats';
+import { Bouton, Ecran, GrandeTuile, Grille, Indicateur, Message, Section } from '@/components/ui';
 import { caisseOuverte } from '@/lib/caisse-session';
-import { confirmer } from '@/lib/confirmer';
+import { useCompteurs } from '@/lib/compteurs';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
 import { useCouleurs } from '@/lib/theme';
 
 /**
- * Accueil : chiffres du jour, la vente en premier, puis les écrans regroupés par
- * thème (vente et caisse, stock, clients, gestion, réglages).
+ * Accueil : chiffres du jour, puis 8 grandes tuiles pour les gestes de tous les jours
+ * (Vendre en premier). Toutes les autres options sont dans l'écran Menu (onglet du bas).
  */
 export default function Accueil() {
   const c = useCouleurs();
-  const { profil, boutique, choisirBoutique, verrouiller, deconnexion, rafraichirProfil } =
-    useSession();
-  const { etat, conflits } = useSync();
+  const { profil, boutique, rafraichirProfil } = useSession();
+  const { etat } = useSync();
+  const n = useCompteurs();
   const boutiqueId = boutique?.id ?? '';
-  const gestion = !!profil && peutGererSessions(profil.role);
+  const gestion = n.gestion;
   const [ouvertLe] = useState(() => new Date());
 
   useEffect(() => {
@@ -46,65 +39,18 @@ export default function Accueil() {
         "SELECT COUNT(*) AS nombre FROM article WHERE boutiqueId = ? AND statut = 'EN_STOCK'",
         [boutiqueId],
       );
-      const aValider = await base.premier<{ nombre: number }>(
-        "SELECT COUNT(*) AS nombre FROM caisse WHERE boutiqueId = ? AND statut = 'CLOTUREE'",
-        [boutiqueId],
-      );
       return {
         ventes: ventes?.nombre ?? 0,
         total: ventes?.total ?? 0,
         telephones: telephones?.nombre ?? 0,
         caisse: profil ? await caisseOuverte(base, boutiqueId, profil.id) : null,
-        aValider: gestion ? (aValider?.nombre ?? 0) : 0,
       };
     },
     [boutiqueId, profil?.id, gestion],
   );
-  const sousSeuil = useLecture((base) => produitsSousSeuil(base, boutiqueId), [boutiqueId]);
-  // Transferts qui attendent cette boutique : à recevoir, ou demandes à préparer.
-  const transfertsEnAttente = useLecture(
-    async (base) =>
-      (
-        await base.premier<{ nombre: number }>(
-          `SELECT COUNT(*) AS nombre FROM transfert
-            WHERE (boutiqueArriveeId = ? AND statut = 'ENVOYE')
-               OR (boutiqueDepartId = ? AND statut = 'DEMANDE')`,
-          [boutiqueId, boutiqueId],
-        )
-      )?.nombre ?? 0,
-    [boutiqueId],
-  );
-  // Crédits avec une tranche échue non payée (badge de la tuile).
-  const creditsEnRetard = useLecture(
-    async (base) =>
-      (
-        await base.premier<{ nombre: number }>(
-          `SELECT COUNT(DISTINCT cr.id) AS nombre FROM credit cr
-             JOIN echeance e ON e.creditId = cr.id
-            WHERE cr.boutiqueId = ? AND cr.statut = 'EN_COURS'
-              AND e.dateEcheance < ? AND e.montantPaye < e.montant + e.penalite`,
-          [boutiqueId, jourLocal(new Date(), profil?.commerce.fuseau ?? 'Africa/Conakry')],
-        )
-      )?.nombre ?? 0,
-    [boutiqueId],
-  );
-
   if (!profil || !boutique) return null;
   const monnaie = profil.commerce.monnaie;
   const aller = (chemin: Parameters<typeof router.push>[0]) => () => router.push(chemin);
-
-  const seDeconnecter = async () => {
-    if (
-      etat.enAttente > 0 &&
-      !(await confirmer(
-        `${etat.enAttente} opération(s) ne sont pas encore envoyées au serveur et seront perdues. Se déconnecter quand même ?`,
-        'Se déconnecter',
-      ))
-    ) {
-      return;
-    }
-    await deconnexion();
-  };
 
   const prenom = profil.nom.split(' ')[0];
   // Seul le propriétaire est prévenu de l'échéance de l'abonnement (essai compris).
@@ -113,8 +59,7 @@ export default function Accueil() {
     profil.role === 'PROPRIETAIRE' && abonnement?.jusquAu
       ? avertissementAbonnement(new Date(abonnement.jusquAu), abonnement.etat === 'ESSAI', ouvertLe)
       : null;
-  const aVerifier = etat.refusees + (gestion ? conflits : etat.enConflit);
-  const aTraiter = (jour?.aValider ?? 0) + aVerifier;
+  const aTraiter = n.caissesAValider + n.aVerifier;
 
   return (
     <Ecran
@@ -137,6 +82,7 @@ export default function Accueil() {
           icone="trending-up"
           couleur={c.succes}
           large
+          compact
         />
         <Indicateur
           libelle="Ma caisse"
@@ -151,179 +97,99 @@ export default function Accueil() {
           }
           icone="cash"
           couleur={jour?.caisse ? c.succes : c.alerte}
+          compact
         />
         <Indicateur
           libelle="Téléphones"
           valeur={String(jour?.telephones ?? 0)}
-          detail={sousSeuil?.length ? `${sousSeuil.length} en stock bas` : 'en stock'}
+          detail={n.stockBas ? `${n.stockBas} en stock bas` : 'en stock'}
           icone="phone-portrait"
-          couleur={sousSeuil?.length ? c.alerte : c.primaire}
+          couleur={n.stockBas ? c.alerte : c.primaire}
+          compact
         />
-        {gestion ? (
+        {gestion && aTraiter ? (
           <Indicateur
+            compact
             libelle="À traiter"
             valeur={String(aTraiter)}
-            detail={`${jour?.aValider ?? 0} caisse(s), ${aVerifier} conflit(s)`}
+            detail={`${n.caissesAValider} caisse(s), ${n.aVerifier} conflit(s)`}
             icone="checkmark-done"
             couleur={aTraiter ? c.danger : c.succes}
           />
         ) : null}
       </Grille>
 
-      <Bouton titre="Nouvelle vente" icone="cart" variante="accent" onPress={aller('/vente')} />
-
-      {sousSeuil?.length ? (
+      {n.sousSeuil?.length ? (
         <Message
           type="info"
-          texte={`Stock bas : ${sousSeuil
+          texte={`Stock bas : ${n.sousSeuil
             .slice(0, 4)
             .map((p) => `${p.nom} (${p.quantite})`)
-            .join(', ')}${sousSeuil.length > 4 ? '…' : ''}`}
+            .join(', ')}${n.sousSeuil.length > 4 ? '…' : ''}`}
         />
       ) : null}
 
-      <Section titre="Ventes et caisse" icone="cash" />
+      <Section titre="Que voulez-vous faire ?" icone="hand-left" />
       <Grille>
-        <Tuile titre="Ventes" icone="receipt" onPress={aller('/ventes')} />
-        <Tuile
+        <GrandeTuile
+          titre="Vendre"
+          icone="cart"
+          couleur={c.accent}
+          plein
+          onPress={aller('/vente')}
+        />
+        <GrandeTuile
           titre="Caisse"
           icone="cash"
           couleur={c.succes}
           onPress={aller('/caisse')}
-          badge={jour?.aValider}
+          badge={n.caissesAValider}
         />
-        <Tuile
-          titre="Retours et échanges"
-          icone="swap-horizontal"
-          couleur={c.alerte}
-          onPress={aller('/retours')}
+        <GrandeTuile
+          titre="Ventes"
+          icone="receipt"
+          couleur={c.primaire}
+          onPress={aller('/ventes')}
         />
-        <Tuile titre="Dépenses" icone="wallet" couleur={c.danger} onPress={aller('/depenses')} />
-        <Tuile
+        <GrandeTuile
           titre="Crédits"
           icone="calendar"
           couleur={c.primaire}
           onPress={aller('/credits')}
-          badge={creditsEnRetard}
+          badge={n.creditsEnRetard}
         />
-      </Grille>
-
-      <Section titre="Troc" icone="swap-horizontal" />
-      <Grille>
-        <Tuile
-          titre="Trocs"
-          icone="swap-horizontal-outline"
-          couleur={c.accent}
-          onPress={aller('/trocs')}
-        />
-        <Tuile
-          titre="IMEI signalés"
-          icone="warning"
-          couleur={c.danger}
-          onPress={aller('/imei-signales')}
-        />
-        {profil.role === 'PROPRIETAIRE' ? (
-          <Tuile titre="Grille de reprise" icone="pricetags" onPress={aller('/grille-reprise')} />
-        ) : null}
-      </Grille>
-
-      <Section titre="Stock" icone="cube" />
-      <Grille>
-        <Tuile titre="Stock" icone="cube" onPress={aller('/stock')} badge={sousSeuil?.length} />
-        <Tuile titre="Fiche IMEI" icone="barcode" onPress={aller('/imei')} />
-        <Tuile
-          titre="Transferts"
-          icone="git-compare"
+        <GrandeTuile
+          titre="Stock"
+          icone="cube"
           couleur={c.primaire}
-          onPress={aller('/transferts')}
-          badge={transfertsEnAttente}
+          onPress={aller('/stock')}
+          badge={n.stockBas}
         />
-        <Tuile
-          titre="Garantie"
-          icone="shield-checkmark"
-          couleur={c.succes}
-          onPress={aller('/garantie')}
+        <GrandeTuile
+          titre="Clients"
+          icone="people"
+          couleur={c.primaire}
+          onPress={aller('/clients')}
         />
-        {gestion ? (
-          <>
-            <Tuile titre="Achats" icone="bag-add" couleur={c.accent} onPress={aller('/achats')} />
-            <Tuile titre="Inventaire" icone="clipboard" onPress={aller('/inventaire')} />
-            <Tuile titre="Fournisseurs" icone="business" onPress={aller('/fournisseurs')} />
-          </>
-        ) : null}
+        <GrandeTuile
+          titre="Retours"
+          icone="return-down-back"
+          couleur={c.alerte}
+          onPress={aller('/retours')}
+        />
+        <GrandeTuile
+          titre="Dépenses"
+          icone="wallet"
+          couleur={c.danger}
+          onPress={aller('/depenses')}
+        />
       </Grille>
 
-      <Section titre="Clients" icone="people" />
-      <Grille>
-        <Tuile titre="Clients" icone="people" onPress={aller('/clients')} />
-      </Grille>
-
-      {gestion ? (
-        <>
-          <Section titre="Gestion" icone="briefcase" />
-          <Grille>
-            <Tuile
-              titre="Tableau de bord"
-              icone="speedometer"
-              couleur={c.primaire}
-              onPress={aller('/tableau')}
-            />
-            <Tuile
-              titre="Rapports"
-              icone="bar-chart"
-              couleur={c.succes}
-              onPress={aller('/rapports')}
-            />
-            <Tuile titre="Journal d’audit" icone="document-text" onPress={aller('/journal')} />
-            <Tuile
-              titre="Messages aux clients"
-              icone="chatbubbles"
-              couleur={c.accent}
-              onPress={aller('/messages')}
-            />
-            <Tuile
-              titre="Appareils connectés"
-              icone="phone-portrait"
-              onPress={aller('/appareils')}
-            />
-            <Tuile titre="Équipe" icone="people-circle" onPress={aller('/equipe')} />
-            {profil.role === 'PROPRIETAIRE' ? (
-              <Tuile
-                titre="Boutiques"
-                icone="storefront"
-                couleur={c.accent}
-                onPress={aller('/boutiques')}
-              />
-            ) : null}
-          </Grille>
-        </>
-      ) : null}
-
-      <Section titre="Réglages" icone="settings" />
-      <Grille>
-        <Tuile titre="Aide" icone="help-buoy" couleur={c.accent} onPress={aller('/aide')} />
-        <Tuile titre="Imprimante" icone="print" onPress={aller('/imprimante')} />
-        <Tuile
-          titre="Synchronisation"
-          icone="cloud-upload"
-          onPress={aller('/synchronisation')}
-          badge={etat.enAttente + aVerifier || undefined}
-        />
-        {profil.boutiques.length > 1 ? (
-          <Tuile
-            titre="Changer de boutique"
-            icone="storefront"
-            onPress={() => void choisirBoutique(null)}
-          />
-        ) : null}
-      </Grille>
-
-      <Bouton titre="Verrouiller" icone="lock-closed" variante="secondaire" onPress={verrouiller} />
       <Bouton
-        titre="Se déconnecter"
-        icone="log-out"
-        variante="danger"
-        onPress={() => void seDeconnecter()}
+        titre="Toutes les options"
+        icone="grid"
+        variante="secondaire"
+        onPress={aller('/menu')}
       />
     </Ecran>
   );

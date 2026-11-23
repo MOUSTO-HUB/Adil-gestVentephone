@@ -2,7 +2,7 @@
 
 **Qui :** le propriétaire. **Réseau :** nécessaire.
 
-Accueil → **Boutiques**. Vous créez autant de boutiques que vous voulez.
+Menu → **Boutiques**. Vous créez autant de boutiques que vous voulez.
 
 ![Boutiques](../images/boutiques.png)
 
@@ -26,7 +26,7 @@ prix propres, les caisses et les ventes sont séparés.
 ## Travailler dans une autre boutique
 
 Le propriétaire et un employé rattaché à plusieurs boutiques changent de boutique active
-avec **Travailler dans cette boutique** (ou depuis l'accueil). Chaque appareil ne reçoit que
+avec **Travailler dans cette boutique** (ou Menu → **Changer boutique**). Chaque appareil ne reçoit que
 les données des boutiques de son utilisateur.
 
 ## Le catalogue de base

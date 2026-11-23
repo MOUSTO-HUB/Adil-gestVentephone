@@ -6,7 +6,7 @@ Avant la première vente de la journée, [ouvrez votre caisse](04-caisse.md).
 
 ## 1. Ouvrir l'écran de vente
 
-Sur l'accueil, touchez le grand bouton jaune **Nouvelle vente**.
+Touchez le gros bouton jaune **Vendre** : au centre de la barre du bas (toujours visible) ou en haut de l'accueil.
 
 ![Accueil du vendeur](../images/accueil-vendeur.png)
 

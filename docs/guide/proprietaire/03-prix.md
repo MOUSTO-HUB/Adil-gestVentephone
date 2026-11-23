@@ -32,7 +32,7 @@ Stock → **Importer (Excel)** : un classeur avec une ligne par produit (colonne
 
 - Le vendeur accorde seul une remise jusqu'à 5 % ; le gérant jusqu'à 15 % ; au-delà, le
   propriétaire.
-- La **grille de reprise** (accueil → Grille de reprise) fixe la valeur d'un ancien
+- La **grille de reprise** (Menu → **Prix reprise**) fixe la valeur d'un ancien
   téléphone en troc selon son modèle, sa capacité et son état. Sans grille, l'application
   propose une part du prix du neuf (60 % en excellent état, 15 % en mauvais état).
 

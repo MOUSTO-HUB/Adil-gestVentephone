@@ -5,7 +5,7 @@ sauvegarde chaque jour. Sur le téléphone, la base de l'application est chiffr�
 
 ## Tout de suite : couper l'accès
 
-Accueil → **Appareils connectés** (propriétaire ou gérant) : repérez l'appareil (nom,
+Menu → **Appareils** (propriétaire ou gérant) : repérez l'appareil (nom,
 utilisateur, dernier accès) et touchez **Déconnecter**. Il ne peut plus rien envoyer ni
 recevoir ; il faudrait l'identifiant **et** le mot de passe pour s'y reconnecter.
 
