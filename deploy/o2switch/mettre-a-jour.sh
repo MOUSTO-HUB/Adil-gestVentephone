@@ -55,7 +55,7 @@
   if [ "$AVANT" = "$APRES" ]; then
     echo "Code déjà à jour ($(git log -1 --format='%h %s'))."
   else
-    git log --oneline "$AVANT..$APRES"
+    git --no-pager log --oneline "$AVANT..$APRES"
   fi
 
   # ── API ──────────────────────────────────────────────────────────────────
@@ -68,8 +68,11 @@
     else
       ACTIVER="$(ls -d "$HOME"/nodevenv/gestvente/source/api/*/bin/activate 2>/dev/null | sort -V | tail -n 1)"
       [ -n "$ACTIVER" ] || erreur "environnement Node.js introuvable (Setup Node.js App, étape 17)"
+      # Le script d'activation de CloudLinux lit des variables non définies : « set -u » suspendu.
+      set +u
       # shellcheck disable=SC1090
       source "$ACTIVER"
+      set -u
 
       etape "API 1/4 : sauvegarde de la base"
       if [ -x "$HOME/gestvente/scripts/sauvegarde.sh" ]; then
