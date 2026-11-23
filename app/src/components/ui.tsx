@@ -152,26 +152,50 @@ export function styleSaisie(
   ];
 }
 
+/**
+ * Champ libellé. Un champ masqué (`secureTextEntry` : mot de passe, code PIN) a un œil
+ * pour afficher ou masquer ce qui est saisi (masqué au départ).
+ */
 export function Champ({ libelle, ...props }: TextInputProps & { libelle: string }) {
   const c = useCouleurs();
   const [actif, setActif] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const masquable = !!props.secureTextEntry;
   return (
     <View style={styles.champ}>
       <Text style={[styles.libelle, { color: c.texte }]}>{libelle}</Text>
-      <TextInput
-        placeholderTextColor={c.texteDiscret}
-        accessibilityLabel={libelle}
-        {...props}
-        onFocus={(e) => {
-          setActif(true);
-          props.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setActif(false);
-          props.onBlur?.(e);
-        }}
-        style={styleSaisie(c, actif)}
-      />
+      <View style={styles.cadreChamp}>
+        <TextInput
+          placeholderTextColor={c.texteDiscret}
+          accessibilityLabel={libelle}
+          {...props}
+          secureTextEntry={masquable && !visible}
+          onFocus={(e) => {
+            setActif(true);
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setActif(false);
+            props.onBlur?.(e);
+          }}
+          style={[styleSaisie(c, actif), masquable && styles.saisieAvecOeil]}
+        />
+        {masquable ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={visible ? `Masquer : ${libelle}` : `Afficher : ${libelle}`}
+            hitSlop={8}
+            onPress={() => setVisible((v) => !v)}
+            style={({ pressed }) => [styles.oeil, { opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Ionicons
+              name={visible ? 'eye-off-outline' : 'eye-outline'}
+              size={22}
+              color={c.texteDiscret}
+            />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -449,6 +473,9 @@ const styles = StyleSheet.create({
   sousTitreCentre: { fontSize: 15, textAlign: 'center', marginTop: -6 },
   champ: { gap: 6 },
   libelle: { fontSize: 14, fontWeight: '600' },
+  cadreChamp: { justifyContent: 'center' },
+  saisieAvecOeil: { paddingRight: 48 },
+  oeil: { position: 'absolute', right: 10, padding: 4 },
   saisie: {
     minHeight: 50,
     borderRadius: 12,

@@ -28,6 +28,19 @@ describe('Rappels et pénalités (e2e)', () => {
   const bearer = { type: 'bearer' as const };
   const base = String(Date.now()).slice(-8);
 
+  // Échéances toujours dans le futur, quel que soit le jour du test : le 15 dans deux mois,
+  // puis un mois plus tard (crédit mensuel). Les passages de la tâche se placent autour.
+  const quinze = (moisEnPlus: number) => {
+    const t = new Date();
+    return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + moisEnPlus, 15));
+  };
+  const PREMIERE = quinze(2);
+  const SECONDE = quinze(3);
+  /** Jour AAAA-MM-JJ décalé de `jours` par rapport à une échéance. */
+  const jour = (echeance: Date, jours = 0) =>
+    new Date(echeance.getTime() + jours * 86_400_000).toISOString().slice(0, 10);
+  const enFrancais = (date: Date) => jour(date).split('-').reverse().join('/');
+
   /** Passage de la tâche quotidienne à 9 h (Conakry = UTC) le jour donné, sur ce commerce. */
   const passer = (jour: string) => rappels.executer(new Date(`${jour}T09:00:00Z`), [d.commerce.id]);
   const messages = () =>
@@ -117,7 +130,7 @@ describe('Rappels et pénalités (e2e)', () => {
                 apport: 0,
                 nombreTranches: 2,
                 frequence: 'MENSUELLE',
-                premiereEcheance: '2026-11-21',
+                premiereEcheance: jour(PREMIERE),
                 garantId: null,
                 echeanceIds: [randomUUID(), randomUUID()],
               },
@@ -169,29 +182,29 @@ describe('Rappels et pénalités (e2e)', () => {
   });
 
   it('rappel 3 jours avant, puis le jour même ; jamais deux fois le même jour', async () => {
-    expect(await passer('2026-11-17')).toEqual({ rappels: 0, penalites: 0 });
-    expect(await passer('2026-11-18')).toEqual({ rappels: 1, penalites: 0 });
-    expect(await passer('2026-11-18')).toEqual({ rappels: 0, penalites: 0 });
-    expect(await passer('2026-11-21')).toEqual({ rappels: 1, penalites: 0 });
+    expect(await passer(jour(PREMIERE, -4))).toEqual({ rappels: 0, penalites: 0 });
+    expect(await passer(jour(PREMIERE, -3))).toEqual({ rappels: 1, penalites: 0 });
+    expect(await passer(jour(PREMIERE, -3))).toEqual({ rappels: 0, penalites: 0 });
+    expect(await passer(jour(PREMIERE))).toEqual({ rappels: 1, penalites: 0 });
     const envoyes = await messages();
     expect(envoyes.map((m) => m.type)).toEqual(['RAPPEL_ECHEANCE', 'RAPPEL_ECHEANCE']);
     expect(envoyes[0]).toMatchObject({ canal: 'SMS', clientId, referenceType: 'Echeance' });
-    expect(envoyes[0].contenu).toMatch(/1 000 000 GNF à régler le 21\/11\/2026/);
+    expect(envoyes[0].contenu).toContain(`1 000 000 GNF à régler le ${enFrancais(PREMIERE)}`);
   });
 
   it('retard : relance, pénalité après le délai de grâce, relances limitées', async () => {
-    expect(await passer('2026-11-22')).toEqual({ rappels: 1, penalites: 0 });
+    expect(await passer(jour(PREMIERE, 1))).toEqual({ rappels: 1, penalites: 0 });
     // 3 jours de retard > 2 jours de grâce : 10 % de la tranche, une seule fois.
-    expect(await passer('2026-11-24')).toEqual({ rappels: 0, penalites: 1 });
-    expect(await passer('2026-11-25')).toEqual({ rappels: 0, penalites: 0 });
+    expect(await passer(jour(PREMIERE, 3))).toEqual({ rappels: 0, penalites: 1 });
+    expect(await passer(jour(PREMIERE, 4))).toEqual({ rappels: 0, penalites: 0 });
     const [premiere] = await tranches();
     expect(premiere).toMatchObject({ penalite: 100_000n, nombreRelances: 1 });
     expect(
       (await prisma.credit.findUniqueOrThrow({ where: { id: creditId } })).montantRestant,
     ).toBe(2_100_000n);
-    expect(await passer('2026-11-29')).toEqual({ rappels: 1, penalites: 0 });
+    expect(await passer(jour(PREMIERE, 8))).toEqual({ rappels: 1, penalites: 0 });
     // Au plus 2 relances.
-    expect(await passer('2026-12-06')).toEqual({ rappels: 0, penalites: 0 });
+    expect(await passer(jour(PREMIERE, 15))).toEqual({ rappels: 0, penalites: 0 });
     const relance = (await messages()).filter((m) => m.type === 'RETARD_ECHEANCE');
     expect(relance).toHaveLength(2);
     expect(relance[1].contenu).toMatch(/1 100 000/);
@@ -243,13 +256,13 @@ describe('Rappels et pénalités (e2e)', () => {
     expect(premiere.soldeeLe).not.toBeNull();
     expect(seconde.montantPaye).toBe(0n);
     // Prochain rappel : 3 jours avant la seconde tranche.
-    expect(await passer('2026-12-17')).toEqual({ rappels: 0, penalites: 0 });
-    expect(await passer('2026-12-18')).toEqual({ rappels: 1, penalites: 0 });
+    expect(await passer(jour(SECONDE, -4))).toEqual({ rappels: 0, penalites: 0 });
+    expect(await passer(jour(SECONDE, -3))).toEqual({ rappels: 1, penalites: 0 });
   });
 
   it('commerce suspendu : aucun rappel', async () => {
     await prisma.commerce.update({ where: { id: d.commerce.id }, data: { statut: 'SUSPENDU' } });
-    expect(await passer('2026-12-21')).toEqual({ rappels: 0, penalites: 0 });
+    expect(await passer(jour(SECONDE))).toEqual({ rappels: 0, penalites: 0 });
     await prisma.commerce.update({ where: { id: d.commerce.id }, data: { statut: 'ACTIF' } });
   });
 });
