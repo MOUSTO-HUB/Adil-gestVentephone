@@ -26,16 +26,24 @@ interface LigneSaisie {
 
 /** Création (sans id) ou modification d'un bon d'achat encore à réceptionner. */
 export default function EditionAchat() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  // produitId : ouvert depuis une fiche produit (« Ajouter du stock »), produit déjà dans le bon.
+  const { id, produitId } = useLocalSearchParams<{ id?: string; produitId?: string }>();
   const donnees = useLecture(
     async (b) => ({
       achat: id ? await b.premier<AchatSync>('SELECT * FROM achat WHERE id = ?', [id]) : null,
       lignes: id ? await lignesAchat(b, id) : ([] as LigneDetaillee[]),
+      produitInitial:
+        !id && produitId
+          ? await b.premier<{ id: string; nom: string; prixAchat: number | null }>(
+              'SELECT id, nom, prixAchat FROM produit WHERE id = ?',
+              [produitId],
+            )
+          : null,
       fournisseurs: await b.tous<FournisseurSync>(
         'SELECT * FROM fournisseur WHERE archive = 0 ORDER BY nom',
       ),
     }),
-    [id],
+    [id, produitId],
   );
   if (!donnees)
     return (
@@ -62,10 +70,12 @@ function Formulaire({
   achat,
   lignes: lignesExistantes,
   fournisseurs,
+  produitInitial,
 }: {
   achat: AchatSync | null;
   lignes: LigneDetaillee[];
   fournisseurs: FournisseurSync[];
+  produitInitial: { id: string; nom: string; prixAchat: number | null } | null;
 }) {
   const { colors } = useTheme();
   const { profil, boutique } = useSession();
@@ -76,14 +86,24 @@ function Formulaire({
     achat?.dateAchat ?? new Date().toISOString().slice(0, 10),
   );
   const [note, setNote] = useState(achat?.note ?? '');
-  const [lignes, setLignes] = useState<LigneSaisie[]>(
-    lignesExistantes.map((l) => ({
-      id: l.id,
-      produitId: l.produitId,
-      nom: l.nom,
-      quantite: String(l.quantite),
-      prixAchat: String(l.prixAchat),
-    })),
+  const [lignes, setLignes] = useState<LigneSaisie[]>(() =>
+    produitInitial
+      ? [
+          {
+            id: Crypto.randomUUID(),
+            produitId: produitInitial.id,
+            nom: produitInitial.nom,
+            quantite: '1',
+            prixAchat: produitInitial.prixAchat === null ? '' : String(produitInitial.prixAchat),
+          },
+        ]
+      : lignesExistantes.map((l) => ({
+          id: l.id,
+          produitId: l.produitId,
+          nom: l.nom,
+          quantite: String(l.quantite),
+          prixAchat: String(l.prixAchat),
+        })),
   );
   const [recherche, setRecherche] = useState('');
   const [erreur, setErreur] = useState<string | null>(null);
@@ -173,7 +193,7 @@ function Formulaire({
 
   return (
     <Ecran
-      titre={achat ? `Bon ${achat.numero}` : 'Nouveau bon d’achat'}
+      titre={achat ? `Bon ${achat.numero}` : 'Ajouter du stock (bon d’achat)'}
       sousTitre={boutique?.nom}
       enHaut
     >
@@ -185,7 +205,15 @@ function Formulaire({
           surChoix={([f]) => f && setFournisseurId(f)}
         />
       ) : (
-        <Message texte="Aucun fournisseur : créez-le d’abord dans Fournisseurs." />
+        <>
+          <Message texte="Aucun fournisseur pour l’instant : créez celui qui vous livre (ou « Achat divers »)." />
+          <Bouton
+            titre="Créer un fournisseur"
+            icone="business"
+            variante="secondaire"
+            onPress={() => router.push('/fournisseur/edition')}
+          />
+        </>
       )}
       <Champ libelle="Date du bon (AAAA-MM-JJ)" value={dateAchat} onChangeText={setDateAchat} />
       <Champ

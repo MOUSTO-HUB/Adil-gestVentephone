@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PhotoProduit } from '@/components/photo-produit';
 import { Scanner, scannerDisponible } from '@/components/scanner';
-import { Bouton, Champ, Ecran, Message, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
 import { rechercherProduits, trouverParCode } from '@/lib/catalogue';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
@@ -43,6 +43,37 @@ export default function Stock() {
 
   return (
     <Ecran titre="Stock" sousTitre={boutique?.nom} enHaut>
+      {gestion ? (
+        <Carte titre="Ajouter du stock" icone="add-circle">
+          <Texte discret>
+            Marchandise reçue : choisissez le produit, la quantité et le prix d’achat (bon d’achat),
+            puis réceptionnez-la. Pour un article jamais vendu ici, créez d’abord sa fiche.
+          </Texte>
+          <Bouton
+            titre="Ajouter une quantité et son prix"
+            icone="add-circle"
+            onPress={() => router.push('/achat/edition')}
+          />
+          <View style={styles.actions}>
+            <View style={styles.action}>
+              <Bouton
+                titre="Nouveau produit"
+                icone="create"
+                variante="secondaire"
+                onPress={() => router.push('/produit/edition')}
+              />
+            </View>
+            <View style={styles.action}>
+              <Bouton
+                titre="Importer (Excel)"
+                icone="document-attach"
+                variante="secondaire"
+                onPress={() => router.push('/import')}
+              />
+            </View>
+          </View>
+        </Carte>
+      ) : null}
       <Champ
         libelle="Rechercher (nom, code-barres ou IMEI)"
         value={recherche}
@@ -60,20 +91,6 @@ export default function Stock() {
         <Bouton titre="Scanner un code" variante="secondaire" onPress={() => setScanner(true)} />
       ) : null}
       <Message texte={message} />
-      {gestion ? (
-        <View style={styles.actions}>
-          <View style={styles.action}>
-            <Bouton titre="Nouveau produit" onPress={() => router.push('/produit/edition')} />
-          </View>
-          <View style={styles.action}>
-            <Bouton
-              titre="Importer (Excel)"
-              variante="secondaire"
-              onPress={() => router.push('/import')}
-            />
-          </View>
-        </View>
-      ) : null}
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: archives }}

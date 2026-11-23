@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { BarreConcepteur } from '@/components/barre-onglets';
 import { ActivityIndicator, View } from 'react-native';
 import { FournisseurPlateforme, usePlateforme } from '@/lib/plateforme';
 
@@ -13,14 +14,18 @@ function Navigation() {
     );
   }
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Protected guard={!!session}>
-        <Stack.Screen name="nouveau" />
-        <Stack.Screen name="tableau" />
-        <Stack.Screen name="commerce/[id]" />
-      </Stack.Protected>
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Protected guard={!!session}>
+          <Stack.Screen name="nouveau" />
+          <Stack.Screen name="tableau" />
+          <Stack.Screen name="commerce/[id]" />
+        </Stack.Protected>
+      </Stack>
+      {/* Barre d'onglets une fois connecté (Commerçants, Nouveau, Tableau de bord, Quitter). */}
+      {session ? <BarreConcepteur /> : null}
+    </>
   );
 }
 

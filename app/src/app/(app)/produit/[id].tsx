@@ -173,6 +173,16 @@ export default function FicheProduit() {
         <View style={styles.actions}>
           <View style={styles.action}>
             <Bouton
+              titre="Ajouter du stock"
+              icone="add-circle"
+              onPress={() =>
+                router.push({ pathname: '/achat/edition', params: { produitId: produit.id } })
+              }
+            />
+          </View>
+          <View style={styles.action}>
+            <Bouton
+              variante="secondaire"
               titre="Modifier la fiche"
               onPress={() =>
                 router.push({ pathname: '/produit/edition', params: { id: produit.id } })

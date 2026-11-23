@@ -26,10 +26,12 @@ Touchez un produit : quantité en stock, téléphones présents avec leur IMEI, 
 - **Sortir du stock** un téléphone (perte, casse, vol) avec un motif.
 - Un téléphone **à réparer** (repris en troc) se remet en vente depuis l'écran **Trocs**.
 
-## Recevoir une commande fournisseur
+## Ajouter du stock (quantité et prix d'achat)
 
-Menu → **Achats** → **Nouveau bon d'achat** : fournisseur, produits, quantités, prix
-d'achat. À la livraison, ouvrez le bon et **réceptionnez** : scannez les IMEI des
+En haut de l'écran **Stock**, bouton **Ajouter une quantité et son prix** (ou, sur la fiche
+d'un produit, **Ajouter du stock**) : fournisseur, produits, quantités, prix d'achat. Pas
+encore de fournisseur ? Le bouton **Créer un fournisseur** est sur le même écran. Les bons
+sont aussi dans Menu → **Achats**. À la livraison, ouvrez le bon et **réceptionnez** : scannez les IMEI des
 téléphones (en rafale), comptez les accessoires. Le stock augmente à la réception.
 
 ![Achats](../images/achats.png)

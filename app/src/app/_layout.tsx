@@ -1,10 +1,11 @@
 import { Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { FournisseurApparence } from '@/lib/apparence';
 import { FournisseurSession, useSession } from '@/lib/session';
 import { FournisseurSync } from '@/lib/sync/contexte';
-import { THEME_CLAIR, THEME_SOMBRE } from '@/lib/theme';
+import { THEME_CLAIR, THEME_SOMBRE, useMode } from '@/lib/theme';
 
 /** Chaque écran n'est accessible qu'à la bonne étape de la session. */
 function Navigation() {
@@ -39,17 +40,27 @@ function Navigation() {
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? THEME_SOMBRE : THEME_CLAIR}>
-        <StatusBar style="auto" />
-        <FournisseurSession>
-          <FournisseurSync>
-            <Navigation />
-          </FournisseurSync>
-        </FournisseurSession>
-      </ThemeProvider>
+      <FournisseurApparence>
+        <Contenu />
+      </FournisseurApparence>
     </SafeAreaProvider>
+  );
+}
+
+/** Thème de navigation et barre d'état selon le mode clair / sombre choisi. */
+function Contenu() {
+  const mode = useMode();
+  return (
+    <ThemeProvider value={mode === 'sombre' ? THEME_SOMBRE : THEME_CLAIR}>
+      {/* En-têtes vert sarcelle dans les deux modes : icônes de la barre d'état en clair. */}
+      <StatusBar style="light" />
+      <FournisseurSession>
+        <FournisseurSync>
+          <Navigation />
+        </FournisseurSync>
+      </FournisseurSession>
+    </ThemeProvider>
   );
 }

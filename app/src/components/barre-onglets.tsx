@@ -1,68 +1,39 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router, usePathname } from 'expo-router';
+import { type Href, router, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NomIcone } from '@/components/ui';
 import { useCompteurs } from '@/lib/compteurs';
+import { usePlateforme } from '@/lib/plateforme';
 import { ombre, useCouleurs } from '@/lib/theme';
 
-type Chemin = '/' | '/vente' | '/stock' | '/clients' | '/menu';
-
-interface Onglet {
-  chemin: Chemin;
+export interface Onglet {
   titre: string;
   icone: NomIcone;
   iconeActive: NomIcone;
+  /** Écran de l'onglet ; absent : `action` (ex. Quitter). */
+  chemin?: Href & string;
+  action?: () => void;
   /** Écrans rattachés à l'onglet (il reste allumé dans leurs sous-écrans). */
-  prefixes: string[];
+  prefixes?: string[];
+  /** Gros bouton rond au centre (l'action principale). */
+  central?: boolean;
+  pastille?: number;
 }
 
-const ONGLETS: Onglet[] = [
-  { chemin: '/', titre: 'Accueil', icone: 'home-outline', iconeActive: 'home', prefixes: [] },
-  {
-    chemin: '/stock',
-    titre: 'Stock',
-    icone: 'cube-outline',
-    iconeActive: 'cube',
-    prefixes: ['/stock', '/produit', '/imei'],
-  },
-  {
-    chemin: '/vente',
-    titre: 'Vendre',
-    icone: 'cart-outline',
-    iconeActive: 'cart',
-    prefixes: ['/vente'],
-  },
-  {
-    chemin: '/clients',
-    titre: 'Clients',
-    icone: 'people-outline',
-    iconeActive: 'people',
-    prefixes: ['/clients', '/client'],
-  },
-  {
-    chemin: '/menu',
-    titre: 'Menu',
-    icone: 'grid-outline',
-    iconeActive: 'grid',
-    prefixes: ['/menu'],
-  },
-];
-
 function estActif(onglet: Onglet, chemin: string) {
-  if (onglet.chemin === '/') return chemin === '/';
-  return onglet.prefixes.some((p) => chemin === p || chemin.startsWith(`${p}/`));
+  if (!onglet.chemin) return false;
+  if (chemin === onglet.chemin) return true;
+  return (onglet.prefixes ?? []).some((p) => chemin === p || chemin.startsWith(`${p}/`));
 }
 
 /**
- * Barre d'onglets toujours visible en bas de l'espace commerçant : les 5 endroits les plus
- * utilisés, avec un gros bouton « Vendre » au centre. Un appui ramène toujours au même écran.
+ * Barre d'onglets toujours visible en bas de l'écran : les endroits les plus utilisés,
+ * l'action principale en gros bouton au centre. Un appui ramène toujours au même écran.
  */
-export function BarreOnglets() {
+export function BarreOnglets({ onglets }: { onglets: Onglet[] }) {
   const c = useCouleurs();
   const chemin = usePathname();
-  const { synchronisation, caissesAValider } = useCompteurs();
-  const pastilleMenu = synchronisation + caissesAValider;
 
   return (
     <SafeAreaView
@@ -74,33 +45,34 @@ export function BarreOnglets() {
       ]}
     >
       <View style={styles.ligne} accessibilityRole="tablist">
-        {ONGLETS.map((o) => {
+        {onglets.map((o) => {
           const actif = estActif(o, chemin);
-          const vendre = o.chemin === '/vente';
-          const couleur = vendre ? '#1E2235' : actif ? c.primaire : c.texteDiscret;
-          const pastille = o.chemin === '/menu' ? pastilleMenu : 0;
+          const couleur = o.central ? '#1E2235' : actif ? c.primaire : c.texteDiscret;
+          const appui = () => {
+            if (o.action) o.action();
+            else if (o.chemin && chemin !== o.chemin) router.navigate(o.chemin);
+          };
           return (
             <Pressable
-              key={o.chemin}
+              key={o.titre}
               accessibilityRole="tab"
               accessibilityState={{ selected: actif }}
-              accessibilityLabel={pastille ? `${o.titre} (${pastille})` : o.titre}
-              // Retour direct à l'écran de l'onglet, sans empiler les écrans.
-              onPress={() => (actif && chemin === o.chemin ? undefined : router.navigate(o.chemin))}
+              accessibilityLabel={o.pastille ? `${o.titre} (${o.pastille})` : o.titre}
+              onPress={appui}
               style={({ pressed }) => [styles.onglet, { opacity: pressed ? 0.7 : 1 }]}
             >
-              {vendre ? (
+              {o.central ? (
                 <View
-                  style={[styles.boutonVendre, ombre(c.ombre, 4), { backgroundColor: c.accent }]}
+                  style={[styles.boutonCentral, ombre(c.ombre, 4), { backgroundColor: c.accent }]}
                 >
-                  <Ionicons name="cart" size={30} color={couleur} />
+                  <Ionicons name={o.iconeActive} size={30} color={couleur} />
                 </View>
               ) : (
                 <View style={[styles.pastilleIcone, actif && { backgroundColor: c.fondPrimaire }]}>
                   <Ionicons name={actif ? o.iconeActive : o.icone} size={26} color={couleur} />
-                  {pastille ? (
+                  {o.pastille ? (
                     <View style={[styles.badge, { backgroundColor: c.boutonDanger }]}>
-                      <Text style={styles.texteBadge}>{pastille > 99 ? '99+' : pastille}</Text>
+                      <Text style={styles.texteBadge}>{o.pastille > 99 ? '99+' : o.pastille}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -110,8 +82,8 @@ export function BarreOnglets() {
                 style={[
                   styles.texte,
                   {
-                    color: vendre ? c.texte : couleur,
-                    fontWeight: actif || vendre ? '800' : '600',
+                    color: o.central ? c.texte : couleur,
+                    fontWeight: actif || o.central ? '800' : '600',
                   },
                 ]}
               >
@@ -122,6 +94,87 @@ export function BarreOnglets() {
         })}
       </View>
     </SafeAreaView>
+  );
+}
+
+/** Espace commerçant : Accueil, Stock, Vendre (au centre), Clients, Menu. */
+export function BarreCommercant() {
+  const { synchronisation, caissesAValider } = useCompteurs();
+  return (
+    <BarreOnglets
+      onglets={[
+        { chemin: '/', titre: 'Accueil', icone: 'home-outline', iconeActive: 'home' },
+        {
+          chemin: '/stock',
+          titre: 'Stock',
+          icone: 'cube-outline',
+          iconeActive: 'cube',
+          prefixes: ['/stock', '/produit', '/imei', '/achat', '/achats'],
+        },
+        {
+          chemin: '/vente',
+          titre: 'Vendre',
+          icone: 'cart-outline',
+          iconeActive: 'cart',
+          prefixes: ['/vente'],
+          central: true,
+        },
+        {
+          chemin: '/clients',
+          titre: 'Clients',
+          icone: 'people-outline',
+          iconeActive: 'people',
+          prefixes: ['/clients', '/client'],
+        },
+        {
+          chemin: '/menu',
+          titre: 'Menu',
+          icone: 'grid-outline',
+          iconeActive: 'grid',
+          prefixes: ['/menu'],
+          pastille: synchronisation + caissesAValider,
+        },
+      ]}
+    />
+  );
+}
+
+/** Espace concepteur : Commerçants, Nouveau (au centre), Tableau de bord, Quitter. */
+export function BarreConcepteur() {
+  const { deconnexion } = usePlateforme();
+  return (
+    <BarreOnglets
+      onglets={[
+        {
+          chemin: '/plateforme',
+          titre: 'Commerçants',
+          icone: 'storefront-outline',
+          iconeActive: 'storefront',
+          prefixes: ['/plateforme/commerce'],
+        },
+        {
+          chemin: '/plateforme/nouveau',
+          titre: 'Nouveau',
+          icone: 'add-circle-outline',
+          iconeActive: 'add',
+          prefixes: ['/plateforme/nouveau'],
+          central: true,
+        },
+        {
+          chemin: '/plateforme/tableau',
+          titre: 'Tableau de bord',
+          icone: 'stats-chart-outline',
+          iconeActive: 'stats-chart',
+          prefixes: ['/plateforme/tableau'],
+        },
+        {
+          titre: 'Quitter',
+          icone: 'log-out-outline',
+          iconeActive: 'log-out',
+          action: () => void deconnexion(),
+        },
+      ]}
+    />
   );
 }
 
@@ -145,7 +198,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  boutonVendre: {
+  boutonCentral: {
     width: 62,
     height: 62,
     borderRadius: 31,

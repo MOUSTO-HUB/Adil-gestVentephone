@@ -15,6 +15,8 @@ Chaque fiche explique **une tâche**, pas à pas, avec l'écran correspondant.
   jours : Vendre, Caisse, Ventes, Crédits, Stock, Clients, Retours, Dépenses.
 - **Le Menu** range toutes les autres options par thème (vente, troc, stock, clients,
   gestion, réglages). Une pastille rouge signale ce qui attend une action.
+- **Le bouton ☀️ / 🌙** en haut à droite passe l'application en mode clair ou sombre ; le
+  choix reste sur l'appareil.
 
 ## Vendeur
 

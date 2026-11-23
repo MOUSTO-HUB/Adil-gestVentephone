@@ -15,9 +15,32 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ombre, useCouleurs } from '@/lib/theme';
+import { useBasculerApparence } from '@/lib/apparence';
+import { ombre, useCouleurs, useMode } from '@/lib/theme';
 
 export type NomIcone = ComponentProps<typeof Ionicons>['name'];
+
+/** Bouton ☀️/🌙 : passe du mode clair au mode sombre (choix gardé sur l'appareil). */
+export function BoutonApparence({ couleur }: { couleur?: string }) {
+  const c = useCouleurs();
+  const mode = useMode();
+  const basculer = useBasculerApparence();
+  const teinte = couleur ?? c.texte;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={mode === 'sombre' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+      hitSlop={8}
+      onPress={basculer}
+      style={({ pressed }) => [
+        styles.boutonApparence,
+        { borderColor: teinte, opacity: pressed ? 0.6 : 1 },
+      ]}
+    >
+      <Ionicons name={mode === 'sombre' ? 'sunny' : 'moon'} size={20} color={teinte} />
+    </Pressable>
+  );
+}
 
 /** Logo de l'application (écrans de connexion et de code PIN). */
 export function Logo() {
@@ -99,6 +122,7 @@ export function Ecran({
                     </Text>
                   ) : null}
                 </View>
+                <BoutonApparence couleur={c.texteEnTete} />
               </View>
             </View>
           ) : null}
@@ -108,6 +132,9 @@ export function Ecran({
             </View>
           ) : (
             <View style={[styles.colonne, styles.colonneEtroite, styles.contenu]}>
+              <View style={styles.apparenceCentre}>
+                <BoutonApparence />
+              </View>
               <Logo />
               <View
                 style={[
@@ -535,6 +562,15 @@ const ECART_GRILLE = 10;
 
 const styles = StyleSheet.create({
   ecran: { flex: 1 },
+  boutonApparence: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  apparenceCentre: { alignItems: 'flex-end', marginBottom: -8 },
   defilement: { flexGrow: 1, justifyContent: 'center', paddingBottom: 28 },
   defilementHaut: { justifyContent: 'flex-start' },
   colonne: { width: '100%', maxWidth: 720, alignSelf: 'center' },

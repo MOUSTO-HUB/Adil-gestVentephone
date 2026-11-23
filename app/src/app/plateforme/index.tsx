@@ -1,8 +1,18 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Bouton, Champ, Ecran, Indicateur, Message, Texte } from '@/components/ui';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Bouton,
+  Champ,
+  Ecran,
+  GrandeTuile,
+  Grille,
+  Indicateur,
+  Message,
+  Section,
+  Texte,
+} from '@/components/ui';
 import { messageErreur } from '@/lib/api';
 import { BadgeAbonnement, BadgeStatut, dateCourte } from '@/components/plateforme';
 import { type ResumeCommerce, usePlateforme } from '@/lib/plateforme';
@@ -67,7 +77,7 @@ const FILTRES = [
 
 function Commerces() {
   const c = useCouleurs();
-  const { session, requete, deconnexion } = usePlateforme();
+  const { session, requete } = usePlateforme();
   const [recherche, setRecherche] = useState('');
   const [statut, setStatut] = useState<string>('');
   const [liste, setListe] = useState<ResumeCommerce[] | null>(null);
@@ -97,47 +107,48 @@ function Commerces() {
   const actifs = total.filter((x) => x.ventes30Jours > 0).length;
 
   return (
-    <Ecran enHaut retour={false} titre="Espace concepteur" sousTitre={session?.nom}>
-      <View style={styles.ligne}>
-        <View style={{ flex: 1 }}>
-          <Bouton
-            titre="Nouveau commerçant"
-            icone="add-circle"
-            onPress={() => router.push('/plateforme/nouveau')}
-          />
-        </View>
-        <Bouton
-          titre="Tableau de bord"
-          variante="secondaire"
-          icone="stats-chart"
-          onPress={() => router.push('/plateforme/tableau')}
-        />
-        <Bouton
-          titre="Quitter"
-          variante="secondaire"
-          icone="log-out-outline"
-          onPress={() => void deconnexion()}
-        />
-      </View>
-      <View style={styles.ligne}>
-        <Indicateur libelle="Commerçants" valeur={String(total.length)} icone="storefront" />
-        <Indicateur libelle="Boutiques" valeur={String(boutiques)} icone="business" />
+    <Ecran enHaut large retour={false} titre="Espace concepteur" sousTitre={session?.nom}>
+      <Grille>
         <Indicateur
+          compact
+          libelle="Commerçants"
+          valeur={String(total.length)}
+          icone="storefront"
+        />
+        <Indicateur compact libelle="Boutiques" valeur={String(boutiques)} icone="business" />
+        <Indicateur
+          compact
           libelle="Actifs (30 j)"
           valeur={String(actifs)}
           icone="trending-up"
           couleur={c.succes}
         />
-      </View>
-      <TextInput
+      </Grille>
+
+      <Section titre="Que voulez-vous faire ?" icone="hand-left" />
+      <Grille>
+        <GrandeTuile
+          titre="Nouveau commerçant"
+          icone="add-circle"
+          couleur={c.accent}
+          plein
+          onPress={() => router.push('/plateforme/nouveau')}
+        />
+        <GrandeTuile
+          titre="Tableau de bord"
+          icone="stats-chart"
+          couleur={c.primaire}
+          onPress={() => router.push('/plateforme/tableau')}
+        />
+      </Grille>
+
+      <Section titre="Commerçants abonnés" icone="storefront" />
+      <Champ
+        libelle="Rechercher un commerce"
         value={recherche}
         onChangeText={setRecherche}
-        placeholder="Rechercher un commerce…"
-        placeholderTextColor={c.texteDiscret}
-        style={[
-          styles.recherche,
-          { color: c.texte, borderColor: c.bordure, backgroundColor: c.carte },
-        ]}
+        placeholder="Nom du commerce…"
+        autoCorrect={false}
       />
       <View style={styles.ligne}>
         {FILTRES.map((f) => {

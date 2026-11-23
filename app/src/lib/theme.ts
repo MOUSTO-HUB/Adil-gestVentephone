@@ -1,4 +1,5 @@
 import { DarkTheme, DefaultTheme, type Theme } from 'expo-router';
+import { createContext, useContext } from 'react';
 import { useColorScheme } from 'react-native';
 
 /**
@@ -91,9 +92,21 @@ export const THEME_SOMBRE: Theme = {
   },
 };
 
-/** Couleurs complètes de la charte, selon le mode clair ou sombre de l'appareil. */
+export type Mode = 'clair' | 'sombre';
+
+/** Mode choisi à la main (bouton ☀️/🌙) ; null : celui de l'appareil. Fourni par `lib/apparence`. */
+export const ContexteMode = createContext<Mode | null>(null);
+
+/** Mode affiché : choix de l'utilisateur, sinon réglage clair/sombre de l'appareil. */
+export function useMode(): Mode {
+  const choisi = useContext(ContexteMode);
+  const appareil = useColorScheme();
+  return choisi ?? (appareil === 'dark' ? 'sombre' : 'clair');
+}
+
+/** Couleurs complètes de la charte, selon le mode clair ou sombre. */
 export function useCouleurs(): Couleurs {
-  return useColorScheme() === 'dark' ? MARQUE.sombre : MARQUE.clair;
+  return useMode() === 'sombre' ? MARQUE.sombre : MARQUE.clair;
 }
 
 /** Ombre douce des cartes et boutons (iOS, web) ; élévation sur Android. */
