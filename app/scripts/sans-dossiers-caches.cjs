@@ -8,6 +8,7 @@
  */
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const racine = path.resolve(process.argv[2] ?? 'dist-web');
 if (!fs.existsSync(path.join(racine, 'index.html'))) {
@@ -38,24 +39,54 @@ for (const chemin of dossiersCaches(racine)) {
   renommes.add(nom);
 }
 
-let fichiers = 0;
-function corriger(dossier) {
+/** Fichiers texte du site (où l'on corrige les chemins et les noms). */
+function fichiersTexte(dossier, trouves = []) {
   for (const entree of fs.readdirSync(dossier, { withFileTypes: true })) {
     const chemin = path.join(dossier, entree.name);
-    if (entree.isDirectory()) corriger(chemin);
-    else if (/\.(js|html|json|css|map)$/.test(entree.name)) {
-      const avant = fs.readFileSync(chemin, 'utf8');
-      let apres = avant;
-      for (const nom of renommes)
-        apres = apres.split(`/${nom}/`).join(`/${nom.replace(/^\.+/, '')}/`);
-      if (apres !== avant) {
-        fs.writeFileSync(chemin, apres);
-        fichiers += 1;
-      }
+    if (entree.isDirectory()) fichiersTexte(chemin, trouves);
+    else if (/.(js|html|json|css|map)$/.test(entree.name)) trouves.push(chemin);
+  }
+  return trouves;
+}
+
+/** Remplace des morceaux de texte dans tous les fichiers ; rend les fichiers modifiés. */
+function remplacer(fichiers, remplacements) {
+  const modifies = [];
+  for (const chemin of fichiers) {
+    const avant = fs.readFileSync(chemin, 'utf8');
+    let apres = avant;
+    for (const [ancien, nouveau] of remplacements) apres = apres.split(ancien).join(nouveau);
+    if (apres !== avant) {
+      fs.writeFileSync(chemin, apres);
+      modifies.push(chemin);
     }
   }
+  return modifies;
 }
-if (renommes.size) corriger(racine);
+
+let fichiers = 0;
+if (renommes.size) {
+  const textes = fichiersTexte(racine);
+  const modifies = remplacer(
+    textes,
+    [...renommes].map((nom) => [`/${nom}/`, `/${nom.replace(/^.+/, '')}/`]),
+  );
+  fichiers = modifies.length;
+  // Un fichier modifié garde sinon son nom à empreinte (ex. worker-0585….js) : le navigateur
+  // resservirait l'ancienne version de son cache. Nouvelle empreinte, et renvois mis à jour.
+  const noms = [];
+  for (const chemin of modifies) {
+    const ancien = path.basename(chemin);
+    const empreinte = /-([0-9a-f]{16,}).js$/.exec(ancien);
+    if (!empreinte) continue;
+    const contenu = fs.readFileSync(chemin);
+    const nouvelle = crypto.createHash('md5').update(contenu).digest('hex');
+    const nouveau = ancien.replace(empreinte[1], nouvelle);
+    fs.renameSync(chemin, path.join(path.dirname(chemin), nouveau));
+    noms.push([ancien, nouveau]);
+  }
+  if (noms.length) remplacer(fichiersTexte(racine), noms);
+}
 
 console.log(
   renommes.size
