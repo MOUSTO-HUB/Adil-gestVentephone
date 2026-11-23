@@ -1,6 +1,7 @@
 import { LIBELLES_OPERATIONS, peutGererSessions, type TypeOperation } from '@gestvente/commun';
 import { useEffect, useState } from 'react';
 import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
+import { AlertesSync } from '@/components/indicateur-sync';
 import { messageErreur } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
@@ -80,8 +81,8 @@ export default function Synchronisation() {
           Dernière synchronisation : {etat.derniereSync ? date(etat.derniereSync) : 'jamais'}
         </Texte>
         <Texte discret>Opérations en attente d’envoi : {etat.enAttente}</Texte>
-        {etat.erreur ? <Message texte={etat.erreur} /> : null}
       </Carte>
+      <AlertesSync />
       <Bouton titre="Synchroniser maintenant" onPress={synchroniser} chargement={etat.enCours} />
 
       {operations?.length ? <Texte gras>Opérations de cet appareil</Texte> : null}

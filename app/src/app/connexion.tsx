@@ -11,14 +11,14 @@ export default function Connexion() {
   const [envoi, setEnvoi] = useState(false);
 
   const valider = async () => {
-    if (!identifiant.trim() || !motDePasse) {
+    if (!identifiant.trim() || !motDePasse.trim()) {
       setErreur('Saisissez votre identifiant et votre mot de passe.');
       return;
     }
     setEnvoi(true);
     setErreur(null);
     try {
-      await connexion(identifiant, motDePasse);
+      await connexion(identifiant.trim(), motDePasse.trim());
     } catch (e) {
       setErreur(messageErreur(e));
       setEnvoi(false);

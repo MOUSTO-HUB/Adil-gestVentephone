@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { type ColorValue, Pressable, StyleSheet, Text, View } from 'react-native';
 import { peutGererSessions } from '@gestvente/commun';
+import { Message } from '@/components/ui';
 import { useSession } from '@/lib/session';
 import { useSync } from '@/lib/sync/contexte';
 import { useCouleurs } from '@/lib/theme';
@@ -56,8 +57,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   pastille: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
   texte: { fontSize: 14, flex: 1, opacity: 0.9 },
 });
+
+/** Nombre de jours sans synchronisation au-delà duquel un rappel s'affiche. */
+export const JOURS_RAPPEL_SYNC = 7;
+
+/** Jours écoulés depuis la dernière synchronisation réussie (null : jamais). */
+export function joursSansSync(derniereSync: string | null, maintenant = new Date()): number | null {
+  if (!derniereSync) return null;
+  return Math.floor((maintenant.getTime() - new Date(derniereSync).getTime()) / 86_400_000);
+}
+
+/**
+ * Bandeaux de synchronisation, en phrases simples : échec, mode hors ligne, et rappel
+ * quand l'appareil n'a rien envoyé depuis une semaine.
+ */
+export function AlertesSync() {
+  const { etat } = useSync();
+  const jours = joursSansSync(etat.derniereSync);
+  return (
+    <>
+      {etat.erreur ? <Message texte={etat.erreur} /> : null}
+      {etat.reseau === 'hors-ligne' ? (
+        <Message
+          type="info"
+          texte={`Mode hors ligne : pas de connexion Internet. Vous pouvez continuer à travailler ; ${
+            etat.enAttente ? `${etat.enAttente} opération(s) partiront` : 'tout partira'
+          } au retour du réseau.`}
+        />
+      ) : null}
+      {jours !== null && jours >= JOURS_RAPPEL_SYNC ? (
+        <Message
+          texte={`Aucune synchronisation depuis ${jours} jours. Connectez l’appareil à Internet pour envoyer vos ventes et recevoir les mises à jour.`}
+        />
+      ) : null}
+    </>
+  );
+}

@@ -7,12 +7,15 @@ import type {
 } from '@gestvente/commun';
 import { ErreurApi, ErreurReseau } from '../api';
 import { appliquerChangements, ecrireMeta, lireMeta, remplacerTout } from '../base/depot';
+import { messageClair } from '../erreurs';
 import type { BaseSql } from '../base/sql';
 
 export const TAILLE_LOT = 50;
 /** Tours envoi + réception au plus par synchronisation (des opérations arrivent pendant l'envoi). */
 const TOURS_MAX = 5;
 const CLE_CURSEUR = 'curseur';
+/** Date de la dernière synchronisation réussie (rappel après 7 jours sans). */
+const CLE_DERNIERE_SYNC = 'derniereSync';
 /** Boutiques de l'utilisateur lors de la dernière descente (« id,id »). */
 const CLE_BOUTIQUES = 'boutiques';
 
@@ -62,6 +65,7 @@ export class MoteurSync {
   };
   private abonnes = new Set<(etat: EtatSync) => void>();
   private encore = false;
+  private derniereLue = false;
 
   constructor(
     private readonly base: BaseSql,
@@ -85,6 +89,11 @@ export class MoteurSync {
 
   /** Recompte la file (après une opération enregistrée ou effacée). */
   async actualiserCompteurs(): Promise<void> {
+    if (!this.derniereLue) {
+      this.derniereLue = true;
+      const derniere = await lireMeta(this.base, CLE_DERNIERE_SYNC);
+      if (derniere && !this.etat.derniereSync) this.publier({ derniereSync: derniere });
+    }
     const lignes = await this.base.tous<{ statut: StatutOperation | 'EN_ATTENTE'; nombre: number }>(
       'SELECT statut, COUNT(*) AS nombre FROM operation GROUP BY statut',
     );
@@ -111,10 +120,16 @@ export class MoteurSync {
         await this.envoyer();
         await this.recevoir();
       } while (this.encore && ++tours < TOURS_MAX);
-      this.publier({ reseau: 'en-ligne', derniereSync: new Date().toISOString() });
+      const maintenant = new Date().toISOString();
+      await ecrireMeta(this.base, CLE_DERNIERE_SYNC, maintenant);
+      this.publier({ reseau: 'en-ligne', derniereSync: maintenant });
     } catch (erreur) {
       if (erreur instanceof ErreurReseau) this.publier({ reseau: 'hors-ligne' });
-      else this.publier({ reseau: 'en-ligne', erreur: (erreur as Error).message });
+      else
+        this.publier({
+          reseau: 'en-ligne',
+          erreur: `Échec de la synchronisation. ${messageClair(erreur)}`,
+        });
     } finally {
       this.publier({ enCours: false });
       await this.actualiserCompteurs();

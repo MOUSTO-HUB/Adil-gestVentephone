@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 import { type BaseOuverte, effacerBase, ouvrirBase } from '../base/ouvrir';
+import { messageClair } from '../erreurs';
 import type { BaseSql } from '../base/sql';
 import { useSession } from '../session';
 import { type EtatSync, MoteurSync } from './moteur';
@@ -67,7 +68,7 @@ export function FournisseurSync({ children }: { children: ReactNode }) {
         setOuverte(b);
         setMoteur(m);
       })
-      .catch((e: unknown) => setEtat((s) => ({ ...s, erreur: (e as Error).message })));
+      .catch((e: unknown) => setEtat((s) => ({ ...s, erreur: messageClair(e) })));
     return () => {
       actif = false;
       void base?.fermer().catch(() => undefined);

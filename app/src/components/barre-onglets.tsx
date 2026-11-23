@@ -65,11 +65,11 @@ export function BarreOnglets({ onglets }: { onglets: Onglet[] }) {
                 <View
                   style={[styles.boutonCentral, ombre(c.ombre, 4), { backgroundColor: c.accent }]}
                 >
-                  <Ionicons name={o.iconeActive} size={30} color={couleur} />
+                  <Ionicons name={o.iconeActive} size={26} color={couleur} />
                 </View>
               ) : (
                 <View style={[styles.pastilleIcone, actif && { backgroundColor: c.fondPrimaire }]}>
-                  <Ionicons name={actif ? o.iconeActive : o.icone} size={26} color={couleur} />
+                  <Ionicons name={actif ? o.iconeActive : o.icone} size={24} color={couleur} />
                   {o.pastille ? (
                     <View style={[styles.badge, { backgroundColor: c.boutonDanger }]}>
                       <Text style={styles.texteBadge}>{o.pastille > 99 ? '99+' : o.pastille}</Text>
@@ -187,26 +187,26 @@ const styles = StyleSheet.create({
     maxWidth: 720,
     alignSelf: 'center',
     paddingHorizontal: 4,
-    paddingTop: 6,
-    paddingBottom: 6,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
-  onglet: { flex: 1, alignItems: 'center', gap: 3, minHeight: 56, justifyContent: 'flex-end' },
+  onglet: { flex: 1, alignItems: 'center', gap: 2, minHeight: 48, justifyContent: 'flex-end' },
   pastilleIcone: {
     width: 56,
-    height: 34,
-    borderRadius: 17,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   boutonCentral: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    marginTop: -26,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    marginTop: -20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  texte: { fontSize: 13 },
+  texte: { fontSize: 12 },
   badge: {
     position: 'absolute',
     top: -4,

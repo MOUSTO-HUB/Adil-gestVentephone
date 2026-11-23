@@ -1,5 +1,6 @@
 import type { EtatAbonnement, ParametresRappels, Role } from '@gestvente/commun';
 import { API_URL } from './config';
+import { MESSAGES, messageClair, messageStatut } from './erreurs';
 
 /** Version web (site) : seul cas où le pare-feu de l'hébergeur impose son défi. */
 const SITE = typeof document !== 'undefined';
@@ -64,7 +65,7 @@ export class ErreurApi extends Error {
 /** Le serveur n'a pas pu être joint (hors ligne, réseau lent). */
 export class ErreurReseau extends Error {
   constructor() {
-    super('Serveur injoignable. Vérifiez la connexion Internet.');
+    super(MESSAGES.reseau);
   }
 }
 
@@ -126,7 +127,7 @@ export async function appeler<T>(chemin: string, options: Options, jeton?: strin
     const message = (donnees as { message?: string | string[] } | null)?.message;
     throw new ErreurApi(
       reponse.status,
-      Array.isArray(message) ? message.join('\n') : (message ?? `Erreur ${reponse.status}`),
+      Array.isArray(message) ? message.join('\n') : (message ?? messageStatut(reponse.status)),
     );
   }
   return donnees as T;
@@ -181,6 +182,5 @@ export type ClientApi = ReturnType<typeof creerClientApi>;
 
 /** Message lisible pour l'utilisateur, quelle que soit l'erreur. */
 export function messageErreur(erreur: unknown): string {
-  if (erreur instanceof Error && erreur.message) return erreur.message;
-  return 'Une erreur inattendue est survenue.';
+  return messageClair(erreur);
 }

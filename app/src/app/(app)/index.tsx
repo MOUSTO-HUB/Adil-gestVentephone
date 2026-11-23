@@ -2,6 +2,7 @@ import { avertissementAbonnement, formaterMontant, LIBELLES_ROLES } from '@gestv
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Bouton, Ecran, GrandeTuile, Grille, Indicateur, Message, Section } from '@/components/ui';
+import { AlertesSync } from '@/components/indicateur-sync';
 import { caisseOuverte } from '@/lib/caisse-session';
 import { useCompteurs } from '@/lib/compteurs';
 import { useSession } from '@/lib/session';
@@ -70,7 +71,7 @@ export default function Accueil() {
       large
     >
       {/* Refus du serveur (commerce suspendu, abonnement expiré…) : rien ne part, tout est gardé. */}
-      {etat.erreur ? <Message texte={etat.erreur} /> : null}
+      <AlertesSync />
       {avertissement && !etat.erreur ? (
         <Message type={avertissement.niveau} texte={avertissement.texte} />
       ) : null}

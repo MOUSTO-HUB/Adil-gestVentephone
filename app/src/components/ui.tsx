@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBasculerApparence } from '@/lib/apparence';
+import { texteClair } from '@/lib/erreurs';
 import { ombre, useCouleurs, useMode } from '@/lib/theme';
 
 export type NomIcone = ComponentProps<typeof Ionicons>['name'];
@@ -204,6 +205,11 @@ export function Champ({ libelle, ...props }: TextInputProps & { libelle: string 
           }}
           onBlur={(e) => {
             setActif(false);
+            // Espaces au début et à la fin retirés en quittant le champ (identifiant, mot de
+            // passe et toute autre saisie) ; le serveur les retire aussi.
+            if (typeof props.value === 'string' && props.value !== props.value.trim()) {
+              props.onChangeText?.(props.value.trim());
+            }
             props.onBlur?.(e);
           }}
           style={[styleSaisie(c, actif), masquable && styles.saisieAvecOeil]}
@@ -293,6 +299,8 @@ export function Message({
 }) {
   const c = useCouleurs();
   if (!texte) return null;
+  // Dernier filet : une erreur technique (anglais, code) devient une phrase simple.
+  const affiche = type === 'erreur' ? texteClair(texte) : texte;
   const [fond, couleur, icone]: [string, string, NomIcone] =
     type === 'erreur'
       ? [c.fondDanger, c.danger, 'alert-circle']
@@ -305,7 +313,7 @@ export function Message({
       style={[styles.message, { backgroundColor: fond, borderLeftColor: couleur }]}
     >
       <Ionicons name={icone} size={20} color={couleur} />
-      <Text style={[styles.texteMessage, { color: c.texte }]}>{texte}</Text>
+      <Text style={[styles.texteMessage, { color: c.texte }]}>{affiche}</Text>
     </View>
   );
 }
@@ -450,8 +458,9 @@ export function GrandeTuile({
   const { width } = useWindowDimensions();
   // Largeur fixe selon l'écran : une tuile seule sur sa ligne ne s'étire pas.
   const colonnes = petite ? (width < 520 ? 3 : width < 900 ? 4 : 6) : width < 700 ? 2 : 4;
-  // Sur ordinateur, la barre de défilement mange une partie de la largeur de la fenêtre.
-  const grille = Math.min(width - (Platform.OS === 'web' ? 18 : 0), LARGEUR_LARGE) - 32;
+  // Sur ordinateur, la barre de défilement mange une partie de la largeur (pas sur téléphone).
+  const grille =
+    Math.min(width - (Platform.OS === 'web' && width >= 700 ? 18 : 0), LARGEUR_LARGE) - 32;
   const cote = Math.floor((grille - ECART_GRILLE * (colonnes - 1)) / colonnes);
   const taille = { width: cote, height: petite ? Math.min(cote, 120) : Math.min(cote / 1.15, 180) };
   const teinte = couleur ?? c.primaire;
@@ -563,9 +572,9 @@ const ECART_GRILLE = 10;
 const styles = StyleSheet.create({
   ecran: { flex: 1 },
   boutonApparence: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -577,11 +586,11 @@ const styles = StyleSheet.create({
   colonneLarge: { maxWidth: LARGEUR_LARGE },
   colonneEtroite: { maxWidth: 460 },
   contenu: { gap: 14, paddingHorizontal: 16, paddingTop: 18 },
-  enTete: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 },
+  enTete: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10 },
   ligneEnTete: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   boutonRetour: { marginLeft: -6, padding: 2 },
-  titre: { fontSize: 24, fontWeight: '800' },
-  sousTitre: { fontSize: 15, opacity: 0.9, marginTop: 2 },
+  titre: { fontSize: 21, fontWeight: '800' },
+  sousTitre: { fontSize: 14, opacity: 0.9, marginTop: 0 },
   logo: { alignItems: 'center', gap: 10, marginBottom: 4 },
   pastilleLogo: {
     width: 68,

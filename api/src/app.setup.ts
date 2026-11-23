@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { convertirBigIntEnJson } from './common/bigint.js';
+import { PipeEspaces } from './common/espaces.pipe.js';
 import { documentationPublique } from './common/documentation.js';
 import { memoriserRequete } from './securite/contexte-requete.js';
 
@@ -17,6 +18,8 @@ export function configurerApplication(app: INestApplication): void {
   express.use(memoriserRequete);
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
+    // Espaces autour des saisies retirés avant toute validation.
+    new PipeEspaces(),
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
