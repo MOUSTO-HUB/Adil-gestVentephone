@@ -69,7 +69,7 @@ if (renommes.size) {
   const textes = fichiersTexte(racine);
   const modifies = remplacer(
     textes,
-    [...renommes].map((nom) => [`/${nom}/`, `/${nom.replace(/^.+/, '')}/`]),
+    [...renommes].map((nom) => [`/${nom}/`, `/${nom.replace(/^\.+/, '')}/`]),
   );
   fichiers = modifies.length;
   // Un fichier modifié garde sinon son nom à empreinte (ex. worker-0585….js) : le navigateur
@@ -77,7 +77,7 @@ if (renommes.size) {
   const noms = [];
   for (const chemin of modifies) {
     const ancien = path.basename(chemin);
-    const empreinte = /-([0-9a-f]{16,}).js$/.exec(ancien);
+    const empreinte = /-([0-9a-f]{16,})\.js$/.exec(ancien);
     if (!empreinte) continue;
     const contenu = fs.readFileSync(chemin);
     const nouvelle = crypto.createHash('md5').update(contenu).digest('hex');
