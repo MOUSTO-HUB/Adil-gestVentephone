@@ -27,6 +27,15 @@ synchronisation, et le bouton **Synchroniser maintenant**.
 
 ![Synchronisation](../images/synchronisation.png)
 
+## Les messages à l'écran
+
+- **Mode hors ligne** (bandeau bleu) : pas d'Internet. Continuez ; le nombre d'opérations
+  qui partiront au retour du réseau est indiqué.
+- **Échec de la synchronisation** (bandeau rouge) : la raison est écrite en clair (pas de
+  connexion, serveur indisponible…). Rien n'est perdu : l'envoi reprend tout seul.
+- **Aucune synchronisation depuis 7 jours ou plus** (bandeau rouge) : connectez l'appareil
+  à Internet (Wi-Fi ou données) dès que possible, puis touchez **Synchroniser maintenant**.
+
 ## Une opération refusée
 
 Rarement, le serveur refuse une opération faite hors ligne : par exemple, le même

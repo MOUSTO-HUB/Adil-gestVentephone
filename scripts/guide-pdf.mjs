@@ -4,8 +4,9 @@
 //   node scripts/guide-pdf.mjs
 //
 // NAVIGATEUR=chemin de msedge.exe ou chrome si le navigateur n'est pas trouvé.
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -199,8 +200,81 @@ function navigateur() {
   return trouve;
 }
 
+/**
+ * Navigateur sans fenêtre piloté par le protocole DevTools (Page.printToPDF) : plus fiable
+ * que --print-to-pdf, qui n'écrit parfois rien quand le navigateur est déjà ouvert.
+ */
+async function ouvrirNavigateur(executable, profil) {
+  const port = 9600 + Math.floor(Math.random() * 300);
+  const processus = spawn(executable, [
+    '--headless=new',
+    '--disable-gpu',
+    '--no-first-run',
+    `--remote-debugging-port=${port}`,
+    `--user-data-dir=${profil}`,
+    'about:blank',
+  ]);
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+  let page;
+  for (let i = 0; i < 60 && !page; i++) {
+    await pause(500);
+    try {
+      const cibles = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
+      page = cibles.find((c) => c.type === 'page');
+    } catch {
+      // Le navigateur démarre encore.
+    }
+  }
+  if (!page) throw new Error('Le navigateur sans fenêtre n’a pas démarré.');
+  const ws = new WebSocket(page.webSocketDebuggerUrl);
+  await new Promise((r) => ws.addEventListener('open', r));
+  let id = 0;
+  const attentes = new Map();
+  ws.addEventListener('message', (e) => {
+    const m = JSON.parse(e.data);
+    if (m.id && attentes.has(m.id)) {
+      attentes.get(m.id)(m);
+      attentes.delete(m.id);
+    }
+  });
+  const commande = (method, params = {}) =>
+    new Promise((r) => {
+      const n = ++id;
+      attentes.set(n, r);
+      ws.send(JSON.stringify({ id: n, method, params }));
+    });
+  await commande('Page.enable');
+  return {
+    async imprimer(url, fichier) {
+      const charge = new Promise((r) =>
+        ws.addEventListener('message', function attendre(e) {
+          if (JSON.parse(e.data).method === 'Page.loadEventFired') {
+            ws.removeEventListener('message', attendre);
+            r();
+          }
+        }),
+      );
+      await commande('Page.navigate', { url });
+      await charge;
+      await pause(500);
+      const reponse = await commande('Page.printToPDF', {
+        printBackground: true,
+        preferCSSPageSize: true,
+        displayHeaderFooter: false,
+      });
+      if (!reponse.result?.data) throw new Error(`Impression impossible : ${fichier}`);
+      writeFileSync(fichier, Buffer.from(reponse.result.data, 'base64'));
+    },
+    fermer() {
+      ws.close();
+      processus.kill();
+    },
+  };
+}
+
 mkdirSync(SORTIE, { recursive: true });
-const executable = navigateur();
+const profil = mkdtempSync(join(tmpdir(), 'guide-pdf-'));
+const navigateurPdf = await ouvrirNavigateur(navigateur(), profil);
 const date = new Date().toLocaleDateString('fr-FR', {
   day: 'numeric',
   month: 'long',
@@ -220,13 +294,14 @@ for (const doc of DOCUMENTS) {
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${doc.titre}</title><style>${STYLE}</style></head><body>${couverture}${fiches}</body></html>`;
   const fichierHtml = join(SORTIE, `${doc.nom}.html`);
   writeFileSync(fichierHtml, html);
-  execFileSync(executable, [
-    '--headless=new',
-    '--disable-gpu',
-    '--no-pdf-header-footer',
-    `--print-to-pdf=${join(SORTIE, doc.nom)}`,
-    pathToFileURL(fichierHtml).href,
-  ]);
+  await navigateurPdf.imprimer(pathToFileURL(fichierHtml).href, join(SORTIE, doc.nom));
   if (!process.env.GARDER_HTML) rmSync(fichierHtml);
   console.log(`docs/guide/pdf/${doc.nom}`);
+}
+navigateurPdf.fermer();
+await new Promise((r) => setTimeout(r, 1500));
+try {
+  rmSync(profil, { recursive: true, force: true, maxRetries: 5 });
+} catch {
+  // Edge peut garder le profil quelques instants : le dossier temporaire sera nettoyé plus tard.
 }

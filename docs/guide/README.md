@@ -18,6 +18,13 @@ Chaque fiche explique **une tâche**, pas à pas, avec l'écran correspondant.
 - **Le bouton ☀️ / 🌙** en haut à droite passe l'application en mode clair ou sombre ; le
   choix reste sur l'appareil.
 
+## Concepteur (gestion des commerçants abonnés)
+
+L'espace concepteur s'ouvre uniquement par l'adresse `/plateforme` du site (aucun lien sur
+l'écran des commerçants). Barre du bas : **Commerçants**, gros bouton **+ Nouveau**,
+**Tableau de bord**, **Quitter**. Création d'un commerçant, abonnements, verrouillage d'une
+boutique et nouveau mot de passe du propriétaire se font depuis la fiche du commerce.
+
 ## Vendeur
 
 1. [Vendre](vendeur/01-vendre.md)
