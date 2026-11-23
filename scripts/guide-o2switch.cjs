@@ -1404,7 +1404,7 @@ curl -sI https://app.mondomaine.com/ | grep -i "cross-origin"
   ETAPE('Ouvrir l’application', '5 min'),
   ...actions([
     'Dans Chrome ou Edge, ouvrez `https://app.mondomaine.com`.',
-    'L’écran de connexion de GestVente Phone s’affiche, avec le lien **Espace concepteur** en bas.',
+    'L’écran de connexion des commerçants de GestVente Phone s’affiche. L’espace concepteur n’y a pas de lien : il s’ouvre uniquement par son adresse, `https://app.mondomaine.com/plateforme` (notez-la dans votre gestionnaire de mots de passe).',
     'Touche **F12** › onglet **Console** : aucune erreur rouge mentionnant « CORS » ou « Cross-Origin ».',
   ]),
   resultat('l’écran de connexion, sans erreur. Si l’écran reste blanc, voir le Dépannage.'),
@@ -1505,7 +1505,7 @@ ls -lh ~/gestvente/sauvegardes
   H2('14.2 Premier commerce : Adil Phone'),
   ETAPE('Se connecter à l’espace concepteur', '2 min'),
   ...actions([
-    'Ouvrez `https://app.mondomaine.com/plateforme` (ou le lien **Espace concepteur** sous la connexion).',
+    'Ouvrez `https://app.mondomaine.com/plateforme` : c’est le seul accès à l’espace concepteur (aucun lien sur l’écran de connexion des commerçants).',
     'Identifiant et mot de passe du concepteur (étape 24).',
   ]),
   resultat(

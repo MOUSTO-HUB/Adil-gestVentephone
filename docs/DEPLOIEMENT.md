@@ -87,8 +87,9 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod exec api node dis
 ```
 
 La commande demande le nom et l'identifiant du concepteur de la plateforme, puis
-affiche **une seule fois** son mot de passe. Ouvrez ensuite le site, **Espace
-concepteur** (sous le bouton de connexion) : chaque commerçant abonné s'y crée avec
+affiche **une seule fois** son mot de passe. Ouvrez ensuite l'espace
+concepteur à l'adresse `/plateforme` du site (aucun lien sur l'écran de connexion des
+commerçants) : chaque commerçant abonné s'y crée avec
 sa première boutique et son propriétaire (mot de passe provisoire affiché une seule
 fois ; le code PIN est choisi à la première connexion). Le catalogue de base
 (téléphones et accessoires courants, sans photo) est installé d'office ; le
