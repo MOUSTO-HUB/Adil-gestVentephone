@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "GestVente Phone",
+    "name": "Gestion vente Phone",
     "slug": "adil-gestventephone",
     "version": "0.1.0",
     "orientation": "default",
@@ -28,8 +28,8 @@
     "web": {
       "output": "single",
       "favicon": "./assets/images/favicon.png",
-      "name": "GestVente Phone",
-      "shortName": "GestVente",
+      "name": "Gestion vente Phone",
+      "shortName": "Gestion vente",
       "lang": "fr",
       "themeColor": "#0F766E",
       "backgroundColor": "#F3F4F8",

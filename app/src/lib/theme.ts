@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, type Theme } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
 /**
- * Charte « GestVente Phone » : vert sarcelle (confiance, la marque), ambre (l'action
+ * Charte « Gestion vente Phone » : vert sarcelle (confiance, la marque), ambre (l'action
  * de vente), vert, orange et rouge pour les états. Bordures franches : champs,
  * boutons et cartes restent bien visibles, en clair comme en sombre.
  */

@@ -27,7 +27,7 @@ export function Logo() {
         <Ionicons name="phone-portrait" size={34} color={c.accent} />
       </View>
       <Text style={[styles.nomLogo, { color: c.texte }]}>
-        GestVente <Text style={{ color: c.primaire }}>Phone</Text>
+        Gestion vente <Text style={{ color: c.primaire }}>Phone</Text>
       </Text>
     </View>
   );
