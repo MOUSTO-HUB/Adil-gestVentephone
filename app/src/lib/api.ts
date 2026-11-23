@@ -1,6 +1,9 @@
 import type { EtatAbonnement, ParametresRappels, Role } from '@gestvente/commun';
 import { API_URL } from './config';
 
+/** Version web (site) : seul cas où le pare-feu de l'hébergeur impose son défi. */
+const SITE = typeof document !== 'undefined';
+
 export interface Jetons {
   jetonAcces: string;
   jetonRafraichissement: string;
@@ -83,9 +86,11 @@ interface Branchements {
 export async function appeler<T>(chemin: string, options: Options, jeton?: string): Promise<T> {
   let reponse: Response;
   const formulaire = options.corps instanceof FormData;
-  try {
-    reponse = await fetch(`${API_URL}${chemin}`, {
+  const envoyer = () =>
+    fetch(`${API_URL}${chemin}`, {
       method: options.methode ?? 'GET',
+      // Site : cookies de l'hébergeur (défi anti-robots d'o2switch) envoyés à l'API.
+      ...(SITE ? { credentials: 'include' as const } : {}),
       headers: {
         Accept: 'application/json',
         // FormData : le navigateur ou React Native pose lui-même l'en-tête multipart.
@@ -100,8 +105,19 @@ export async function appeler<T>(chemin: string, options: Options, jeton?: strin
           ? JSON.stringify(options.corps)
           : undefined,
     });
+  try {
+    reponse = await envoyer();
   } catch {
-    throw new ErreurReseau();
+    // Le pare-feu de l'hébergeur répond d'abord à un navigateur par un défi (redirection
+    // et cookie), refusé par le navigateur entre deux sous-domaines ; le cookie est posé,
+    // et le second envoi passe. Ce premier envoi n'a pas atteint l'API ; après une vraie coupure,
+    // le second échoue aussi (les opérations de synchronisation ont un identifiant : pas de doublon).
+    if (!SITE) throw new ErreurReseau();
+    try {
+      reponse = await envoyer();
+    } catch {
+      throw new ErreurReseau();
+    }
   }
   if (reponse.status === 204) return undefined as T;
   if (options.fichier && reponse.ok) return (await reponse.blob()) as T;
