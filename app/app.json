@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#283593",
+        "backgroundColor": "#0F766E",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -31,7 +31,7 @@
       "name": "GestVente Phone",
       "shortName": "GestVente",
       "lang": "fr",
-      "themeColor": "#283593",
+      "themeColor": "#0F766E",
       "backgroundColor": "#F3F4F8",
       "description": "Ventes, stock IMEI, caisse et rapports d'une boutique de téléphones, même hors ligne."
     },
@@ -48,7 +48,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#283593",
+          "backgroundColor": "#0F766E",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 120
         }

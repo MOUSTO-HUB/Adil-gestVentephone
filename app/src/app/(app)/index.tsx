@@ -122,6 +122,7 @@ export default function Accueil() {
       sousTitre={`${boutique.nom} · ${LIBELLES_ROLES[profil.role]}`}
       retour={false}
       enHaut
+      large
     >
       {/* Refus du serveur (commerce suspendu, abonnement expiré…) : rien ne part, tout est gardé. */}
       {etat.erreur ? <Message texte={etat.erreur} /> : null}
@@ -181,7 +182,7 @@ export default function Accueil() {
         />
       ) : null}
 
-      <Section titre="Ventes et caisse" />
+      <Section titre="Ventes et caisse" icone="cash" />
       <Grille>
         <Tuile titre="Ventes" icone="receipt" onPress={aller('/ventes')} />
         <Tuile
@@ -207,7 +208,7 @@ export default function Accueil() {
         />
       </Grille>
 
-      <Section titre="Troc" />
+      <Section titre="Troc" icone="swap-horizontal" />
       <Grille>
         <Tuile
           titre="Trocs"
@@ -226,7 +227,7 @@ export default function Accueil() {
         ) : null}
       </Grille>
 
-      <Section titre="Stock" />
+      <Section titre="Stock" icone="cube" />
       <Grille>
         <Tuile titre="Stock" icone="cube" onPress={aller('/stock')} badge={sousSeuil?.length} />
         <Tuile titre="Fiche IMEI" icone="barcode" onPress={aller('/imei')} />
@@ -252,14 +253,14 @@ export default function Accueil() {
         ) : null}
       </Grille>
 
-      <Section titre="Clients" />
+      <Section titre="Clients" icone="people" />
       <Grille>
         <Tuile titre="Clients" icone="people" onPress={aller('/clients')} />
       </Grille>
 
       {gestion ? (
         <>
-          <Section titre="Gestion" />
+          <Section titre="Gestion" icone="briefcase" />
           <Grille>
             <Tuile
               titre="Tableau de bord"
@@ -298,7 +299,7 @@ export default function Accueil() {
         </>
       ) : null}
 
-      <Section titre="Réglages" />
+      <Section titre="Réglages" icone="settings" />
       <Grille>
         <Tuile titre="Aide" icone="help-buoy" couleur={c.accent} onPress={aller('/aide')} />
         <Tuile titre="Imprimante" icone="print" onPress={aller('/imprimante')} />

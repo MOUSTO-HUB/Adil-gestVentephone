@@ -41,7 +41,7 @@ export function IndicateurSync() {
       onPress={() => router.push('/synchronisation')}
       style={[styles.bandeau, { backgroundColor: c.enTete }]}
     >
-      <View style={[styles.pastille, { backgroundColor: couleur }]} />
+      <View style={[styles.pastille, { backgroundColor: couleur, borderColor: c.texteEnTete }]} />
       <Text style={[styles.texte, { color: c.texteEnTete }]} numberOfLines={1}>
         {morceaux.join(' · ')}
       </Text>
@@ -58,6 +58,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  pastille: { width: 10, height: 10, borderRadius: 5 },
+  pastille: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
   texte: { fontSize: 14, flex: 1, opacity: 0.9 },
 });

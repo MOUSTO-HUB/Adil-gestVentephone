@@ -20,6 +20,7 @@ import { messageErreur } from '@/lib/api';
 import { caisseOuverte, mouvementsCaisse } from '@/lib/caisse-session';
 import { confirmer } from '@/lib/confirmer';
 import { useSession } from '@/lib/session';
+import { useCouleurs } from '@/lib/theme';
 import { useLecture, useSync } from '@/lib/sync/contexte';
 
 const STATUTS: Record<CaisseSync['statut'], string> = {
@@ -41,6 +42,7 @@ const avecSigne = (v: number, monnaie?: string) =>
  */
 export default function Caisse() {
   const { colors } = useTheme();
+  const cs = useCouleurs();
   const { profil, boutique } = useSession();
   const { enregistrer } = useSync();
   const monnaie = profil?.commerce.monnaie;
@@ -154,7 +156,12 @@ export default function Caisse() {
 
   const saisie = [
     styles.saisie,
-    { color: colors.text, borderColor: colors.border, backgroundColor: colors.card },
+    {
+      color: cs.texte,
+      borderColor: cs.bordureSaisie,
+      backgroundColor: cs.saisie,
+      borderWidth: 1.5,
+    },
   ];
 
   return (

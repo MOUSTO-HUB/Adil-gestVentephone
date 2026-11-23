@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import type { ComponentProps, ReactNode } from 'react';
+import { useState, type ComponentProps, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -43,6 +43,7 @@ export function Ecran({
   sousTitre,
   enHaut = false,
   retour = true,
+  large = false,
   children,
 }: {
   titre: string;
@@ -50,6 +51,8 @@ export function Ecran({
   enHaut?: boolean;
   /** Flèche de retour dans l'en-tête (si l'écran précédent existe). */
   retour?: boolean;
+  /** Colonne plus large sur ordinateur (accueil, tableaux de bord). */
+  large?: boolean;
   children: ReactNode;
 }) {
   const c = useCouleurs();
@@ -69,7 +72,7 @@ export function Ecran({
         >
           {enHaut ? (
             <View style={[styles.enTete, { backgroundColor: c.enTete }]}>
-              <View style={[styles.colonne, styles.ligneEnTete]}>
+              <View style={[styles.colonne, large && styles.colonneLarge, styles.ligneEnTete]}>
                 {flecheRetour ? (
                   <Pressable
                     accessibilityRole="button"
@@ -98,10 +101,20 @@ export function Ecran({
               </View>
             </View>
           ) : null}
-          <View style={[styles.colonne, styles.contenu]}>
-            {!enHaut ? (
-              <>
-                <Logo />
+          {enHaut ? (
+            <View style={[styles.colonne, large && styles.colonneLarge, styles.contenu]}>
+              {children}
+            </View>
+          ) : (
+            <View style={[styles.colonne, styles.colonneEtroite, styles.contenu]}>
+              <Logo />
+              <View
+                style={[
+                  styles.panneau,
+                  ombre(c.ombre, 3),
+                  { backgroundColor: c.carte, borderColor: c.bordure },
+                ]}
+              >
                 <Text accessibilityRole="header" style={[styles.titreCentre, { color: c.texte }]}>
                   {titre}
                 </Text>
@@ -110,28 +123,54 @@ export function Ecran({
                     {sousTitre}
                   </Text>
                 ) : null}
-              </>
-            ) : null}
-            {children}
-          </View>
+                {children}
+              </View>
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+/** Style commun des zones de saisie (contour franc, plus épais quand le champ est actif). */
+export function styleSaisie(
+  c: ReturnType<typeof useCouleurs>,
+  actif = false,
+): TextInputProps['style'] {
+  return [
+    styles.saisie,
+    {
+      color: c.texte,
+      backgroundColor: c.saisie,
+      borderColor: actif ? c.primaire : c.bordureSaisie,
+      borderWidth: actif ? 2 : 1.5,
+      // Même encombrement actif ou non : la bordure plus épaisse mange le rembourrage.
+      paddingHorizontal: actif ? 13.5 : 14,
+    },
+    Platform.OS === 'web' ? styles.sansContourWeb : null,
+  ];
+}
+
 export function Champ({ libelle, ...props }: TextInputProps & { libelle: string }) {
   const c = useCouleurs();
+  const [actif, setActif] = useState(false);
   return (
     <View style={styles.champ}>
-      <Text style={[styles.libelle, { color: c.texteDiscret }]}>{libelle}</Text>
+      <Text style={[styles.libelle, { color: c.texte }]}>{libelle}</Text>
       <TextInput
         placeholderTextColor={c.texteDiscret}
+        accessibilityLabel={libelle}
         {...props}
-        style={[
-          styles.saisie,
-          { color: c.texte, borderColor: c.bordure, backgroundColor: c.carte },
-        ]}
+        onFocus={(e) => {
+          setActif(true);
+          props.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setActif(false);
+          props.onBlur?.(e);
+        }}
+        style={styleSaisie(c, actif)}
       />
     </View>
   );
@@ -155,14 +194,14 @@ export function Bouton({
   icone?: NomIcone;
 }) {
   const c = useCouleurs();
-  const [fond, texte] =
+  const [fond, texte, contour] =
     variante === 'principal'
-      ? [c.bouton, '#FFFFFF']
+      ? [c.bouton, '#FFFFFF', c.bouton]
       : variante === 'accent'
-        ? [c.accent, '#1E2235']
+        ? [c.accent, '#1E2235', c.accent]
         : variante === 'danger'
-          ? [c.danger, '#FFFFFF']
-          : [c.fondPrimaire, c.primaire];
+          ? [c.boutonDanger, '#FFFFFF', c.boutonDanger]
+          : [c.carte, c.primaire, c.primaire];
   const inactif = desactive || chargement;
   return (
     <Pressable
@@ -175,6 +214,7 @@ export function Bouton({
         variante !== 'secondaire' && ombre(c.ombre, 2),
         {
           backgroundColor: fond,
+          borderColor: contour,
           opacity: inactif ? 0.5 : 1,
           transform: [{ scale: pressed ? 0.98 : 1 }],
         },
@@ -269,10 +309,19 @@ export function Texte({
   );
 }
 
-/** Titre d'un groupe d'écrans ou de tuiles. */
-export function Section({ titre }: { titre: string }) {
+/** Titre d'un groupe d'écrans ou de tuiles : barre de couleur, icône facultative. */
+export function Section({ titre, icone }: { titre: string; icone?: NomIcone }) {
   const c = useCouleurs();
-  return <Text style={[styles.section, { color: c.texteDiscret }]}>{titre.toUpperCase()}</Text>;
+  return (
+    <View style={styles.ligneSection}>
+      <View style={[styles.barreSection, { backgroundColor: c.primaire }]} />
+      {icone ? <Ionicons name={icone} size={18} color={c.primaire} /> : null}
+      <Text accessibilityRole="header" style={[styles.section, { color: c.texte }]}>
+        {titre}
+      </Text>
+      <View style={[styles.filetSection, { backgroundColor: c.bordure }]} />
+    </View>
+  );
 }
 
 /** Tuile du menu d'accueil : icône colorée et libellé, badge facultatif. */
@@ -300,23 +349,24 @@ export function Tuile({
         styles.tuile,
         ombre(c.ombre, 1),
         {
-          backgroundColor: c.carte,
-          borderColor: c.bordure,
-          transform: [{ scale: pressed ? 0.97 : 1 }],
+          backgroundColor: pressed ? c.fondPrimaire : c.carte,
+          borderColor: pressed ? c.primaire : c.bordure,
+          transform: [{ scale: pressed ? 0.99 : 1 }],
         },
       ]}
     >
-      <View style={[styles.iconeTuile, { backgroundColor: `${teinte}1F` }]}>
-        <Ionicons name={icone} size={26} color={teinte} />
+      <View style={[styles.iconeTuile, { backgroundColor: `${teinte}24` }]}>
+        <Ionicons name={icone} size={22} color={teinte} />
       </View>
       <Text style={[styles.texteTuile, { color: c.texte }]} numberOfLines={2}>
         {titre}
       </Text>
       {badge ? (
-        <View style={[styles.badge, { backgroundColor: c.danger }]}>
+        <View style={[styles.badge, { backgroundColor: c.boutonDanger }]}>
           <Text style={styles.texteBadge}>{badge > 99 ? '99+' : badge}</Text>
         </View>
       ) : null}
+      <Ionicons name="chevron-forward" size={18} color={c.texteDiscret} />
     </Pressable>
   );
 }
@@ -374,16 +424,18 @@ export function Indicateur({
 
 const styles = StyleSheet.create({
   ecran: { flex: 1 },
-  defilement: { flexGrow: 1, justifyContent: 'center', paddingBottom: 24 },
+  defilement: { flexGrow: 1, justifyContent: 'center', paddingBottom: 28 },
   defilementHaut: { justifyContent: 'flex-start' },
-  colonne: { width: '100%', maxWidth: 680, alignSelf: 'center' },
-  contenu: { gap: 14, paddingHorizontal: 16, paddingTop: 16 },
-  enTete: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 18 },
+  colonne: { width: '100%', maxWidth: 720, alignSelf: 'center' },
+  colonneLarge: { maxWidth: 1040 },
+  colonneEtroite: { maxWidth: 460 },
+  contenu: { gap: 14, paddingHorizontal: 16, paddingTop: 18 },
+  enTete: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 20 },
   ligneEnTete: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   boutonRetour: { marginLeft: -6, padding: 2 },
   titre: { fontSize: 24, fontWeight: '800' },
-  sousTitre: { fontSize: 15, opacity: 0.8, marginTop: 2 },
-  logo: { alignItems: 'center', gap: 10, marginBottom: 8 },
+  sousTitre: { fontSize: 15, opacity: 0.9, marginTop: 2 },
+  logo: { alignItems: 'center', gap: 10, marginBottom: 4 },
   pastilleLogo: {
     width: 68,
     height: 68,
@@ -392,20 +444,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nomLogo: { fontSize: 24, fontWeight: '800' },
+  panneau: { borderWidth: 1, borderRadius: 18, padding: 20, gap: 14 },
   titreCentre: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
   sousTitreCentre: { fontSize: 15, textAlign: 'center', marginTop: -6 },
   champ: { gap: 6 },
   libelle: { fontSize: 14, fontWeight: '600' },
   saisie: {
-    borderWidth: 1,
+    minHeight: 50,
     borderRadius: 12,
-    paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 17,
   },
+  // Le contour du champ actif remplace le contour du navigateur.
+  sansContourWeb: { outlineStyle: 'none' } as object,
   bouton: {
     minHeight: 52,
-    borderRadius: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
     flexDirection: 'row',
     gap: 8,
     alignItems: 'center',
@@ -422,48 +477,50 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
   },
   texteMessage: { fontSize: 15, flex: 1 },
-  carte: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 16, gap: 8 },
+  carte: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 8 },
   titreCarte: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   texteTitreCarte: { fontSize: 17, fontWeight: '700' },
   texte: { fontSize: 16 },
-  section: { fontSize: 13, fontWeight: '700', letterSpacing: 0.8, marginTop: 8 },
-  grille: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  ligneSection: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
+  barreSection: { width: 4, height: 20, borderRadius: 2 },
+  section: { fontSize: 16, fontWeight: '800' },
+  filetSection: { flex: 1, height: 1, marginLeft: 4 },
+  grille: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   tuile: {
     flexGrow: 1,
-    flexBasis: '40%',
-    minWidth: 140,
-    minHeight: 104,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 18,
-    padding: 14,
-    gap: 10,
-    justifyContent: 'space-between',
+    flexBasis: '30%',
+    minWidth: 220,
+    minHeight: 58,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   iconeTuile: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  texteTuile: { fontSize: 15, fontWeight: '700' },
+  texteTuile: { flex: 1, fontSize: 16, fontWeight: '700' },
   badge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    paddingHorizontal: 6,
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    paddingHorizontal: 7,
     alignItems: 'center',
     justifyContent: 'center',
   },
   texteBadge: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   indicateur: {
     flexGrow: 1,
-    flexBasis: '40%',
-    minWidth: 140,
-    borderWidth: StyleSheet.hairlineWidth,
+    flexBasis: '22%',
+    minWidth: 150,
+    borderWidth: 1,
     borderRadius: 16,
     padding: 14,
     gap: 4,

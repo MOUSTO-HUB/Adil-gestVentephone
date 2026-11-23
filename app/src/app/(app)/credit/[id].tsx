@@ -171,7 +171,7 @@ export default function FicheCredit() {
 
   const saisie = [
     styles.saisie,
-    { color: c.texte, borderColor: c.bordure, backgroundColor: c.carte },
+    { color: c.texte, borderColor: c.bordureSaisie, backgroundColor: c.saisie, borderWidth: 1.5 },
   ];
 
   return (

@@ -107,7 +107,7 @@ Guide utilisateur : `docs/guide/` (une fiche par tâche et par rôle, formation 
 
 ## Interface
 
-- Charte dans `app/src/lib/theme.ts` (`useCouleurs()` : indigo, ambre pour la vente, états vert/orange/rouge ; clair et sombre) : jamais de couleur en dur dans un écran. Composants de `components/ui.tsx` : `Ecran` (en-tête coloré, flèche de retour : pas de bouton « Retour » en bas d'écran), `Bouton` (`icone` Ionicons, variantes principal/secondaire/accent/danger), `Carte`, `Message` (erreur/info/succes), `Section`, `Grille`, `Tuile`, `Indicateur`. Icônes : `@expo/vector-icons/Ionicons`. Icônes de l'application dessinées par `app/scripts/icones.cjs`.
+- Charte dans `app/src/lib/theme.ts` (`useCouleurs()` : vert sarcelle, ambre pour la vente, états vert/orange/rouge ; clair et sombre ; bordures franches : `bordure` pour les cartes, `saisie`/`bordureSaisie` pour les champs, `boutonDanger`) : jamais de couleur en dur dans un écran. Composants de `components/ui.tsx` : `Ecran` (en-tête coloré, flèche de retour : pas de bouton « Retour » en bas d'écran ; `large` pour l'accueil ; écrans centrés dans un panneau encadré), `Champ` (contour épaissi quand il est actif ; `styleSaisie(c)` pour un `TextInput` propre à un écran), `Bouton` (`icone` Ionicons, variantes principal/secondaire encadré/accent/danger), `Carte`, `Message` (erreur/info/succes), `Section` (`icone` facultative), `Grille`, `Tuile` (ligne icône + libellé + chevron, 1 à 3 colonnes selon la largeur), `Indicateur`. Icônes : `@expo/vector-icons/Ionicons`. Icônes de l'application dessinées par `app/scripts/icones.cjs`.
 
 ## Production
 

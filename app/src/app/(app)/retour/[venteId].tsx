@@ -30,6 +30,7 @@ import { messageErreur } from '@/lib/api';
 import { caisseOuverte } from '@/lib/caisse-session';
 import { type ArticlePanier, prixDuPanier, prochainNumeroFacture } from '@/lib/panier';
 import { useSession } from '@/lib/session';
+import { useCouleurs } from '@/lib/theme';
 import { useLecture, useSync } from '@/lib/sync/contexte';
 
 interface LigneVendue {
@@ -65,6 +66,7 @@ const options = <T extends string>(valeurs: readonly T[], libelles: Record<T, st
 export default function NouveauRetour() {
   const { venteId } = useLocalSearchParams<{ venteId: string }>();
   const { colors } = useTheme();
+  const cs = useCouleurs();
   const { profil, boutique, api } = useSession();
   const { base, enregistrer } = useSync();
   const monnaie = profil?.commerce.monnaie;
@@ -287,7 +289,12 @@ export default function NouveauRetour() {
 
   const saisie = [
     styles.saisie,
-    { color: colors.text, borderColor: colors.border, backgroundColor: colors.card },
+    {
+      color: cs.texte,
+      borderColor: cs.bordureSaisie,
+      backgroundColor: cs.saisie,
+      borderWidth: 1.5,
+    },
   ];
 
   return (

@@ -1,5 +1,5 @@
 /**
- * Dessine les icônes de l'application (téléphone ambre sur fond indigo) :
+ * Dessine les icônes de l'application (téléphone ambre sur fond vert sarcelle) :
  * site installable (public/icones), favicon, icônes Android et iOS, écran de démarrage.
  * Relancer après un changement de charte : node scripts/icones.cjs
  */
@@ -12,9 +12,9 @@ const Jimp = require(
   }),
 );
 
-const INDIGO = [0x28, 0x35, 0x93];
+const SARCELLE = [0x0f, 0x76, 0x6e];
 const AMBRE = [0xf5, 0x9e, 0x0b];
-const ECRAN = [0x1a, 0x23, 0x7e];
+const ECRAN = [0x13, 0x4e, 0x4a];
 const BLANC = [0xff, 0xff, 0xff];
 
 /** Distance signée à un rectangle arrondi centré (négative à l'intérieur). */
@@ -52,9 +52,9 @@ async function dessiner(fichier, taille, { fond = 'arrondi', echelle = 1, mono =
       couleur = couleur.map((v, i) => v * (1 - a) + rgb[i] * a);
       alpha = alpha + a * (1 - alpha);
     };
-    if (fond === 'plein') poser(INDIGO, 1);
+    if (fond === 'plein') poser(SARCELLE, 1);
     if (fond === 'arrondi') {
-      poser(INDIGO, couverture(rectangleArrondi(px, py, c, c, c, c, 0.22 * t)));
+      poser(SARCELLE, couverture(rectangleArrondi(px, py, c, c, c, c, 0.22 * t)));
     }
     // Corps du téléphone.
     poser(corps, couverture(rectangleArrondi(px, py, c, c, hw, hh, 0.32 * hw)));
