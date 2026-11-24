@@ -12,6 +12,7 @@ import {
   imeisDisponibles,
   produitPourVente,
   versPanier,
+  telephonesSansImei,
 } from '@/lib/caisse';
 import {
   marquesCatalogue,
@@ -99,7 +100,12 @@ export function ChoixArticles({
   const [marqueId, setMarqueId] = useState('');
   const [modeleId, setModeleId] = useState('');
   const filtre = !!(type || marqueId || modeleId);
-  const [choixImei, setChoixImei] = useState<{ produitId: string; nom: string } | null>(null);
+  // Choix de l'IMEI ; « sansImei » : téléphones reçus sans IMEI encore disponibles.
+  const [choixImei, setChoixImei] = useState<{
+    produitId: string;
+    nom: string;
+    sansImei: number;
+  } | null>(null);
   const [scanner, setScanner] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -154,7 +160,26 @@ export function ChoixArticles({
     if (!produit) return;
     setRecherche('');
     if (produit.type === 'TELEPHONE' && !article) {
-      setChoixImei({ produitId: produit.id, nom: produit.nom });
+      // IMEI facultatif : sans IMEI enregistré en stock, le téléphone s'ajoute en quantité.
+      const dejaSansImei = articles
+        .filter((a) => a.produitId === produit.id && !a.articleId)
+        .reduce((t, a) => t + a.quantite, 0);
+      const sansImei = (await telephonesSansImei(base, boutiqueId, produit.id)) - dejaSansImei;
+      const avecImei = await imeisDisponibles(
+        base,
+        boutiqueId,
+        produit.id,
+        articles.flatMap((a) => (a.articleId ? [a.articleId] : [])),
+      );
+      if (avecImei.length === 0) {
+        if (sansImei <= 0) {
+          setMessage(`« ${produit.nom} » : plus de téléphone en stock.`);
+          return;
+        }
+        ajouterSansImei(produit);
+        return;
+      }
+      setChoixImei({ produitId: produit.id, nom: produit.nom, sansImei });
       return;
     }
     setChoixImei(null);
@@ -173,6 +198,36 @@ export function ChoixArticles({
     }
     if (article && articles.some((a) => a.articleId === article.id)) return;
     setArticles((as) => [...as, versPanier(produit, Crypto.randomUUID(), article)]);
+  };
+
+  /** Téléphone vendu sans IMEI : une ligne par produit, en quantité. */
+  const ajouterSansImei = (produit: NonNullable<Awaited<ReturnType<typeof produitPourVente>>>) => {
+    setChoixImei(null);
+    const deja = articles.find((a) => a.produitId === produit.id && !a.articleId);
+    if (deja) {
+      setArticles((as) =>
+        as.map((a) => (a.cle === deja.cle ? { ...a, quantite: a.quantite + 1 } : a)),
+      );
+      return;
+    }
+    setArticles((as) => [...as, versPanier(produit, Crypto.randomUUID(), null)]);
+  };
+
+  /** « + » sur une ligne de téléphones sans IMEI : seulement s'il en reste sans IMEI. */
+  const plusSansImei = async (produitId: string) => {
+    setMessage(null);
+    const produit = await produitPourVente(base, boutiqueId, produitId);
+    if (!produit) return;
+    const deja = articles
+      .filter((a) => a.produitId === produitId && !a.articleId)
+      .reduce((t, a) => t + a.quantite, 0);
+    if ((await telephonesSansImei(base, boutiqueId, produitId)) - deja <= 0) {
+      setMessage(
+        `« ${produit.nom} » : plus de téléphone sans IMEI ; choisissez les autres par IMEI.`,
+      );
+      return;
+    }
+    ajouterSansImei(produit);
   };
 
   /** Lecteur USB (code puis Entrée) ou caméra : code-barres ou IMEI exact. */
@@ -281,6 +336,18 @@ export function ChoixArticles({
       {choixImei ? (
         <Carte>
           <Texte gras>{choixImei.nom} : choisissez l’IMEI</Texte>
+          {choixImei.sansImei > 0 ? (
+            <Bouton
+              titre={`Vendre sans IMEI (${choixImei.sansImei} disponible${choixImei.sansImei > 1 ? 's' : ''})`}
+              icone="phone-portrait"
+              variante="secondaire"
+              onPress={() =>
+                void produitPourVente(base, boutiqueId, choixImei.produitId).then(
+                  (p) => p && ajouterSansImei(p),
+                )
+              }
+            />
+          ) : null}
           {imeis?.length === 0 ? <Texte discret>Aucun téléphone disponible.</Texte> : null}
           <View style={styles.pastilles}>
             {imeis?.map((a) => (
@@ -320,7 +387,7 @@ export function ChoixArticles({
                 {l.tarif === 'GROS' ? ' (gros)' : ''}
               </Text>
             </View>
-            {l.type === 'ACCESSOIRE' ? (
+            {l.type === 'ACCESSOIRE' || !l.articleId ? (
               <View style={styles.quantite}>
                 <Pressable
                   accessibilityRole="button"
@@ -333,7 +400,11 @@ export function ChoixArticles({
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Un de plus"
-                  onPress={() => void ajouterProduit(l.produitId)}
+                  onPress={() =>
+                    void (l.type === 'TELEPHONE'
+                      ? plusSansImei(l.produitId)
+                      : ajouterProduit(l.produitId))
+                  }
                 >
                   <Text style={[styles.bouton, { color: colors.primary }]}>+</Text>
                 </Pressable>

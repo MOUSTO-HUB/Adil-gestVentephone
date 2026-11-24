@@ -25,7 +25,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ChoixArticles } from '@/components/choix-articles';
 import { Choix } from '@/components/choix';
-import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, Ecran, Message, Texte, ListeDeroulante } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
 import { caisseOuverte } from '@/lib/caisse-session';
 import { type ArticlePanier, prixDuPanier, prochainNumeroFacture } from '@/lib/panier';
@@ -440,11 +440,14 @@ export default function NouveauRetour() {
         {bilan.aPayer > 0 ? (
           <>
             <Texte gras>Le client paie : {formaterMontant(bilan.aPayer, monnaie)}</Texte>
-            <Choix
-              libelle="Paiement"
-              options={options(MOYENS_REMBOURSEMENT, LIBELLES_MOYENS)}
-              valeurs={[moyenPaiement]}
-              surChoix={([m]) => m && setMoyenPaiement(m as MoyenRemboursement)}
+            <ListeDeroulante
+              libelle="Mode de paiement"
+              options={MOYENS_REMBOURSEMENT.map((m) => ({
+                valeur: m,
+                libelle: LIBELLES_MOYENS[m],
+              }))}
+              valeur={moyenPaiement}
+              surChoix={(m) => setMoyenPaiement(m as MoyenRemboursement)}
             />
             <TextInput
               value={montantPaye}
@@ -469,11 +472,14 @@ export default function NouveauRetour() {
         {bilan.aRendre > 0 ? (
           <>
             <Texte gras>À rendre au client : {formaterMontant(bilan.aRendre, monnaie)}</Texte>
-            <Choix
+            <ListeDeroulante
               libelle="Remboursé en"
-              options={options(MOYENS_REMBOURSEMENT, LIBELLES_MOYENS)}
-              valeurs={[moyen]}
-              surChoix={([m]) => m && setMoyen(m as MoyenRemboursement)}
+              options={MOYENS_REMBOURSEMENT.map((m) => ({
+                valeur: m,
+                libelle: LIBELLES_MOYENS[m],
+              }))}
+              valeur={moyen}
+              surChoix={(m) => setMoyen(m as MoyenRemboursement)}
             />
             {moyenAvecReference(moyen) ? (
               <TextInput

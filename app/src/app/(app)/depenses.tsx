@@ -13,7 +13,7 @@ import * as Crypto from 'expo-crypto';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import { Choix } from '@/components/choix';
-import { Bouton, Carte, Champ, Ecran, Message, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, Ecran, Message, Texte, ListeDeroulante } from '@/components/ui';
 import { type ClientApi, ErreurApi, messageErreur } from '@/lib/api';
 import { caisseOuverte } from '@/lib/caisse-session';
 import { choisirPhoto, envoyerImage, lireImagePrivee } from '@/lib/photo';
@@ -190,11 +190,11 @@ export default function Depenses() {
           onChangeText={setMontant}
           keyboardType="number-pad"
         />
-        <Choix
+        <ListeDeroulante
           libelle="Payée en"
-          options={options(MOYENS_REMBOURSEMENT, LIBELLES_MOYENS)}
-          valeurs={[moyen]}
-          surChoix={([m]) => m && setMoyen(m as MoyenRemboursement)}
+          options={MOYENS_REMBOURSEMENT.map((m) => ({ valeur: m, libelle: LIBELLES_MOYENS[m] }))}
+          valeur={moyen}
+          surChoix={(m) => setMoyen(m as MoyenRemboursement)}
         />
         {gestion ? (
           <Choix

@@ -10,6 +10,7 @@ import {
   plafondRemise,
   pourcentageRemise,
 } from '@gestvente/commun';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Crypto from 'expo-crypto';
 import { router, useTheme } from 'expo-router';
 import { useState } from 'react';
@@ -18,7 +19,8 @@ import { Choix } from '@/components/choix';
 import { ChoixArticles } from '@/components/choix-articles';
 import { SaisieCredit } from '@/components/saisie-credit';
 import { SaisieTroc } from '@/components/saisie-troc';
-import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
+import { Bouton, Carte, Ecran, ListeDeroulante, Message, Texte } from '@/components/ui';
+import { useCouleurs } from '@/lib/theme';
 import { messageErreur } from '@/lib/api';
 import { caisseOuverte } from '@/lib/caisse-session';
 import {
@@ -64,6 +66,7 @@ interface Autorisation {
  */
 export default function Vente() {
   const { colors } = useTheme();
+  const c = useCouleurs();
   const { profil, boutique, api } = useSession();
   const { base, enregistrer } = useSync();
   const monnaie = profil?.commerce.monnaie;
@@ -77,6 +80,8 @@ export default function Vente() {
   const [gerantId, setGerantId] = useState('');
   const [gerantPin, setGerantPin] = useState('');
   const [paiements, setPaiements] = useState<Paiements>(PAIEMENTS_VIDES);
+  // Modes de paiement affichés (liste déroulante par ligne) ; espèces par défaut.
+  const [modes, setModes] = useState<MoyenPaiement[]>(['ESPECES']);
   const [message, setMessage] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [troc, setTroc] = useState<FormulaireTroc | null>(null);
@@ -269,6 +274,7 @@ export default function Vente() {
       setRemise('');
       setAutorisation(null);
       setPaiements(PAIEMENTS_VIDES);
+      setModes(['ESPECES']);
     } catch (e) {
       setMessage(messageErreur(e));
     } finally {
@@ -476,48 +482,94 @@ export default function Vente() {
 
       <Carte>
         <Texte gras>Paiement</Texte>
-        {moyens.map((moyen) => (
-          <View key={moyen} style={styles.paiement}>
-            <Text style={{ color: colors.text, width: 120 }}>
-              {LIBELLES_MOYENS[moyen]}
-              {moyen === 'AVOIR' && client
-                ? ` (solde ${formaterMontant(client.soldeAvoir, monnaie)})`
-                : ''}
-            </Text>
-            <TextInput
-              value={paiements[moyen].montant}
-              onChangeText={(montant) =>
-                setPaiements((p) => ({ ...p, [moyen]: { ...p[moyen], montant } }))
-              }
-              keyboardType="number-pad"
-              placeholder="0"
-              placeholderTextColor="#8a8a8a"
-              accessibilityLabel={`Montant en ${LIBELLES_MOYENS[moyen]}`}
-              style={[saisie, { flex: 1, minWidth: 100 }]}
-            />
-            {moyenAvecReference(moyen) && entier(paiements[moyen].montant) > 0 ? (
+        {modes
+          .filter((m) => moyens.includes(m))
+          .map((moyen) => (
+            <View key={moyen} style={styles.paiement}>
+              <View style={{ flex: 1, minWidth: 160 }}>
+                <ListeDeroulante
+                  libelle=""
+                  options={moyens
+                    .filter((m) => m === moyen || !modes.includes(m))
+                    .map((m) => ({
+                      valeur: m,
+                      libelle:
+                        m === 'AVOIR' && client
+                          ? `${LIBELLES_MOYENS[m]} (solde ${formaterMontant(client.soldeAvoir, monnaie)})`
+                          : LIBELLES_MOYENS[m],
+                    }))}
+                  valeur={moyen}
+                  surChoix={(v) => {
+                    const nouveau = v as MoyenPaiement;
+                    if (nouveau === moyen) return;
+                    // Le montant saisi suit le mode choisi.
+                    setPaiements((p) => ({
+                      ...p,
+                      [nouveau]: p[moyen],
+                      [moyen]: { montant: '', reference: '' },
+                    }));
+                    setModes((ms) => ms.map((m) => (m === moyen ? nouveau : m)));
+                  }}
+                />
+              </View>
               <TextInput
-                value={paiements[moyen].reference}
-                onChangeText={(reference) =>
-                  setPaiements((p) => ({ ...p, [moyen]: { ...p[moyen], reference } }))
+                value={paiements[moyen].montant}
+                onChangeText={(montant) =>
+                  setPaiements((p) => ({ ...p, [moyen]: { ...p[moyen], montant } }))
                 }
-                placeholder="Référence"
-                placeholderTextColor="#8a8a8a"
-                accessibilityLabel={`Référence ${LIBELLES_MOYENS[moyen]}`}
-                style={[saisie, { flex: 1, minWidth: 120 }]}
+                keyboardType="number-pad"
+                placeholder="Montant"
+                placeholderTextColor={c.texteDiscret}
+                accessibilityLabel={`Montant en ${LIBELLES_MOYENS[moyen]}`}
+                style={[saisie, { flex: 1, minWidth: 110 }]}
               />
-            ) : null}
-          </View>
-        ))}
+              {moyenAvecReference(moyen) && entier(paiements[moyen].montant) > 0 ? (
+                <TextInput
+                  value={paiements[moyen].reference}
+                  onChangeText={(reference) =>
+                    setPaiements((p) => ({ ...p, [moyen]: { ...p[moyen], reference } }))
+                  }
+                  placeholder="Référence (facultatif)"
+                  placeholderTextColor={c.texteDiscret}
+                  accessibilityLabel={`Référence ${LIBELLES_MOYENS[moyen]}`}
+                  style={[saisie, { flex: 1, minWidth: 140 }]}
+                />
+              ) : null}
+              {modes.length > 1 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Retirer le paiement en ${LIBELLES_MOYENS[moyen]}`}
+                  onPress={() => {
+                    setPaiements((p) => ({ ...p, [moyen]: { montant: '', reference: '' } }));
+                    setModes((ms) => ms.filter((m) => m !== moyen));
+                  }}
+                >
+                  <Ionicons name="close-circle" size={24} color={c.danger} />
+                </Pressable>
+              ) : null}
+            </View>
+          ))}
+        {moyens.some((m) => !modes.includes(m)) ? (
+          <Bouton
+            titre="Ajouter un autre mode de paiement"
+            icone="add-circle"
+            variante="secondaire"
+            onPress={() => {
+              const libre = moyens.find((m) => !modes.includes(m));
+              if (libre) setModes((ms) => [...ms, libre]);
+            }}
+          />
+        ) : null}
         <Bouton
           titre="Tout en espèces"
           variante="secondaire"
-          onPress={() =>
+          onPress={() => {
+            setModes(['ESPECES']);
             setPaiements({
               ...PAIEMENTS_VIDES,
               ESPECES: { montant: String(Math.max(0, aPayer)), reference: '' },
-            })
-          }
+            });
+          }}
         />
       </Carte>
 
@@ -566,6 +618,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 16,
   },
-  paiement: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  paiement: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' },
   total: { fontSize: 24, fontWeight: '800' },
 });

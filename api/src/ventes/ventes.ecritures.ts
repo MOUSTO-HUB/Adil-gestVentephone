@@ -103,8 +103,8 @@ export async function enregistrerVente(
   for (const l of d.lignes) {
     const produit = produits.find((p) => p.id === l.produitId);
     if (!produit) return rejet('Un des produits est inconnu.');
-    if (produit.type === 'TELEPHONE' && (!l.articleId || l.quantite !== 1)) {
-      return rejet(`« ${produit.nom} » : un téléphone se vend à l’unité, avec son IMEI.`);
+    if (produit.type === 'TELEPHONE' && l.articleId && l.quantite !== 1) {
+      return rejet(`« ${produit.nom} » : un téléphone choisi par son IMEI se vend à l’unité.`);
     }
     if (produit.type === 'ACCESSOIRE' && l.articleId) {
       return rejet(`« ${produit.nom} » : un accessoire se vend en quantité.`);
@@ -165,6 +165,30 @@ export async function enregistrerVente(
     if (Number(client.soldeAvoir) < avoirUtilise) {
       return conflit(
         `Avoir insuffisant : le solde de ${client.nom} est de ${Number(client.soldeAvoir)}.`,
+      );
+    }
+  }
+
+  // Téléphones sans IMEI choisi (IMEI facultatif) : pris parmi ceux reçus sans IMEI. S'il n'en
+  // reste plus mais que des téléphones avec IMEI sont en stock, l'IMEI vendu doit être choisi
+  // (sinon un téléphone vendu resterait « en stock » sous son IMEI).
+  const sansImei = new Map<string, number>();
+  for (const l of d.lignes) {
+    const produit = produits.find((p) => p.id === l.produitId)!;
+    if (produit.type === 'TELEPHONE' && !l.articleId) {
+      sansImei.set(l.produitId, (sansImei.get(l.produitId) ?? 0) + l.quantite);
+    }
+  }
+  for (const [produitId, demandes] of sansImei) {
+    const produit = produits.find((p) => p.id === produitId)!;
+    const [stock, avecImei] = await Promise.all([
+      tx.stock.findUnique({ where: { produitId_boutiqueId: { produitId, boutiqueId } } }),
+      tx.article.count({ where: { produitId, boutiqueId, statut: 'EN_STOCK' } }),
+    ]);
+    const disponibles = Math.max(0, (stock?.quantite ?? 0) - avecImei);
+    if (demandes > disponibles && avecImei > 0) {
+      return conflit(
+        `« ${produit.nom} » : choisissez l’IMEI du téléphone vendu (${avecImei} en stock avec IMEI, ${disponibles} sans IMEI).`,
       );
     }
   }

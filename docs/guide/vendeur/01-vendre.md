@@ -21,7 +21,9 @@ Le choix d'un modèle affiche aussi ses accessoires (coques, verres trempés).
 
 Chaque résultat indique le stock : « 3 en stock » ou **Rupture**.
 
-- **Téléphone :** choisissez ensuite son **IMEI** dans la liste (ou scannez-le).
+- **Téléphone :** choisissez son **IMEI** dans la liste (ou scannez-le). L'IMEI est
+  facultatif pour les téléphones reçus sans IMEI : touchez **Vendre sans IMEI**. Quand il ne
+  reste que des téléphones enregistrés avec leur IMEI, il faut choisir lequel part.
 - **Accessoire :** il s'ajoute au panier ; ajustez la quantité avec **−** et **+**.
 
 ![Le panier](../images/vente-panier.png)
@@ -39,9 +41,10 @@ Chaque résultat indique le stock : « 3 en stock » ou **Rupture**.
 
 ## 4. Encaisser
 
-Saisissez ce que le client donne dans chaque moyen de paiement (espèces, Orange Money,
-MTN MoMo, virement ; plusieurs moyens possibles). Pour Orange Money, MTN MoMo et
-virement, notez la **référence** de la transaction. **Tout en espèces** remplit le total.
+Choisissez le **mode de paiement** dans la liste déroulante (espèces par défaut, Orange
+Money, MTN MoMo, virement) et saisissez le montant. Le client paie de deux façons ? Touchez
+**Ajouter un autre mode de paiement**. Pour Orange Money, MTN MoMo et virement, notez la
+**référence** de la transaction. **Tout en espèces** remplit le total.
 
 ![Paiement et total](../images/vente-paiement.png)
 

@@ -69,7 +69,12 @@ describe('réception', () => {
 
   it('refuse plus que commandé, ou le mauvais mode de réception', () => {
     expect(erreurReception(telephone, { articles: [{}, {}, {}] })).toMatch(/3 reçu\(s\) pour 2/);
-    expect(erreurReception(telephone, { quantite: 1 })).toMatch(/IMEI/);
+    // IMEI facultatifs : une quantité suffit ; jamais plus d'IMEI que de téléphones reçus.
+    expect(erreurReception(telephone, { quantite: 1 })).toBeNull();
+    expect(erreurReception(telephone, { quantite: 2, articles: [{}] })).toBeNull();
+    expect(erreurReception(telephone, { quantite: 1, articles: [{}, {}] })).toMatch(
+      /2 IMEI pour 1/,
+    );
     expect(erreurReception(accessoire, { articles: [{}] })).toMatch(/quantité/);
     expect(erreurReception(accessoire, {})).toMatch(/rien/);
   });

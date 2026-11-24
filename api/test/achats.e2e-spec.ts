@@ -232,7 +232,7 @@ describe('Achats, stock et inventaire (e2e)', () => {
       );
     });
 
-    it('refuse de recevoir plus que commandé ou de modifier un bon déjà reçu', async () => {
+    it('refuse de recevoir plus que commandé ; un bon reçu se corrige sans descendre sous le reçu', async () => {
       const trop = await envoyer(gerant, 'ACHAT_RECEVOIR', {
         achatId,
         lignes: [{ ligneId: ligneCoque, quantite: 7 }],
@@ -241,7 +241,17 @@ describe('Achats, stock et inventaire (e2e)', () => {
         statut: 'CONFLIT',
         motif: expect.stringMatching(/7 reçu\(s\) pour 6/),
       });
-      expect((await envoyer(gerant, 'ACHAT_ENREGISTRER', achat())).statut).toBe('CONFLIT');
+      // Bon déjà reçu en partie : il se corrige encore, sans descendre sous ce qui est reçu.
+      expect(
+        (await envoyer(gerant, 'ACHAT_ENREGISTRER', { ...achat(4), note: 'Facture corrigée' }))
+          .statut,
+      ).toBe('APPLIQUEE');
+      expect((await prisma.achat.findUniqueOrThrow({ where: { id: achatId } })).note).toBe(
+        'Facture corrigée',
+      );
+      expect((await envoyer(gerant, 'ACHAT_ENREGISTRER', achat(1))).statut).toBe('CONFLIT');
+      const sansCoque = { ...achat(4), lignes: achat(4).lignes.slice(0, 1) };
+      expect((await envoyer(gerant, 'ACHAT_ENREGISTRER', sansCoque)).statut).toBe('CONFLIT');
     });
 
     it('réception du reste : bon reçu en totalité', async () => {

@@ -751,6 +751,8 @@ model Achat {
   dateAchat     DateTime    @default(now())
   montantTotal  BigInt      @default(0)
   montantPaye   BigInt      @default(0)
+  /// Paiements au fournisseur : [{ date, montant, moyen, reference }].
+  paiements     Json        @default("[]")
   note          String?
   creeLe        DateTime    @default(now())
   modifieLe     DateTime    @updatedAt

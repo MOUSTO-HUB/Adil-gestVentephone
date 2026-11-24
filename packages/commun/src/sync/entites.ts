@@ -164,6 +164,8 @@ export interface AchatSync {
   dateAchat: string;
   montantTotal: number;
   montantPaye: number;
+  /** Paiements au fournisseur (mode et référence). */
+  paiements: { date: string; montant: number; moyen: string; reference: string | null }[];
   note: string | null;
 }
 

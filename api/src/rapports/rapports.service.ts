@@ -127,12 +127,16 @@ export class RapportsService {
         const derniere = dernieres.find((d) => d.produitId === p.id)?.derniere ?? null;
         if (p.type === 'TELEPHONE') {
           const siens = articles.filter((a) => a.produitId === p.id);
+          // Téléphones reçus sans IMEI : le reste du stock, au prix d'achat du produit.
+          const sansImei = Math.max(0, (p.stocks[0]?.quantite ?? 0) - siens.length);
+          const achat = nombre(pb?.prixAchat ?? p.prixAchat ?? 0);
           return {
             produitId: p.id,
             nom: p.nom,
-            quantite: siens.length,
-            valeurAchat: siens.reduce((t, a) => t + nombre(a.prixAchat), 0),
-            valeurVente: siens.reduce((t, a) => t + nombre(a.prixRevente ?? detail), 0),
+            quantite: siens.length + sansImei,
+            valeurAchat: siens.reduce((t, a) => t + nombre(a.prixAchat), 0) + sansImei * achat,
+            valeurVente:
+              siens.reduce((t, a) => t + nombre(a.prixRevente ?? detail), 0) + sansImei * detail,
             derniereVente: derniere?.toISOString() ?? null,
           };
         }

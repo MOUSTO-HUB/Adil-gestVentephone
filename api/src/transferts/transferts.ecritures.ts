@@ -144,10 +144,9 @@ export async function envoyerTransfert(
   for (const l of d.lignes) {
     const produit = produits.find((p) => p.id === l.produitId);
     if (!produit) return rejet('Un des produits est inconnu.');
-    if ((produit.type === 'TELEPHONE') !== (l.articleId !== null)) {
-      return rejet(
-        `« ${produit.nom} » : un téléphone part avec son IMEI, un accessoire en quantité.`,
-      );
+    // Un téléphone part avec son IMEI, ou en quantité s'il a été reçu sans IMEI.
+    if (produit.type === 'ACCESSOIRE' && l.articleId !== null) {
+      return rejet(`« ${produit.nom} » : un accessoire part en quantité.`);
     }
     if (l.articleId) {
       const article = articles.find((a) => a.id === l.articleId) ?? null;
@@ -165,9 +164,19 @@ export async function envoyerTransfert(
     const stock = await tx.stock.findUnique({
       where: { produitId_boutiqueId: { produitId, boutiqueId: departId } },
     });
-    if ((stock?.quantite ?? 0) < quantite) {
-      const nom = produits.find((p) => p.id === produitId)!.nom;
-      return conflit(`« ${nom} » : ${stock?.quantite ?? 0} en stock seulement au départ.`);
+    const produit = produits.find((p) => p.id === produitId)!;
+    // Téléphones sans IMEI : seuls ceux reçus sans IMEI partent en quantité.
+    const avecImei =
+      produit.type === 'TELEPHONE'
+        ? await tx.article.count({ where: { produitId, boutiqueId: departId, statut: 'EN_STOCK' } })
+        : 0;
+    const disponibles = (stock?.quantite ?? 0) - avecImei;
+    if (disponibles < quantite) {
+      return conflit(
+        avecImei
+          ? `« ${produit.nom} » : ${Math.max(0, disponibles)} sans IMEI au départ ; choisissez les autres par leur IMEI.`
+          : `« ${produit.nom} » : ${stock?.quantite ?? 0} en stock seulement au départ.`,
+      );
     }
   }
 

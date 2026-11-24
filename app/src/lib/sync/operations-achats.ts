@@ -60,11 +60,29 @@ export async function achatEnregistrer(
   boutiqueId: string,
   c: ContenuOperation<'ACHAT_ENREGISTRER'>,
 ) {
-  const existant = await tx.premier<AchatSync>('SELECT * FROM achat WHERE id = ?', [c.id]);
-  if (existant && existant.statut !== 'BROUILLON') {
-    throw new ErreurOperation(
-      'Ce bon a déjà été réceptionné ou annulé : il ne peut plus être modifié.',
-    );
+  const existant = await tx.premier<AchatSync & { paiements: string | null }>(
+    'SELECT * FROM achat WHERE id = ?',
+    [c.id],
+  );
+  if (existant?.statut === 'ANNULE') {
+    throw new ErreurOperation('Ce bon a été annulé : il ne peut plus être modifié.');
+  }
+  // Bon déjà reçu : il se corrige, sans retirer un produit reçu ni descendre sous le reçu.
+  const anciennes = existant
+    ? await tx.tous<LigneAchatSync>('SELECT * FROM ligneAchat WHERE achatId = ?', [c.id])
+    : [];
+  for (const a of anciennes.filter((l) => l.quantiteRecue > 0)) {
+    const nouvelle = c.lignes.find((l) => l.id === a.id);
+    if (!nouvelle || nouvelle.produitId !== a.produitId) {
+      throw new ErreurOperation(
+        'Un produit déjà reçu ne peut pas être retiré du bon (ajustez le stock).',
+      );
+    }
+    if (nouvelle.quantite < a.quantiteRecue) {
+      throw new ErreurOperation(
+        `Quantité commandée inférieure à la quantité déjà reçue (${a.quantiteRecue}).`,
+      );
+    }
   }
   const numero = await tx.premier('SELECT id FROM achat WHERE numero = ? AND id <> ?', [
     c.numero,
@@ -72,21 +90,32 @@ export async function achatEnregistrer(
   ]);
   if (numero) throw new ErreurOperation(`Le numéro ${c.numero} est déjà utilisé.`);
   const montantTotal = totalAchat(c.lignes);
+  if (existant && existant.montantPaye > montantTotal) {
+    throw new ErreurOperation(
+      'Le bon corrigé coûte moins que ce qui a déjà été payé au fournisseur.',
+    );
+  }
+  await tx.executer('DELETE FROM ligneAchat WHERE achatId = ?', [c.id]);
+  const lignes = c.lignes.map((l) => ({
+    ...l,
+    achatId: c.id,
+    quantiteRecue: anciennes.find((a) => a.id === l.id)?.quantiteRecue ?? 0,
+  }));
+  for (const l of lignes) await ecrireEntite(tx, 'ligneAchat', l.id, l);
   await ecrireEntite(tx, 'achat', c.id, {
     id: c.id,
     boutiqueId,
     fournisseurId: c.fournisseurId,
     numero: c.numero,
-    statut: 'BROUILLON',
+    statut: existant ? statutApresReception(lignes) : 'BROUILLON',
     dateAchat: c.dateAchat,
     montantTotal,
     montantPaye: existant?.montantPaye ?? 0,
+    paiements: existant?.paiements
+      ? (JSON.parse(existant.paiements) as AchatSync['paiements'])
+      : [],
     note: c.note || null,
   });
-  await tx.executer('DELETE FROM ligneAchat WHERE achatId = ?', [c.id]);
-  for (const l of c.lignes) {
-    await ecrireEntite(tx, 'ligneAchat', l.id, { ...l, achatId: c.id, quantiteRecue: 0 });
-  }
   if (existant && existant.fournisseurId !== c.fournisseurId) {
     await ajusterDette(tx, existant.fournisseurId, -(existant.montantTotal - existant.montantPaye));
     await ajusterDette(tx, c.fournisseurId, montantTotal - existant.montantPaye);
@@ -126,7 +155,8 @@ export async function achatRecevoir(
   }
   for (const r of c.lignes) {
     const ligne = lignes.find((l) => l.id === r.ligneId)!;
-    const quantite = r.articles?.length ?? r.quantite ?? 0;
+    // Quantité reçue ; les IMEI saisis (facultatifs) en couvrent une partie ou la totalité.
+    const quantite = r.quantite ?? r.articles?.length ?? 0;
     for (const a of r.articles ?? []) {
       await ecrireEntite(tx, 'article', a.id, {
         id: a.id,
@@ -169,8 +199,19 @@ export async function achatPayer(
   const achat = await achatLocal(tx, c.achatId, boutiqueId);
   const erreur = erreurPaiementAchat(achat.montantTotal, achat.montantPaye, c.montant);
   if (erreur) throw new ErreurOperation(erreur);
-  await tx.executer('UPDATE achat SET montantPaye = montantPaye + ? WHERE id = ?', [
+  const brut = (achat as unknown as { paiements: string | null }).paiements;
+  const paiements = [
+    ...(brut ? (JSON.parse(brut) as AchatSync['paiements']) : []),
+    {
+      date: new Date().toISOString(),
+      montant: c.montant,
+      moyen: c.moyen ?? 'ESPECES',
+      reference: c.reference?.trim() || null,
+    },
+  ];
+  await tx.executer('UPDATE achat SET montantPaye = montantPaye + ?, paiements = ? WHERE id = ?', [
     c.montant,
+    JSON.stringify(paiements),
     achat.id,
   ]);
   await ajusterDette(tx, achat.fournisseurId, -c.montant);

@@ -7,6 +7,7 @@ import {
   erreurPaiementAchat,
   erreurReception,
   type InventaireSaisi,
+  type MoyenRemboursement as MoyenFournisseur,
   type ReceptionSaisie,
   statutApresReception,
   totalAchat,
@@ -67,7 +68,12 @@ async function stockDe(tx: Tx, produitId: string, boutiqueId: string) {
   });
 }
 
-/** Crée ou remplace un bon d'achat tant que rien n'a été reçu. */
+/**
+ * Crée ou modifie un bon d'achat. Un bon déjà (partiellement) reçu se corrige encore :
+ * fournisseur, date, note, prix d'achat et quantités commandées ; une ligne déjà reçue
+ * reste (même produit, quantité commandée au moins égale à la quantité reçue). Les
+ * téléphones reçus prennent le prix d'achat corrigé. Un bon annulé ne se modifie plus.
+ */
 export async function enregistrerAchat(
   { tx, utilisateur, journal }: ContexteCatalogue,
   boutiqueId: string,
@@ -78,8 +84,8 @@ export async function enregistrerAchat(
   if (existant && (existant.commerceId !== commerceId || existant.boutiqueId !== boutiqueId)) {
     return rejet('Identifiant déjà utilisé.');
   }
-  if (existant && existant.statut !== 'BROUILLON') {
-    return conflit('Ce bon a déjà été réceptionné ou annulé : il ne peut plus être modifié.');
+  if (existant?.statut === 'ANNULE') {
+    return conflit('Ce bon a été annulé : il ne peut plus être modifié.');
   }
   if (!(await tx.fournisseur.findFirst({ where: { id: d.fournisseurId, commerceId } }))) {
     return rejet('Fournisseur inconnu.');
@@ -105,14 +111,56 @@ export async function enregistrerAchat(
     montantTotal: totalAchat(d.lignes),
   };
   const anciennes = existant ? await tx.ligneAchat.findMany({ where: { achatId: d.id } }) : [];
+  for (const ancienne of anciennes.filter((a) => a.quantiteRecue > 0)) {
+    const nouvelle = d.lignes.find((l) => l.id === ancienne.id);
+    if (!nouvelle || nouvelle.produitId !== ancienne.produitId) {
+      return conflit('Un produit déjà reçu ne peut pas être retiré du bon (ajustez le stock).');
+    }
+    if (nouvelle.quantite < ancienne.quantiteRecue) {
+      return conflit(
+        `Quantité commandée inférieure à la quantité déjà reçue (${ancienne.quantiteRecue}).`,
+      );
+    }
+  }
+  if (existant && Number(existant.montantPaye) > champs.montantTotal) {
+    return conflit('Le bon corrigé coûte moins que ce qui a déjà été payé au fournisseur.');
+  }
   await tx.achat.upsert({
     where: { id: d.id },
     create: { id: d.id, commerceId, boutiqueId, creeParId: utilisateur.id, ...champs },
     update: champs,
   });
-  await tx.ligneAchat.deleteMany({ where: { achatId: d.id } });
-  await tx.ligneAchat.createMany({ data: d.lignes.map((l) => ({ ...l, achatId: d.id })) });
   const retirees = anciennes.filter((a) => !d.lignes.some((l) => l.id === a.id));
+  await tx.ligneAchat.deleteMany({ where: { id: { in: retirees.map((l) => l.id) } } });
+  const changementsArticles: NouveauChangement[] = [];
+  for (const l of d.lignes) {
+    const ancienne = anciennes.find((a) => a.id === l.id);
+    await tx.ligneAchat.upsert({
+      where: { id: l.id },
+      create: { ...l, achatId: d.id },
+      update: { produitId: l.produitId, quantite: l.quantite, prixAchat: l.prixAchat },
+    });
+    // Prix corrigé : les téléphones déjà reçus de cette ligne prennent le nouveau coût.
+    if (ancienne && ancienne.quantiteRecue > 0 && Number(ancienne.prixAchat) !== l.prixAchat) {
+      const articles = await tx.article.findMany({ where: { ligneAchatId: l.id } });
+      for (const a of articles) {
+        const maj = await tx.article.update({
+          where: { id: a.id },
+          data: { prixAchat: l.prixAchat },
+        });
+        changementsArticles.push({
+          entite: 'article',
+          id: maj.id,
+          boutiqueId,
+          donnees: versArticle(maj),
+        });
+      }
+    }
+  }
+  if (existant && existant.statut !== 'BROUILLON') {
+    const lignes = await tx.ligneAchat.findMany({ where: { achatId: d.id } });
+    await tx.achat.update({ where: { id: d.id }, data: { statut: statutApresReception(lignes) } });
+  }
   await journal.ecrire(tx, commerceId, [
     ...retirees.map((l) => ({
       entite: 'ligneAchat' as const,
@@ -120,6 +168,7 @@ export async function enregistrerAchat(
       boutiqueId,
       donnees: null,
     })),
+    ...changementsArticles,
     ...(await changementsAchat(tx, d.id)),
   ]);
   return OK;
@@ -176,7 +225,9 @@ export async function recevoirAchat(
   const changements: NouveauChangement[] = [];
   for (const r of d.lignes) {
     const ligne = achat.lignes.find((l) => l.id === r.ligneId)!;
-    const quantite = r.articles?.length ?? r.quantite ?? 0;
+    // Quantité reçue ; les IMEI saisis (facultatifs) en couvrent une partie ou la totalité.
+    const quantite = r.quantite ?? r.articles?.length ?? 0;
+    const sansImei = quantite - (r.articles?.length ?? 0);
     for (const a of r.articles ?? []) {
       const article = await tx.article.create({
         data: {
@@ -198,30 +249,33 @@ export async function recevoirAchat(
       });
     }
     await tx.mouvementStock.createMany({
-      data: r.articles?.length
-        ? r.articles.map((a) => ({
-            commerceId,
-            boutiqueId,
-            produitId: ligne.produitId,
-            articleId: a.id,
-            type: 'ACHAT' as const,
-            quantite: 1,
-            referenceType: 'Achat',
-            referenceId: achat.id,
-            utilisateurId: utilisateur.id,
-          }))
-        : [
-            {
-              commerceId,
-              boutiqueId,
-              produitId: ligne.produitId,
-              type: 'ACHAT' as const,
-              quantite,
-              referenceType: 'Achat',
-              referenceId: achat.id,
-              utilisateurId: utilisateur.id,
-            },
-          ],
+      data: [
+        ...(r.articles ?? []).map((a) => ({
+          commerceId,
+          boutiqueId,
+          produitId: ligne.produitId,
+          articleId: a.id,
+          type: 'ACHAT' as const,
+          quantite: 1,
+          referenceType: 'Achat',
+          referenceId: achat.id,
+          utilisateurId: utilisateur.id,
+        })),
+        ...(sansImei > 0
+          ? [
+              {
+                commerceId,
+                boutiqueId,
+                produitId: ligne.produitId,
+                type: 'ACHAT' as const,
+                quantite: sansImei,
+                referenceType: 'Achat',
+                referenceId: achat.id,
+                utilisateurId: utilisateur.id,
+              },
+            ]
+          : []),
+      ],
     });
     await stockDe(tx, ligne.produitId, boutiqueId);
     const stock = await tx.stock.update({
@@ -259,7 +313,7 @@ export async function recevoirAchat(
 export async function payerAchat(
   { tx, utilisateur, journal, audit }: ContexteCatalogue,
   boutiqueId: string,
-  d: { achatId: string; montant: number },
+  d: { achatId: string; montant: number; moyen?: MoyenFournisseur; reference?: string | null },
 ): Promise<Controle> {
   const achat = await achatDe(tx, utilisateur.commerceId, boutiqueId, d.achatId);
   if (!achat) return rejet('Bon d’achat introuvable dans cette boutique.');
@@ -270,9 +324,16 @@ export async function payerAchat(
     d.montant,
   );
   if (erreur) return conflit(erreur);
+  const paiement = {
+    date: new Date().toISOString(),
+    montant: d.montant,
+    moyen: d.moyen ?? 'ESPECES',
+    reference: d.reference?.trim() || null,
+  };
+  const precedents = Array.isArray(achat.paiements) ? achat.paiements : [];
   await tx.achat.update({
     where: { id: achat.id },
-    data: { montantPaye: { increment: d.montant } },
+    data: { montantPaye: { increment: d.montant }, paiements: [...precedents, paiement] },
   });
   await journal.ecrire(tx, utilisateur.commerceId, await changementsAchat(tx, achat.id));
   await audit.journaliser(
@@ -284,7 +345,12 @@ export async function payerAchat(
       appareilId: utilisateur.appareilId,
       entite: 'Achat',
       entiteId: achat.id,
-      details: { numero: achat.numero, montant: d.montant },
+      details: {
+        numero: achat.numero,
+        montant: d.montant,
+        moyen: paiement.moyen,
+        reference: paiement.reference,
+      },
     },
     tx,
   );

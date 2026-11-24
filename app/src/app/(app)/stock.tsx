@@ -65,6 +65,14 @@ export default function Stock() {
             </View>
             <View style={styles.action}>
               <Bouton
+                titre="Bons d’achat (voir, modifier)"
+                icone="receipt"
+                variante="secondaire"
+                onPress={() => router.push('/achats')}
+              />
+            </View>
+            <View style={styles.action}>
+              <Bouton
                 titre="Importer (Excel)"
                 icone="document-attach"
                 variante="secondaire"

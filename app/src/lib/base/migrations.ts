@@ -387,6 +387,10 @@ export const MIGRATIONS: string[] = [
   CREATE INDEX vente_numero ON vente (boutiqueId, numero);
   CREATE INDEX ligne_vente_article ON ligneVente (articleId);
   `,
+  // Paiements au fournisseur (mode, référence) gardés sur le bon.
+  `
+  ALTER TABLE achat ADD COLUMN paiements TEXT;
+  `,
 ];
 
 /**

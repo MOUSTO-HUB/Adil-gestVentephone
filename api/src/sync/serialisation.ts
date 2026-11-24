@@ -185,6 +185,7 @@ export const versAchat = (a: Achat): AchatSync => ({
   dateAchat: a.dateAchat.toISOString().slice(0, 10),
   montantTotal: nombre(a.montantTotal),
   montantPaye: nombre(a.montantPaye),
+  paiements: Array.isArray(a.paiements) ? (a.paiements as AchatSync['paiements']) : [],
   note: a.note,
 });
 

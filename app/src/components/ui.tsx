@@ -234,6 +234,93 @@ export function Champ({ libelle, ...props }: TextInputProps & { libelle: string 
   );
 }
 
+export interface OptionListe {
+  valeur: string;
+  libelle: string;
+}
+
+/**
+ * Liste déroulante : un champ encadré qui affiche le choix, et la liste des options en
+ * dessous quand on le touche (modes de paiement, fournisseur…).
+ */
+export function ListeDeroulante({
+  libelle,
+  options,
+  valeur,
+  surChoix,
+  indication = 'Choisir…',
+}: {
+  libelle: string;
+  options: OptionListe[];
+  valeur: string | null;
+  surChoix: (valeur: string) => void;
+  indication?: string;
+}) {
+  const c = useCouleurs();
+  const [ouverte, setOuverte] = useState(false);
+  const choisie = options.find((o) => o.valeur === valeur);
+  return (
+    <View style={styles.champ}>
+      {libelle ? <Text style={[styles.libelle, { color: c.texte }]}>{libelle}</Text> : null}
+      <Pressable
+        accessibilityRole="combobox"
+        accessibilityLabel={`${libelle} : ${choisie?.libelle ?? indication}`}
+        accessibilityState={{ expanded: ouverte }}
+        onPress={() => setOuverte((o) => !o)}
+        style={[styleSaisie(c, ouverte) as object, styles.liste]}
+      >
+        <Text
+          style={{ flex: 1, fontSize: 17, color: choisie ? c.texte : c.texteDiscret }}
+          numberOfLines={1}
+        >
+          {choisie?.libelle ?? indication}
+        </Text>
+        <Ionicons name={ouverte ? 'chevron-up' : 'chevron-down'} size={20} color={c.texteDiscret} />
+      </Pressable>
+      {ouverte ? (
+        <View
+          accessibilityRole="menu"
+          style={[styles.options, { borderColor: c.bordureSaisie, backgroundColor: c.carte }]}
+        >
+          {options.map((o) => {
+            const active = o.valeur === valeur;
+            return (
+              <Pressable
+                key={o.valeur}
+                accessibilityRole="menuitem"
+                accessibilityState={{ selected: active }}
+                onPress={() => {
+                  surChoix(o.valeur);
+                  setOuverte(false);
+                }}
+                style={({ pressed }) => [
+                  styles.option,
+                  {
+                    backgroundColor: active || pressed ? c.fondPrimaire : 'transparent',
+                    borderBottomColor: c.bordure,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 16,
+                    color: c.texte,
+                    fontWeight: active ? '700' : '400',
+                  }}
+                >
+                  {o.libelle}
+                </Text>
+                {active ? <Ionicons name="checkmark" size={18} color={c.primaire} /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 type Variante = 'principal' | 'secondaire' | 'danger' | 'accent';
 
 export function Bouton({
@@ -606,6 +693,15 @@ const styles = StyleSheet.create({
   champ: { gap: 6 },
   libelle: { fontSize: 14, fontWeight: '600' },
   cadreChamp: { justifyContent: 'center' },
+  liste: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  options: { borderWidth: 1.5, borderRadius: 12, overflow: 'hidden' },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 46,
+    paddingHorizontal: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   saisieAvecOeil: { paddingRight: 48 },
   oeil: { position: 'absolute', right: 10, padding: 4 },
   saisie: {

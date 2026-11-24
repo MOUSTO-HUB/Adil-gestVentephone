@@ -22,9 +22,8 @@ import * as Crypto from 'expo-crypto';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
-import { Choix } from '@/components/choix';
 import { ImpressionDocument } from '@/components/impression-document';
-import { Bouton, Carte, Ecran, Message, Texte } from '@/components/ui';
+import { Bouton, Carte, Ecran, Message, Texte, ListeDeroulante } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
 import { caisseOuverte } from '@/lib/caisse-session';
 import { detailCredit, documentContrat, recuEncaissement } from '@/lib/credits';
@@ -261,11 +260,11 @@ export default function FicheCredit() {
               partiel est accepté.
             </Texte>
           ) : null}
-          <Choix
-            libelle="Moyen"
-            options={MOYENS_REMBOURSEMENT.map((m) => ({ id: m, nom: LIBELLES_MOYENS[m] }))}
-            valeurs={[moyen]}
-            surChoix={([v]) => v && setMoyen(v as MoyenRemboursement)}
+          <ListeDeroulante
+            libelle="Mode de paiement"
+            options={MOYENS_REMBOURSEMENT.map((m) => ({ valeur: m, libelle: LIBELLES_MOYENS[m] }))}
+            valeur={moyen}
+            surChoix={(v) => setMoyen(v as MoyenRemboursement)}
           />
           {moyenAvecReference(moyen) ? (
             <TextInput

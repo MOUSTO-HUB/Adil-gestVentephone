@@ -133,7 +133,7 @@ export default function Menu() {
           <>
             <GrandeTuile
               petite
-              titre="Achats"
+              titre="Bons d’achat"
               icone="bag-add"
               couleur={c.accent}
               onPress={aller('/achats')}

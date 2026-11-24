@@ -37,7 +37,10 @@ export default function Accueil() {
         [boutiqueId, minuit.toISOString(), gestion ? 1 : 0, profil?.id ?? ''],
       );
       const telephones = await base.premier<{ nombre: number }>(
-        "SELECT COUNT(*) AS nombre FROM article WHERE boutiqueId = ? AND statut = 'EN_STOCK'",
+        // Stock des téléphones, avec ou sans IMEI enregistré.
+        `SELECT COALESCE(SUM(MAX(s.quantite, 0)), 0) AS nombre FROM stock s
+           JOIN produit p ON p.id = s.produitId
+          WHERE s.boutiqueId = ? AND p.type = 'TELEPHONE'`,
         [boutiqueId],
       );
       return {

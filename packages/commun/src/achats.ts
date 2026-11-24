@@ -1,7 +1,11 @@
 import { z } from 'zod';
 import { imeiValide, normaliserImei } from './imei.js';
+import { MOYENS_REMBOURSEMENT } from './ventes.js';
 
-/** Bons d'achat fournisseur, réception (IMEI), paiements et seuils de stock. */
+/**
+ * Bons d'achat fournisseur, réception (quantité ; IMEI des téléphones facultatifs),
+ * paiements (mode et référence) et seuils de stock.
+ */
 
 const montant = z.number().int('Montant entier attendu.');
 
@@ -34,9 +38,9 @@ export const schemaReception = z.object({
     .array(
       z.object({
         ligneId: z.uuid(),
-        /** Accessoires : quantité reçue. */
+        /** Quantité reçue (téléphones sans IMEI saisi compris). */
         quantite: z.number().int().min(1).optional(),
-        /** Téléphones : un article par IMEI (identifiant donné par l'appareil). */
+        /** Téléphones : IMEI facultatifs, un article par IMEI (identifiant donné par l'appareil). */
         articles: z
           .array(z.object({ id: z.uuid(), imei: z.string() }))
           .max(1000)
@@ -50,7 +54,19 @@ export type ReceptionSaisie = z.infer<typeof schemaReception>;
 export const schemaPaiementAchat = z.object({
   achatId: z.uuid(),
   montant: montant.min(1, 'Montant positif attendu.'),
+  /** Mode de paiement au fournisseur (espèces par défaut). */
+  moyen: z.enum(MOYENS_REMBOURSEMENT).optional(),
+  /** Référence de la transaction (Orange Money, virement…), si besoin. */
+  reference: z.string().trim().max(60).nullable().optional(),
 });
+
+/** Paiement au fournisseur, gardé sur le bon. */
+export interface PaiementFournisseur {
+  date: string;
+  montant: number;
+  moyen: (typeof MOYENS_REMBOURSEMENT)[number];
+  reference: string | null;
+}
 
 export const schemaAnnulationAchat = z.object({ achatId: z.uuid() });
 
@@ -108,12 +124,14 @@ export function erreurReception(
   ligne: { quantite: number; quantiteRecue: number; type: 'TELEPHONE' | 'ACCESSOIRE'; nom: string },
   reception: { quantite?: number; articles?: unknown[] },
 ): string | null {
+  // Quantité reçue ; pour un téléphone, les IMEI sont facultatifs (jamais plus que la quantité).
+  const imeis = reception.articles?.length ?? 0;
   const recue =
-    ligne.type === 'TELEPHONE' ? (reception.articles?.length ?? 0) : (reception.quantite ?? 0);
-  if (ligne.type === 'TELEPHONE' && reception.quantite) {
-    return `« ${ligne.nom} » : un téléphone se réceptionne par ses IMEI.`;
+    ligne.type === 'TELEPHONE' ? (reception.quantite ?? imeis) : (reception.quantite ?? 0);
+  if (ligne.type === 'TELEPHONE' && imeis > recue) {
+    return `« ${ligne.nom} » : ${imeis} IMEI pour ${recue} téléphone(s) reçu(s).`;
   }
-  if (ligne.type === 'ACCESSOIRE' && reception.articles?.length) {
+  if (ligne.type === 'ACCESSOIRE' && imeis) {
     return `« ${ligne.nom} » : un accessoire se réceptionne en quantité.`;
   }
   if (recue < 1) return `« ${ligne.nom} » : rien à réceptionner.`;

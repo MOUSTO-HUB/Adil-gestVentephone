@@ -77,6 +77,20 @@ export function imeisDisponibles(
   );
 }
 
+/**
+ * Téléphones d'un produit reçus sans IMEI (IMEI facultatif) : le stock moins ceux qui
+ * ont un IMEI en stock. Ils se vendent en quantité, sans choisir d'IMEI.
+ */
+export async function telephonesSansImei(base: BaseSql, boutiqueId: string, produitId: string) {
+  const ligne = await base.premier<{ stock: number; avecImei: number }>(
+    `SELECT COALESCE((SELECT quantite FROM stock WHERE produitId = ? AND boutiqueId = ?), 0) AS stock,
+            (SELECT COUNT(*) FROM article
+              WHERE produitId = ? AND boutiqueId = ? AND statut = 'EN_STOCK') AS avecImei`,
+    [produitId, boutiqueId, produitId, boutiqueId],
+  );
+  return Math.max(0, (ligne?.stock ?? 0) - (ligne?.avecImei ?? 0));
+}
+
 /** Téléphone en stock dans la boutique, par son identifiant. */
 export function articleEnStock(base: BaseSql, boutiqueId: string, articleId: string) {
   return base.premier<ArticleChoisi & { produitId: string }>(

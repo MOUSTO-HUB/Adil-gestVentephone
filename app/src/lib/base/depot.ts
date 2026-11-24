@@ -73,6 +73,7 @@ const COLONNES: { [E in EntiteSync]: (keyof DonneesEntites[E] & string)[] } = {
     'montantTotal',
     'montantPaye',
     'note',
+    'paiements',
   ],
   ligneAchat: ['id', 'achatId', 'produitId', 'quantite', 'quantiteRecue', 'prixAchat'],
   vente: [

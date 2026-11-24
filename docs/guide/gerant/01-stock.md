@@ -29,10 +29,22 @@ Touchez un produit : quantité en stock, téléphones présents avec leur IMEI, 
 ## Ajouter du stock (quantité et prix d'achat)
 
 En haut de l'écran **Stock**, bouton **Ajouter une quantité et son prix** (ou, sur la fiche
-d'un produit, **Ajouter du stock**) : fournisseur, produits, quantités, prix d'achat. Pas
-encore de fournisseur ? Le bouton **Créer un fournisseur** est sur le même écran. Les bons
-sont aussi dans Menu → **Achats**. À la livraison, ouvrez le bon et **réceptionnez** : scannez les IMEI des
-téléphones (en rafale), comptez les accessoires. Le stock augmente à la réception.
+d'un produit, **Ajouter du stock**). Le bon se remplit comme un tableau : une ligne par
+article (quantité, prix d'achat, total). Le **numéro du bon est donné automatiquement**.
+Choisissez le fournisseur dans la **liste déroulante**, ou « Nouveau fournisseur » pour le
+créer sur place.
+
+À la livraison, ouvrez le bon et **validez la réception** : la quantité reçue est déjà
+remplie (corrigez-la si besoin). Les **IMEI sont facultatifs** (bouton « Ajouter les IMEI »).
+Indiquez au même endroit le **montant payé**, le **mode de paiement** et la **référence** si
+besoin. Le stock augmente à la réception.
+
+**Bons d'achat** (bouton de l'écran Stock, ou Menu → **Bons d'achat**) : tous les bons, à
+recevoir ou reçus, avec une recherche par numéro ou fournisseur. **Modifier** corrige un bon,
+même déjà reçu (fournisseur, prix, quantités commandées, sans descendre sous ce qui est reçu).
+
+**Nouveau produit** : la fiche propose un **stock de départ** (quantité et fournisseur) ; le
+bon d'achat correspondant est créé et reçu automatiquement.
 
 ![Achats](../images/achats.png)
 

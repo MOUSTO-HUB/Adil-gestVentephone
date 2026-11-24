@@ -1,11 +1,19 @@
-import { type CategorieSync, nomPropose, type ProduitSync, schemaProduit } from '@gestvente/commun';
+import {
+  type CategorieSync,
+  type FournisseurSync,
+  nomPropose,
+  type ProduitSync,
+  schemaFournisseur,
+  schemaProduit,
+} from '@gestvente/commun';
 import * as Crypto from 'expo-crypto';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable } from 'react-native';
 import { Choix } from '@/components/choix';
 import { Scanner, scannerDisponible } from '@/components/scanner';
-import { Bouton, Champ, Ecran, Message, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, Ecran, ListeDeroulante, Message, Texte } from '@/components/ui';
+import { numeroAchat } from '@/lib/achats';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
 
@@ -70,6 +78,8 @@ function lireEntier(valeur: string): number | null {
   return /^-?\d+$/.test(propre) ? Number(propre) : Number.NaN;
 }
 
+const NOUVEAU = '__nouveau__';
+
 function Formulaire({ donnees }: { donnees: Donnees }) {
   const { boutique } = useSession();
   const { enregistrer } = useSync();
@@ -100,6 +110,14 @@ function Formulaire({ donnees }: { donnees: Donnees }) {
   const [scanner, setScanner] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  // Nouveau produit : stock de départ (facultatif) et son fournisseur, enregistrés ensemble.
+  const fournisseurs = useLecture(
+    (b) => b.tous<FournisseurSync>('SELECT * FROM fournisseur WHERE archive = 0 ORDER BY nom'),
+    [],
+  );
+  const [stockDepart, setStockDepart] = useState('');
+  const [fournisseurId, setFournisseurId] = useState('');
+  const [nouveauFournisseur, setNouveauFournisseur] = useState<string | null>(null);
 
   const marqueNom = marques.find((m) => m.id === marqueId)?.nom;
   const modeleNom = modeles.find((m) => m.id === modeleId)?.nom;
@@ -140,6 +158,19 @@ function Formulaire({ donnees }: { donnees: Donnees }) {
     ) as Record<keyof typeof montants, number | null>;
     if (Object.values(nombres).some((n) => n === null || Number.isNaN(n))) {
       setErreur('Les trois prix sont obligatoires, en nombres entiers.');
+      return;
+    }
+    const quantiteDepart = p ? null : lireEntier(stockDepart);
+    if (quantiteDepart !== null && (!Number.isInteger(quantiteDepart) || quantiteDepart < 0)) {
+      setErreur('Stock de départ : nombre entier attendu.');
+      return;
+    }
+    if (quantiteDepart && nouveauFournisseur === null && !fournisseurId) {
+      setErreur('Stock de départ : choisissez le fournisseur (ou « Nouveau fournisseur »).');
+      return;
+    }
+    if (quantiteDepart && nouveauFournisseur !== null && nouveauFournisseur.trim().length < 2) {
+      setErreur('Stock de départ : nom du nouveau fournisseur trop court.');
       return;
     }
     const saisie = schemaProduit.safeParse({
@@ -195,6 +226,52 @@ function Formulaire({ donnees }: { donnees: Donnees }) {
         boutiqueId: boutique.id,
         contenu: saisie.data,
       });
+      if (quantiteDepart && quantiteDepart > 0) {
+        // Stock de départ : bon d'achat reçu aussitôt (IMEI facultatifs), au prix d'achat saisi.
+        let idFournisseur = fournisseurId;
+        if (nouveauFournisseur !== null) {
+          const fiche = schemaFournisseur.parse({
+            id: Crypto.randomUUID(),
+            nom: nouveauFournisseur,
+            telephone: null,
+            adresse: null,
+            note: null,
+            archive: false,
+          });
+          await enregistrer({
+            type: 'FOURNISSEUR_ENREGISTRER',
+            boutiqueId: boutique.id,
+            contenu: fiche,
+          });
+          idFournisseur = fiche.id;
+        }
+        const achatId = Crypto.randomUUID();
+        const ligneId = Crypto.randomUUID();
+        await enregistrer({
+          type: 'ACHAT_ENREGISTRER',
+          boutiqueId: boutique.id,
+          contenu: {
+            id: achatId,
+            fournisseurId: idFournisseur,
+            numero: numeroAchat(boutique.prefixe, new Date()),
+            dateAchat: new Date().toISOString().slice(0, 10),
+            note: 'Stock de départ du produit',
+            lignes: [
+              {
+                id: ligneId,
+                produitId: saisie.data.id,
+                quantite: quantiteDepart,
+                prixAchat: saisie.data.prixAchat ?? 0,
+              },
+            ],
+          },
+        });
+        await enregistrer({
+          type: 'ACHAT_RECEVOIR',
+          boutiqueId: boutique.id,
+          contenu: { achatId, lignes: [{ ligneId, quantite: quantiteDepart }] },
+        });
+      }
       router.replace({ pathname: '/produit/[id]', params: { id: saisie.data.id } });
     } catch (e) {
       setErreur((e as Error).message);
@@ -335,6 +412,51 @@ function Formulaire({ donnees }: { donnees: Donnees }) {
         >
           <Texte>{archive ? '☑' : '☐'} Archivé (n’apparaît plus dans les recherches)</Texte>
         </Pressable>
+      ) : null}
+      {!p ? (
+        <Carte titre="Stock de départ (facultatif)" icone="cube">
+          <Texte discret>
+            Quantité déjà en boutique : un bon d’achat reçu est créé avec le prix d’achat ci-dessus.
+            Les IMEI ne sont pas obligatoires.
+          </Texte>
+          <Champ
+            libelle="Quantité en stock"
+            value={stockDepart}
+            onChangeText={setStockDepart}
+            keyboardType="number-pad"
+            placeholder="0"
+          />
+          {lireEntier(stockDepart) ? (
+            nouveauFournisseur !== null ? (
+              <>
+                <Champ
+                  libelle="Nom du nouveau fournisseur"
+                  value={nouveauFournisseur}
+                  onChangeText={setNouveauFournisseur}
+                  placeholder="Ex. Madina Télécom, Achat divers"
+                />
+                {fournisseurs?.length ? (
+                  <Bouton
+                    titre="Choisir un fournisseur existant"
+                    variante="secondaire"
+                    onPress={() => setNouveauFournisseur(null)}
+                  />
+                ) : null}
+              </>
+            ) : (
+              <ListeDeroulante
+                libelle="Fournisseur"
+                indication="Choisir le fournisseur…"
+                options={[
+                  ...(fournisseurs ?? []).map((f) => ({ valeur: f.id, libelle: f.nom })),
+                  { valeur: NOUVEAU, libelle: '＋ Nouveau fournisseur' },
+                ]}
+                valeur={fournisseurId || null}
+                surChoix={(v) => (v === NOUVEAU ? setNouveauFournisseur('') : setFournisseurId(v))}
+              />
+            )
+          ) : null}
+        </Carte>
       ) : null}
       <Message texte={erreur} />
       <Bouton titre="Enregistrer" onPress={() => void enregistrerFiche()} chargement={envoi} />
