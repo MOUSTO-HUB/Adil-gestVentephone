@@ -811,6 +811,12 @@ model Vente {
   annuleLe        DateTime?
   annuleParId     String?
   motifAnnulation String?
+  /// Coordonnées du client saisies à la vente ou sur la facture (facultatives).
+  nomClient       String?
+  contactClient   String?
+  adresseClient   String?
+  /// Une facture a été émise (espace Factures de l'application).
+  factureEmise    Boolean     @default(false)
   creeLe          DateTime    @default(now())
   modifieLe       DateTime    @updatedAt
   creeParId       String?

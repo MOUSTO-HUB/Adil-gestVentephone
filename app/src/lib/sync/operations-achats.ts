@@ -84,11 +84,13 @@ export async function achatEnregistrer(
       );
     }
   }
+  // Le numéro d'un bon existant ne change jamais (il est donné automatiquement).
+  const numeroBon = existant?.numero ?? c.numero;
   const numero = await tx.premier('SELECT id FROM achat WHERE numero = ? AND id <> ?', [
-    c.numero,
+    numeroBon,
     c.id,
   ]);
-  if (numero) throw new ErreurOperation(`Le numéro ${c.numero} est déjà utilisé.`);
+  if (numero) throw new ErreurOperation(`Le numéro ${numeroBon} est déjà utilisé.`);
   const montantTotal = totalAchat(c.lignes);
   if (existant && existant.montantPaye > montantTotal) {
     throw new ErreurOperation(
@@ -106,7 +108,7 @@ export async function achatEnregistrer(
     id: c.id,
     boutiqueId,
     fournisseurId: c.fournisseurId,
-    numero: c.numero,
+    numero: numeroBon,
     statut: existant ? statutApresReception(lignes) : 'BROUILLON',
     dateAchat: c.dateAchat,
     montantTotal,

@@ -20,9 +20,13 @@ export async function chargerDocument(
   },
 ): Promise<DocumentVente | null> {
   const vente = await base.premier<
-    VenteSync & { clientNom: string | null; clientTelephone: string | null }
+    VenteSync & {
+      clientNom: string | null;
+      clientTelephone: string | null;
+      clientAdresse: string | null;
+    }
   >(
-    `SELECT v.*, c.nom AS clientNom, c.telephone AS clientTelephone
+    `SELECT v.*, c.nom AS clientNom, c.telephone AS clientTelephone, c.adresse AS clientAdresse
        FROM vente v LEFT JOIN client c ON c.id = v.clientId WHERE v.id = ?`,
     [venteId],
   );
@@ -51,7 +55,20 @@ export async function chargerDocument(
     numero: vente.numero,
     dateVente: vente.dateVente,
     statut: vente.statut,
-    client: vente.clientNom ? { nom: vente.clientNom, telephone: vente.clientTelephone } : null,
+    // Coordonnées saisies sur la vente (facture), sinon fiche du client.
+    client: vente.nomClient
+      ? {
+          nom: vente.nomClient,
+          telephone: vente.contactClient,
+          adresse: vente.adresseClient,
+        }
+      : vente.clientNom
+        ? {
+            nom: vente.clientNom,
+            telephone: vente.clientTelephone,
+            adresse: vente.clientAdresse,
+          }
+        : null,
     lignes,
     sousTotal: vente.sousTotal,
     remise: vente.remise,

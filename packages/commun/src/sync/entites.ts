@@ -198,6 +198,12 @@ export interface VenteSync {
   dateVente: string;
   annuleLe: string | null;
   motifAnnulation: string | null;
+  /** Coordonnées du client saisies à la vente ou sur la facture. */
+  nomClient: string | null;
+  contactClient: string | null;
+  adresseClient: string | null;
+  /** Une facture a été émise (espace Factures). */
+  factureEmise: boolean;
 }
 
 export interface LigneVenteSync {

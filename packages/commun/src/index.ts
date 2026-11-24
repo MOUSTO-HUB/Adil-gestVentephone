@@ -11,6 +11,7 @@ export * from './clients.js';
 export * from './credit.js';
 export * from './documents.js';
 export * from './documents-credit.js';
+export * from './documents-achat.js';
 export * from './escpos.js';
 export * from './imei.js';
 export * from './inventaire.js';

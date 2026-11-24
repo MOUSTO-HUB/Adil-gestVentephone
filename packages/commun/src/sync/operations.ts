@@ -31,7 +31,7 @@ import {
   schemaReceptionTransfert,
 } from '../transferts.js';
 import { schemaGrilleReprise, schemaImeiSignale, schemaRemiseEnVente } from '../troc.js';
-import { schemaAnnulationVente, schemaVente } from '../ventes.js';
+import { schemaAnnulationVente, schemaFactureVente, schemaVente } from '../ventes.js';
 import type { Changement } from './entites.js';
 
 /**
@@ -83,6 +83,8 @@ export const schemasContenus = {
   VENTE_ENREGISTRER: schemaVente,
   /** Annulation d'une vente, avec motif : gérant ou propriétaire. */
   VENTE_ANNULER: schemaAnnulationVente,
+  /** Facture d'une vente (coordonnées du client) : tout le personnel, vendeur sur ses ventes. */
+  VENTE_FACTURE: schemaFactureVente,
   /** Retour (remboursement, avoir) ou échange : gérant, ou vendeur avec le PIN du gérant. */
   RETOUR_ENREGISTRER: schemaRetour,
   /** Ouverture de la caisse du jour (fond de caisse) : tout le personnel. */
@@ -135,6 +137,7 @@ export const LIBELLES_OPERATIONS: Record<TypeOperation, string> = {
   INVENTAIRE_VALIDER: 'Inventaire',
   VENTE_ENREGISTRER: 'Vente',
   VENTE_ANNULER: 'Annulation de vente',
+  VENTE_FACTURE: 'Facture de vente',
   RETOUR_ENREGISTRER: 'Retour ou échange',
   CAISSE_OUVRIR: 'Ouverture de caisse',
   CAISSE_CLOTURER: 'Clôture de caisse',

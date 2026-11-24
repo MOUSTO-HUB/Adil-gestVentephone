@@ -216,6 +216,10 @@ export const versVente = (v: Vente): VenteSync => ({
   dateVente: v.dateVente.toISOString(),
   annuleLe: v.annuleLe?.toISOString() ?? null,
   motifAnnulation: v.motifAnnulation,
+  nomClient: v.nomClient,
+  contactClient: v.contactClient,
+  adresseClient: v.adresseClient,
+  factureEmise: v.factureEmise,
 });
 
 export const versLigneVente = (l: LigneVente): LigneVenteSync => ({

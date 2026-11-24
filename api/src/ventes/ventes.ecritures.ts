@@ -1,5 +1,6 @@
 import {
   type Controle,
+  type FactureVenteSaisie,
   controlerPaiements,
   controlerSortieArticle,
   erreurRemise,
@@ -229,6 +230,10 @@ export async function enregistrerVente(
       montantPaye: aPayer,
       renduMonnaie: paiements.rendu,
       dateVente,
+      nomClient: d.nomClient || null,
+      contactClient: d.contactClient || null,
+      adresseClient: d.adresseClient || null,
+      factureEmise: d.factureEmise ?? false,
       creeParId: utilisateur.id,
     },
   });
@@ -453,5 +458,34 @@ export async function annulerVente(
     },
     tx,
   );
+  return OK;
+}
+
+/**
+ * Facture d'une vente : coordonnées du client (nom, contact, adresse) enregistrées sur la
+ * vente, qui entre dans l'espace Factures. Un vendeur ne facture que ses propres ventes.
+ */
+export async function facturerVente(
+  { tx, utilisateur, operation, journal }: ContexteOperation,
+  d: FactureVenteSaisie,
+): Promise<Controle> {
+  const { commerceId } = utilisateur;
+  const vente = await tx.vente.findFirst({
+    where: { id: d.venteId, commerceId, boutiqueId: operation.boutiqueId },
+  });
+  if (!vente) return rejet('Vente introuvable dans cette boutique.');
+  if (utilisateur.role === 'VENDEUR' && vente.vendeurId !== utilisateur.id) {
+    return rejet('Un vendeur ne modifie que les factures de ses ventes.');
+  }
+  await tx.vente.update({
+    where: { id: vente.id },
+    data: {
+      nomClient: d.nomClient,
+      contactClient: d.contactClient,
+      adresseClient: d.adresseClient,
+      factureEmise: true,
+    },
+  });
+  await journal.ecrire(tx, commerceId, await changementsVente(tx, vente.id));
   return OK;
 }

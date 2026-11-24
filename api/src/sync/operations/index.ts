@@ -37,7 +37,7 @@ import {
   grilleRepriseEnregistrer,
   imeiSignaler,
 } from './trocs.operations.js';
-import { venteAnnuler, venteEnregistrer } from './ventes.operations.js';
+import { venteAnnuler, venteEnregistrer, venteFacture } from './ventes.operations.js';
 
 /** Un gestionnaire par type d'opération (chaque fonctionnalité ajoute les siens). */
 export const GESTIONNAIRES: { [T in TypeOperation]: Gestionnaire<T> } = {
@@ -58,6 +58,7 @@ export const GESTIONNAIRES: { [T in TypeOperation]: Gestionnaire<T> } = {
   INVENTAIRE_VALIDER: inventaireValider,
   VENTE_ENREGISTRER: venteEnregistrer,
   VENTE_ANNULER: venteAnnuler,
+  VENTE_FACTURE: venteFacture,
   RETOUR_ENREGISTRER: retourEnregistrer,
   CAISSE_OUVRIR: caisseOuvrir,
   CAISSE_CLOTURER: caisseCloturer,

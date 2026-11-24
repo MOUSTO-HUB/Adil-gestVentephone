@@ -391,6 +391,13 @@ export const MIGRATIONS: string[] = [
   `
   ALTER TABLE achat ADD COLUMN paiements TEXT;
   `,
+  // Coordonnées du client sur la vente et factures émises.
+  `
+  ALTER TABLE vente ADD COLUMN nomClient TEXT;
+  ALTER TABLE vente ADD COLUMN contactClient TEXT;
+  ALTER TABLE vente ADD COLUMN adresseClient TEXT;
+  ALTER TABLE vente ADD COLUMN factureEmise INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 /**

@@ -6,6 +6,7 @@ import {
   ecartsTelephones,
   erreurPaiementAchat,
   erreurReception,
+  prefixeDuNumero,
   type InventaireSaisi,
   type MoyenRemboursement as MoyenFournisseur,
   type ReceptionSaisie,
@@ -94,10 +95,23 @@ export async function enregistrerAchat(
     where: { id: { in: d.lignes.map((l) => l.produitId) }, commerceId },
   });
   if (produits !== d.lignes.length) return rejet('Un des produits est inconnu.');
+  // Le numéro d'un bon existant ne change jamais (il est donné automatiquement).
+  if (existant) d = { ...d, numero: existant.numero };
   const numero = await tx.achat.findFirst({
     where: { commerceId, numero: d.numero, id: { not: d.id } },
   });
-  if (numero) return rejet(`Le numéro ${d.numero} est déjà utilisé.`);
+  if (numero) {
+    // Deux appareils hors ligne ont donné le même numéro (BCAB-20260004) à deux bons :
+    // le nouveau bon prend le numéro libre suivant, renvoyé aux appareils par le journal.
+    const prefixe = prefixeDuNumero(d.numero);
+    if (existant || !prefixe) return rejet(`Le numéro ${d.numero} est déjà utilisé.`);
+    const memes = await tx.achat.findMany({
+      where: { commerceId, numero: { startsWith: prefixe } },
+      select: { numero: true },
+    });
+    const plusGrand = Math.max(0, ...memes.map((a) => Number(a.numero.slice(prefixe.length)) || 0));
+    d = { ...d, numero: `${prefixe}${String(plusGrand + 1).padStart(4, '0')}` };
+  }
   const autresLignes = await tx.ligneAchat.findFirst({
     where: { id: { in: d.lignes.map((l) => l.id) }, achatId: { not: d.id } },
   });

@@ -1,6 +1,6 @@
 import type { Changement } from '@gestvente/commun';
 import { Role } from '../../generated/prisma/enums.js';
-import { annulerVente, enregistrerVente } from '../../ventes/ventes.ecritures.js';
+import { annulerVente, enregistrerVente, facturerVente } from '../../ventes/ventes.ecritures.js';
 import type { Tx } from '../journal.service.js';
 import {
   versArticle,
@@ -88,6 +88,17 @@ export const venteEnregistrer: Gestionnaire<'VENTE_ENREGISTRER'> = {
     // Crédit refusé : le crédit et ses tranches disparaissent de l'appareil.
     if (contenu.credit) corrections.push(...(await etatCredit(tx, contenu.credit)));
     return corrections;
+  },
+};
+
+/** Facture (coordonnées du client) : tout le personnel ; un vendeur, sur ses ventes. */
+export const venteFacture: Gestionnaire<'VENTE_FACTURE'> = {
+  type: 'VENTE_FACTURE',
+  roles: [Role.PROPRIETAIRE, Role.GERANT, Role.VENDEUR],
+  appliquer: (ctx, contenu) => facturerVente(ctx, contenu),
+  async corrections(tx, _operation, contenu) {
+    const vente = await tx.vente.findUnique({ where: { id: contenu.venteId } });
+    return vente ? [{ seq: 0, entite: 'vente', id: vente.id, donnees: versVente(vente) }] : [];
   },
 };
 

@@ -10,6 +10,7 @@ import * as Crypto from 'expo-crypto';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { DocumentsBon } from '@/components/documents-bon';
 import { SaisieImei } from '@/components/saisie-imei';
 import {
   Bouton,
@@ -317,6 +318,8 @@ export default function FicheAchat() {
           ))}
         </Carte>
       ) : null}
+
+      <DocumentsBon achatId={achat.id} />
 
       {actif && rienRecu ? (
         <Bouton titre="Annuler le bon" variante="danger" onPress={() => void annuler()} />

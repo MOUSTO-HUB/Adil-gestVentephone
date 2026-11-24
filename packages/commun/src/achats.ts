@@ -152,3 +152,40 @@ export function erreurPaiementAchat(
   if (montant > reste) return `Le paiement (${montant}) dépasse le reste dû (${reste}).`;
   return null;
 }
+
+// ---------------------------------------------------------------- Numéro du bon de commande
+
+/** Deux lettres du nom de l'utilisateur, sans accent, en majuscules (« Abdoul » → AB). */
+export function initialesBon(nom: string): string {
+  // NFD sépare les accents des lettres ; tout ce qui n'est pas A-Z est ensuite retiré.
+  const lettres = nom
+    .normalize('NFD')
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '');
+  return (lettres + 'XX').slice(0, 2);
+}
+
+/** Début commun des numéros d'un utilisateur pour une année : BCAB-2026. */
+export const prefixeBonCommande = (nom: string, annee: number) => `BC${initialesBon(nom)}-${annee}`;
+
+/** Numéro du bon de commande : BC + initiales + année + ordre sur 4 chiffres (BCAB-20260001). */
+export const numeroBonCommande = (nom: string, annee: number, ordre: number) =>
+  `${prefixeBonCommande(nom, annee)}${String(ordre).padStart(4, '0')}`;
+
+/** Numéro suivant, d'après les numéros déjà connus (ordre le plus grand + 1). */
+export function prochainNumeroBon(nom: string, annee: number, existants: string[]): string {
+  const prefixe = prefixeBonCommande(nom, annee);
+  let plusGrand = 0;
+  for (const n of existants) {
+    if (!n.startsWith(prefixe)) continue;
+    const reste = n.slice(prefixe.length);
+    if (/^\d+$/.test(reste)) plusGrand = Math.max(plusGrand, Number(reste));
+  }
+  return numeroBonCommande(nom, annee, plusGrand + 1);
+}
+
+/** Partie « BCAB-2026 » d'un numéro au nouveau format, sinon null. */
+export function prefixeDuNumero(numero: string): string | null {
+  const m = /^(BC[A-Z]{2}-\d{4})\d+$/.exec(numero);
+  return m ? m[1]! : null;
+}

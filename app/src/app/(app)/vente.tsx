@@ -7,6 +7,7 @@ import {
   MOYENS_PAIEMENT,
   type MoyenPaiement,
   moyenAvecReference,
+  normaliserTelephone,
   plafondRemise,
   pourcentageRemise,
 } from '@gestvente/commun';
@@ -19,7 +20,7 @@ import { Choix } from '@/components/choix';
 import { ChoixArticles } from '@/components/choix-articles';
 import { SaisieCredit } from '@/components/saisie-credit';
 import { SaisieTroc } from '@/components/saisie-troc';
-import { Bouton, Carte, Ecran, ListeDeroulante, Message, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, Ecran, ListeDeroulante, Message, Texte } from '@/components/ui';
 import { useCouleurs } from '@/lib/theme';
 import { messageErreur } from '@/lib/api';
 import { caisseOuverte } from '@/lib/caisse-session';
@@ -75,6 +76,10 @@ export default function Vente() {
   /** Facture envoyée au client par le serveur après l'encaissement (si un client est choisi). */
   const [envoiFacture, setEnvoiFacture] = useState<'NON' | 'SMS' | 'WHATSAPP'>('SMS');
   const [rechercheClient, setRechercheClient] = useState('');
+  // Coordonnées du client (facultatives), imprimées sur la facture.
+  const [nomClient, setNomClient] = useState('');
+  const [contactClient, setContactClient] = useState('');
+  const [adresseClient, setAdresseClient] = useState('');
   const [remise, setRemise] = useState('');
   const [autorisation, setAutorisation] = useState<Autorisation | null>(null);
   const [gerantId, setGerantId] = useState('');
@@ -94,7 +99,11 @@ export default function Vente() {
     rendu: number;
     reprise: number;
     creditId: string | null;
+    /** Réponse à « Imprimer une facture ? » : null tant que le vendeur n'a pas répondu. */
+    facture: boolean | null;
+    coordonneesCompletes: boolean;
   } | null>(null);
+  const [factureEnCours, setFactureEnCours] = useState(false);
   const boutiqueId = boutique?.id ?? '';
 
   const caisse = useLecture(
@@ -198,6 +207,13 @@ export default function Vente() {
     }
     const controle = controlerPaiements(aPayer, listePaiements);
     if (!controle.ok) return setMessage(controle.motif);
+    const coordonnees = {
+      nom: nomClient.trim(),
+      contact: contactClient.trim()
+        ? (normaliserTelephone(contactClient, profil.commerce.indicatif) ?? contactClient.trim())
+        : '',
+      adresse: adresseClient.trim(),
+    };
     setEnvoi(true);
     try {
       const numero = await prochainNumeroFacture(
@@ -230,6 +246,9 @@ export default function Vente() {
           caisseId: caisse.id,
           troc: trocSaisi,
           credit: creditSaisi,
+          nomClient: coordonnees.nom || null,
+          contactClient: coordonnees.contact || null,
+          adresseClient: coordonnees.adresse || null,
         },
       });
       if (client && envoiFacture !== 'NON') {
@@ -252,6 +271,11 @@ export default function Vente() {
         rendu: controle.rendu,
         reprise,
         creditId: creditSaisi?.id ?? null,
+        facture: null,
+        coordonneesCompletes:
+          coordonnees.nom.length >= 2 &&
+          coordonnees.contact.length >= 6 &&
+          coordonnees.adresse.length >= 2,
       });
       // Photos du troc : envoyées dès que la vente est arrivée sur le serveur.
       if (trocSaisi && troc?.photos.length) {
@@ -271,6 +295,9 @@ export default function Vente() {
       setCredit(null);
       setArticles([]);
       setClient(null);
+      setNomClient('');
+      setContactClient('');
+      setAdresseClient('');
       setRemise('');
       setAutorisation(null);
       setPaiements(PAIEMENTS_VIDES);
@@ -279,6 +306,45 @@ export default function Vente() {
       setMessage(messageErreur(e));
     } finally {
       setEnvoi(false);
+    }
+  };
+
+  /** Oui : facture complétée (coordonnées obligatoires) puis imprimée ; non : rien de plus. */
+  const repondreFacture = async (oui: boolean) => {
+    if (!derniere) return;
+    if (!oui) return setDerniere({ ...derniere, facture: false });
+    setFactureEnCours(true);
+    try {
+      const vente = await base.premier<{
+        nomClient: string | null;
+        contactClient: string | null;
+        adresseClient: string | null;
+      }>('SELECT nomClient, contactClient, adresseClient FROM vente WHERE id = ?', [derniere.id]);
+      if (
+        derniere.coordonneesCompletes &&
+        vente?.nomClient &&
+        vente.contactClient &&
+        vente.adresseClient
+      ) {
+        await enregistrer({
+          type: 'VENTE_FACTURE',
+          boutiqueId,
+          contenu: {
+            venteId: derniere.id,
+            nomClient: vente.nomClient,
+            contactClient: vente.contactClient,
+            adresseClient: vente.adresseClient,
+          },
+        });
+        router.push({ pathname: '/vente/[id]', params: { id: derniere.id } });
+      } else {
+        router.push({ pathname: '/facture/edition', params: { id: derniere.id } });
+      }
+      setDerniere({ ...derniere, facture: true });
+    } catch (e) {
+      setMessage(messageErreur(e));
+    } finally {
+      setFactureEnCours(false);
     }
   };
 
@@ -311,8 +377,32 @@ export default function Vente() {
           {derniere.rendu > 0 ? (
             <Texte gras>Monnaie à rendre : {formaterMontant(derniere.rendu, monnaie)}</Texte>
           ) : null}
+          {derniere.facture === null ? (
+            <View style={[styles.question, { borderColor: c.primaire }]}>
+              <Texte gras>Imprimer une facture pour le client ?</Texte>
+              <Texte discret>Oui : le nom, le contact et l’adresse du client sont demandés.</Texte>
+              <View style={styles.reponses}>
+                <View style={{ flex: 1 }}>
+                  <Bouton
+                    titre="Oui, faire la facture"
+                    icone="document-text"
+                    chargement={factureEnCours}
+                    onPress={() => void repondreFacture(true)}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Bouton
+                    titre="Non"
+                    variante="secondaire"
+                    onPress={() => void repondreFacture(false)}
+                  />
+                </View>
+              </View>
+            </View>
+          ) : null}
           <Bouton
             titre="Reçu, facture, WhatsApp…"
+            variante={derniere.facture === null ? 'secondaire' : undefined}
             onPress={() => router.push({ pathname: '/vente/[id]', params: { id: derniere.id } })}
           />
           <Bouton titre="Nouvelle vente" variante="secondaire" onPress={() => setDerniere(null)} />
@@ -357,7 +447,12 @@ export default function Vente() {
             <Bouton
               titre="Retirer le client"
               variante="secondaire"
-              onPress={() => setClient(null)}
+              onPress={() => {
+                setClient(null);
+                setNomClient('');
+                setContactClient('');
+                setAdresseClient('');
+              }}
             />
           </>
         ) : (
@@ -377,6 +472,9 @@ export default function Vente() {
                 onPress={() => {
                   setClient(c);
                   setRechercheClient('');
+                  setNomClient(c.nom);
+                  setContactClient(c.telephone);
+                  setAdresseClient(c.adresse ?? '');
                 }}
               >
                 <Texte>
@@ -386,6 +484,26 @@ export default function Vente() {
             ))}
           </>
         )}
+        <Champ
+          libelle="Nom du client (facultatif)"
+          value={nomClient}
+          onChangeText={setNomClient}
+          placeholder="Ex. Mamadou Diallo"
+          autoCapitalize="words"
+        />
+        <Champ
+          libelle="Contact (facultatif)"
+          value={contactClient}
+          onChangeText={setContactClient}
+          keyboardType="phone-pad"
+          placeholder="620 11 22 33"
+        />
+        <Champ
+          libelle="Adresse (facultatif)"
+          value={adresseClient}
+          onChangeText={setAdresseClient}
+          placeholder="Quartier, ville"
+        />
       </Carte>
 
       {troc ? (
@@ -620,4 +738,6 @@ const styles = StyleSheet.create({
   },
   paiement: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' },
   total: { fontSize: 24, fontWeight: '800' },
+  question: { borderWidth: 2, borderRadius: 12, padding: 12, gap: 8 },
+  reponses: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
 });

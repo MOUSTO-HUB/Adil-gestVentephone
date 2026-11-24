@@ -1,9 +1,10 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { formaterMontant } from '@gestvente/commun';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Bouton, Champ, Ecran, Texte } from '@/components/ui';
+import { BoutonLigne } from '@/components/bouton-ligne';
+import { imprimerBon, useChargerBon } from '@/components/documents-bon';
+import { Bouton, Champ, Ecran, Message, Texte } from '@/components/ui';
 import { achatsDeLaBoutique, LIBELLES_STATUTS_ACHAT } from '@/lib/achats';
 import { useSession } from '@/lib/session';
 import { useLecture } from '@/lib/sync/contexte';
@@ -29,6 +30,21 @@ export default function Achats() {
   const [recherche, setRecherche] = useState('');
   const achats = useLecture((b) => achatsDeLaBoutique(b, boutique?.id ?? ''), [boutique?.id]);
   const monnaie = profil?.commerce.monnaie;
+  const chargerBon = useChargerBon();
+  const [impression, setImpression] = useState<string | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  const imprimer = async (achatId: string) => {
+    setErreur(null);
+    setImpression(achatId);
+    try {
+      await imprimerBon(await chargerBon(achatId));
+    } catch (e) {
+      setErreur((e as Error).message);
+    } finally {
+      setImpression(null);
+    }
+  };
 
   const mot = recherche.trim().toLowerCase();
   const visibles = (achats ?? []).filter((a) => {
@@ -81,6 +97,7 @@ export default function Achats() {
           );
         })}
       </View>
+      <Message texte={erreur} />
       {achats && visibles.length === 0 ? <Texte discret>Aucun bon d’achat.</Texte> : null}
       {visibles.map((a) => {
         const reste = a.statut === 'ANNULE' ? 0 : a.montantTotal - a.montantPaye;
@@ -108,20 +125,23 @@ export default function Achats() {
                 {LIBELLES_STATUTS_ACHAT[a.statut]}
               </Text>
             </Pressable>
-            {a.statut !== 'ANNULE' ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Modifier le bon ${a.numero}`}
-                onPress={() => router.push({ pathname: '/achat/edition', params: { id: a.id } })}
-                style={({ pressed }) => [
-                  styles.modifier,
-                  { borderColor: c.primaire, opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <Ionicons name="create" size={18} color={c.primaire} />
-                <Text style={{ color: c.primaire, fontWeight: '700' }}>Modifier</Text>
-              </Pressable>
-            ) : null}
+            <View style={styles.actions}>
+              {a.statut !== 'ANNULE' ? (
+                <BoutonLigne
+                  titre="Modifier"
+                  icone="create"
+                  libelleAccessible={`Modifier le bon ${a.numero}`}
+                  surAppui={() => router.push({ pathname: '/achat/edition', params: { id: a.id } })}
+                />
+              ) : null}
+              <BoutonLigne
+                titre="Imprimer"
+                icone="print"
+                libelleAccessible={`Imprimer le bon ${a.numero}`}
+                chargement={impression === a.id}
+                surAppui={() => void imprimer(a.id)}
+              />
+            </View>
           </View>
         );
       })}
@@ -143,13 +163,5 @@ const styles = StyleSheet.create({
   texte: { flex: 1, gap: 2 },
   nom: { fontSize: 16, fontWeight: '700' },
   statut: { fontSize: 14, fontWeight: '700' },
-  modifier: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1.5,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
+  actions: { gap: 6 },
 });

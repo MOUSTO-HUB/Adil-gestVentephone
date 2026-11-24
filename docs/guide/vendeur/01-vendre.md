@@ -36,6 +36,8 @@ Chaque résultat indique le stock : « 3 en stock » ou **Rupture**.
 - **Client (facultatif)** : tapez son nom ou son téléphone. Un client grossiste reçoit
   automatiquement le prix de gros. Avec un client, la facture peut lui être envoyée par
   SMS ou WhatsApp.
+- **Nom, contact et adresse du client** : trois champs facultatifs, remplis tout seuls
+  quand vous choisissez un client enregistré. Ils sont imprimés sur la facture.
 - **Remise** : vous pouvez accorder jusqu'au pourcentage indiqué. Au-delà, un gérant
   valide avec son identifiant et son code PIN.
 
@@ -48,8 +50,28 @@ Money, MTN MoMo, virement) et saisissez le montant. Le client paie de deux faço
 
 ![Paiement et total](../images/vente-paiement.png)
 
-Touchez **Encaisser**. L'écran affiche la monnaie à rendre et le numéro de facture.
+Touchez **Encaisser**. L'écran affiche la monnaie à rendre et le numéro de facture, puis
+demande : **« Imprimer une facture pour le client ? »**
+
+- **Non** : la vente est terminée (le reçu reste disponible).
+- **Oui, faire la facture** : le **nom**, le **contact** et l'**adresse** du client
+  deviennent **obligatoires**. Complétez ce qui manque puis touchez **Enregistrer et
+  imprimer la facture** : la facture A4 s'ouvre à l'impression (sur ordinateur, choisissez
+  **Enregistrer au format PDF** pour la garder). Sur téléphone, **Partager la facture (PDF)**
+  l'envoie par WhatsApp, e-mail…
+
 Touchez **Reçu, facture, WhatsApp…** pour imprimer le ticket ou envoyer la facture.
+
+## 5. Retrouver ses factures
+
+Menu → **Factures** : toutes les factures émises de la boutique, avec une recherche par
+numéro, nom ou contact du client. Chaque facture a deux boutons :
+
+- **Modifier** : corriger le nom, le contact ou l'adresse du client ;
+- **Imprimer** : réimprimer la facture A4 (ou l'enregistrer en PDF).
+
+Une vente sans facture peut en recevoir une plus tard : ouvrez la vente puis **Faire la
+facture du client**. Un vendeur ne modifie que les factures de ses propres ventes.
 
 ## À retenir
 

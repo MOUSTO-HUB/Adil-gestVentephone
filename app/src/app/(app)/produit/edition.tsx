@@ -13,7 +13,7 @@ import { Pressable } from 'react-native';
 import { Choix } from '@/components/choix';
 import { Scanner, scannerDisponible } from '@/components/scanner';
 import { Bouton, Carte, Champ, Ecran, ListeDeroulante, Message, Texte } from '@/components/ui';
-import { numeroAchat } from '@/lib/achats';
+import { numeroAchat, prochainNumeroAchat } from '@/lib/achats';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
 
@@ -81,8 +81,8 @@ function lireEntier(valeur: string): number | null {
 const NOUVEAU = '__nouveau__';
 
 function Formulaire({ donnees }: { donnees: Donnees }) {
-  const { boutique } = useSession();
-  const { enregistrer } = useSync();
+  const { boutique, profil } = useSession();
+  const { enregistrer, base } = useSync();
   const p = donnees.produit;
   const [type, setType] = useState<Type>(p?.type ?? 'TELEPHONE');
   const [categories, setCategories] = useState(donnees.categories);
@@ -253,7 +253,9 @@ function Formulaire({ donnees }: { donnees: Donnees }) {
           contenu: {
             id: achatId,
             fournisseurId: idFournisseur,
-            numero: numeroAchat(boutique.prefixe, new Date()),
+            numero: base
+              ? await prochainNumeroAchat(base, profil?.nom ?? '', new Date())
+              : numeroAchat(boutique.prefixe, new Date()),
             dateAchat: new Date().toISOString().slice(0, 10),
             note: 'Stock de départ du produit',
             lignes: [

@@ -12,6 +12,7 @@ import {
   resteAPayer,
   texteMessage,
 } from './documents.js';
+import { bonCommandeHtml, type DocumentBonCommande, texteBonCommande } from './documents-achat.js';
 import { encoderPc850, paquets, recuEscPos, versBase64 } from './escpos.js';
 
 const vente: DocumentVente = {
@@ -175,5 +176,55 @@ describe('ESC/POS', () => {
     attendus.forEach((attendu, n) =>
       expect(versBase64(Uint8Array.from([250, 0, 66, 7, 128].slice(0, n)))).toBe(attendu),
     );
+  });
+});
+
+describe('bon de commande', () => {
+  const bon: DocumentBonCommande = {
+    commerce: 'Adil Phone',
+    boutique: { nom: 'Adil Phone Madina', adresse: 'Marché Madina', telephone: '+224620000001' },
+    numero: 'BCAB-20260003',
+    dateAchat: '2026-11-24',
+    statut: 'PARTIEL',
+    fournisseur: { nom: 'Madina <Télécom>', telephone: '+224621000000', adresse: 'Madina' },
+    lignes: [
+      {
+        designation: 'Tecno Spark 20',
+        quantite: 5,
+        quantiteRecue: 2,
+        prixAchat: 1_000_000,
+        total: 5_000_000,
+      },
+    ],
+    total: 5_000_000,
+    montantPaye: 2_000_000,
+    paiements: [
+      {
+        date: '2026-11-24T10:00:00Z',
+        montant: 2_000_000,
+        moyen: 'ORANGE_MONEY',
+        reference: 'OM123',
+      },
+    ],
+    note: null,
+    emisPar: 'Abdoul',
+    monnaie: 'GNF',
+  };
+
+  it('imprime le numéro, le fournisseur échappé, les lignes et le reste à payer', () => {
+    const html = bonCommandeHtml(bon);
+    expect(html).toContain('Bon de commande');
+    expect(html).toContain('BCAB-20260003');
+    expect(html).toContain('Madina &lt;Télécom&gt;');
+    expect(html).toContain('Reçu : 2 / 5');
+    expect(html).toContain('réf. OM123');
+    expect(html).toContain('Reste à payer');
+  });
+
+  it('résume le bon pour WhatsApp', () => {
+    const texte = texteBonCommande(bon);
+    expect(texte).toContain('Bon de commande BCAB-20260003 du 24/11/2026');
+    expect(texte).toContain('5 x Tecno Spark 20');
+    expect(texte).toMatch(/Reste à payer : 3.000.000/);
   });
 });

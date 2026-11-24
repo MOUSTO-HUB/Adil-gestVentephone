@@ -22,7 +22,7 @@ import {
   styleSaisie,
   Texte,
 } from '@/components/ui';
-import { type LigneDetaillee, lignesAchat, numeroAchat } from '@/lib/achats';
+import { type LigneDetaillee, lignesAchat, prochainNumeroAchat } from '@/lib/achats';
 import { rechercherProduits } from '@/lib/catalogue';
 import { useSession } from '@/lib/session';
 import { useLecture, useSync } from '@/lib/sync/contexte';
@@ -121,10 +121,12 @@ function Formulaire({
           quantiteRecue: l.quantiteRecue,
         })),
   );
-  // Numéro du bon : donné automatiquement (préfixe de la boutique, date, code), jamais saisi.
-  const [numero] = useState(
-    () => achat?.numero ?? (boutique ? numeroAchat(boutique.prefixe, new Date()) : ''),
+  // Numéro du bon : donné automatiquement (BC + initiales de l'utilisateur + année + ordre).
+  const numeroPropose = useLecture(
+    async (b) => (achat ? achat.numero : prochainNumeroAchat(b, profil?.nom ?? '', new Date())),
+    [achat?.numero, profil?.nom],
   );
+  const numero = achat?.numero ?? numeroPropose ?? '';
   const [nouveauFournisseur, setNouveauFournisseur] = useState<{
     nom: string;
     telephone: string;

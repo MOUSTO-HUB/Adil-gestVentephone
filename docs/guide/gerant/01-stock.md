@@ -30,7 +30,9 @@ Touchez un produit : quantité en stock, téléphones présents avec leur IMEI, 
 
 En haut de l'écran **Stock**, bouton **Ajouter une quantité et son prix** (ou, sur la fiche
 d'un produit, **Ajouter du stock**). Le bon se remplit comme un tableau : une ligne par
-article (quantité, prix d'achat, total). Le **numéro du bon est donné automatiquement**.
+article (quantité, prix d'achat, total). Le **numéro du bon est donné automatiquement** :
+**BC**, les deux premières lettres de votre nom, puis l'année et un numéro d'ordre (Abdoul
+→ **BCAB-20260001**, puis BCAB-20260002…).
 Choisissez le fournisseur dans la **liste déroulante**, ou « Nouveau fournisseur » pour le
 créer sur place.
 
@@ -42,6 +44,10 @@ besoin. Le stock augmente à la réception.
 **Bons d'achat** (bouton de l'écran Stock, ou Menu → **Bons d'achat**) : tous les bons, à
 recevoir ou reçus, avec une recherche par numéro ou fournisseur. **Modifier** corrige un bon,
 même déjà reçu (fournisseur, prix, quantités commandées, sans descendre sous ce qui est reçu).
+**Imprimer** sort le **bon de commande** A4 (fournisseur, articles, total, déjà payé, reste à
+payer, signatures) ; sur ordinateur, choisissez **Enregistrer au format PDF** pour le garder.
+Sur la fiche du bon, la carte **Bon de commande (PDF)** propose aussi **Partager le PDF**
+(téléphone) et **Envoyer par WhatsApp** (résumé du bon au fournisseur).
 
 **Nouveau produit** : la fiche propose un **stock de départ** (quantité et fournisseur) ; le
 bon d'achat correspondant est créé et reçu automatiquement.

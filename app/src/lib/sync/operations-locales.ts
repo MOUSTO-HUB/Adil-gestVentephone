@@ -93,6 +93,7 @@ const APPLIQUER: { [T in TypeOperation]: AppliquerLocal<T> } = {
   VENTE_ENREGISTRER: (tx, boutiqueId, contenu, id, contexte) =>
     ventes.venteEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId, 0, id),
   VENTE_ANNULER: (tx, boutiqueId, contenu) => ventes.venteAnnuler(tx, boutiqueId, contenu),
+  VENTE_FACTURE: (tx, boutiqueId, contenu) => ventes.venteFacture(tx, boutiqueId, contenu),
   RETOUR_ENREGISTRER: (tx, boutiqueId, contenu, _id, contexte) =>
     retours.retourEnregistrer(tx, boutiqueId, contenu, contexte.utilisateurId),
   CAISSE_OUVRIR: (tx, boutiqueId, contenu, _id, contexte) =>

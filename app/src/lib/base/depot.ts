@@ -94,6 +94,10 @@ const COLONNES: { [E in EntiteSync]: (keyof DonneesEntites[E] & string)[] } = {
     'dateVente',
     'annuleLe',
     'motifAnnulation',
+    'nomClient',
+    'contactClient',
+    'adresseClient',
+    'factureEmise',
   ],
   ligneVente: [
     'id',

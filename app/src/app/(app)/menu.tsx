@@ -48,6 +48,7 @@ export default function Menu() {
           onPress={aller('/vente')}
         />
         <GrandeTuile petite titre="Ventes" icone="receipt" onPress={aller('/ventes')} />
+        <GrandeTuile petite titre="Factures" icone="document-text" onPress={aller('/factures')} />
         <GrandeTuile
           petite
           titre="Caisse"

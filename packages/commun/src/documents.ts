@@ -11,7 +11,7 @@ export interface DocumentVente {
   numero: string;
   dateVente: string;
   statut: 'VALIDEE' | 'ANNULEE';
-  client: { nom: string; telephone: string | null } | null;
+  client: { nom: string; telephone: string | null; adresse?: string | null } | null;
   lignes: {
     designation: string;
     imei: string | null;
@@ -282,7 +282,7 @@ footer { margin-top: 32px; font-size: 9pt; color: #555; }
   <div><h2>Facture</h2><div class="discret" style="text-align:right">N° ${echapper(d.numero)}<br>${echapper(formaterDate(d.dateVente, d.fuseau, true))}</div></div>
 </header>
 ${d.statut === 'ANNULEE' ? '<div class="annulee">VENTE ANNULÉE</div>' : ''}
-<div class="client"><strong>Client :</strong> ${d.client ? `${echapper(d.client.nom)}${d.client.telephone ? ` · ${echapper(d.client.telephone)}` : ''}` : 'client de passage'}</div>
+<div class="client"><strong>Client :</strong> ${d.client ? `${echapper(d.client.nom)}${d.client.telephone ? ` · ${echapper(d.client.telephone)}` : ''}${d.client.adresse ? `<br><span class="discret">${echapper(d.client.adresse)}</span>` : ''}` : 'client de passage'}</div>
 <table class="lignes">
 <thead><tr><th>Désignation</th><th class="n">Qté</th><th class="n">Prix unitaire</th><th class="n">Montant</th></tr></thead>
 <tbody>

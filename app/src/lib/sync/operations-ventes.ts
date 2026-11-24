@@ -142,6 +142,10 @@ export async function venteEnregistrer(
     dateVente: dateVente.toISOString(),
     annuleLe: null,
     motifAnnulation: null,
+    nomClient: c.nomClient || null,
+    contactClient: c.contactClient || null,
+    adresseClient: c.adresseClient || null,
+    factureEmise: c.factureEmise ?? false,
   });
   if (c.troc) {
     await trocEnregistrer(tx, boutiqueId, c.id, c.clientId, c.troc, vendeurId, idProvisoire);
@@ -213,5 +217,23 @@ export async function venteAnnuler(
   await tx.executer(
     "UPDATE vente SET statut = 'ANNULEE', annuleLe = ?, motifAnnulation = ? WHERE id = ?",
     [new Date().toISOString(), c.motif, c.venteId],
+  );
+}
+
+/** Facture d'une vente : coordonnées du client enregistrées, vente rangée dans les factures. */
+export async function venteFacture(
+  tx: BaseSql,
+  boutiqueId: string,
+  c: ContenuOperation<'VENTE_FACTURE'>,
+) {
+  const vente = await tx.premier<{ id: string }>(
+    'SELECT id FROM vente WHERE id = ? AND boutiqueId = ?',
+    [c.venteId, boutiqueId],
+  );
+  if (!vente) throw new ErreurOperation('Vente introuvable dans cette boutique.');
+  await tx.executer(
+    `UPDATE vente SET nomClient = ?, contactClient = ?, adresseClient = ?, factureEmise = 1
+      WHERE id = ?`,
+    [c.nomClient, c.contactClient, c.adresseClient, c.venteId],
   );
 }

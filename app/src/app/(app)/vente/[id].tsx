@@ -116,7 +116,11 @@ export default function DetailVente() {
   };
 
   return (
-    <Ecran titre={`Facture ${vente.numero}`} sousTitre={vente.client ?? 'Client de passage'} enHaut>
+    <Ecran
+      titre={`Facture ${vente.numero}`}
+      sousTitre={vente.nomClient ?? vente.client ?? 'Client de passage'}
+      enHaut
+    >
       <Carte>
         <Texte discret>
           {new Date(vente.dateVente).toLocaleString('fr-FR', {
@@ -212,6 +216,24 @@ export default function DetailVente() {
           }
         />
       ) : null}
+      <Carte titre="Client de la facture" icone="person">
+        {vente.nomClient || vente.client ? (
+          <>
+            <Texte gras>{vente.nomClient ?? vente.client}</Texte>
+            {vente.contactClient ? <Texte>Contact : {vente.contactClient}</Texte> : null}
+            {vente.adresseClient ? <Texte>Adresse : {vente.adresseClient}</Texte> : null}
+          </>
+        ) : (
+          <Texte discret>Client de passage : aucune coordonnée enregistrée.</Texte>
+        )}
+        {vente.factureEmise ? <Texte discret>Facture émise (voir Factures).</Texte> : null}
+        <Bouton
+          titre={vente.factureEmise ? 'Modifier la facture' : 'Faire la facture du client'}
+          icone="create"
+          variante="secondaire"
+          onPress={() => router.push({ pathname: '/facture/edition', params: { id: vente.id } })}
+        />
+      </Carte>
       {document ? (
         <DocumentsVente document={document} reglages={reglages} venteId={vente.id} />
       ) : null}

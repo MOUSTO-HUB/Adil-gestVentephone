@@ -68,8 +68,23 @@ export const schemaVente = z.object({
   troc: schemaTroc.nullable().optional(),
   /** Vente à crédit : apport payé à la vente, reste par tranches. */
   credit: schemaCreditVente.nullable().optional(),
+  /** Coordonnées du client (facultatives), imprimées sur la facture. */
+  nomClient: z.string().trim().max(100).nullable().optional(),
+  contactClient: z.string().trim().max(40).nullable().optional(),
+  adresseClient: z.string().trim().max(200).nullable().optional(),
+  /** Le vendeur a émis une facture (elle apparaît dans l'espace Factures). */
+  factureEmise: z.boolean().optional(),
 });
 export type VenteSaisie = z.infer<typeof schemaVente>;
+
+/** Facture d'une vente : nom, contact et adresse du client obligatoires. */
+export const schemaFactureVente = z.object({
+  venteId: z.uuid(),
+  nomClient: z.string().trim().min(2, 'Nom du client obligatoire.').max(100),
+  contactClient: z.string().trim().min(6, 'Contact du client obligatoire.').max(40),
+  adresseClient: z.string().trim().min(2, 'Adresse du client obligatoire.').max(200),
+});
+export type FactureVenteSaisie = z.infer<typeof schemaFactureVente>;
 
 export const schemaAnnulationVente = z.object({
   venteId: z.uuid(),
