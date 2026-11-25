@@ -47,7 +47,13 @@ interface ValeurPlateforme {
   majSession: (changement: Partial<Omit<SessionConcepteur, 'jeton'>>) => Promise<void>;
   deconnexion: () => Promise<void>;
   requete: <T>(chemin: string, options?: Options) => Promise<T>;
+  /** Demandes « Mot de passe oublié » en attente (pastille, relue chaque minute). */
+  demandesEnAttente: number;
+  rafraichirDemandes: () => void;
 }
+
+/** Fréquence de relecture des demandes en attente dans l'espace concepteur. */
+const RELECTURE_DEMANDES_MS = 60_000;
 
 const Contexte = createContext<ValeurPlateforme | null>(null);
 
@@ -65,6 +71,22 @@ export function FournisseurPlateforme({ children }: { children: ReactNode }) {
     setSession(null);
     await effacer(CLE);
   }, []);
+
+  const [demandesEnAttente, setDemandesEnAttente] = useState(0);
+  const jeton = session?.jeton;
+  const rafraichirDemandes = useCallback(() => {
+    if (!jeton) return;
+    appeler<{ enAttente: number }>('/plateforme/demandes/compte', {}, jeton).then(
+      (r) => setDemandesEnAttente(r.enAttente),
+      () => undefined,
+    );
+  }, [jeton]);
+  useEffect(() => {
+    if (!jeton) return;
+    rafraichirDemandes();
+    const minuterie = setInterval(rafraichirDemandes, RELECTURE_DEMANDES_MS);
+    return () => clearInterval(minuterie);
+  }, [jeton, rafraichirDemandes]);
 
   const valeur = useMemo<ValeurPlateforme>(
     () => ({
@@ -102,8 +124,11 @@ export function FournisseurPlateforme({ children }: { children: ReactNode }) {
           throw e;
         }
       },
+      // Hors session : aucune demande affichée (le compteur garde la dernière valeur lue).
+      demandesEnAttente: session ? demandesEnAttente : 0,
+      rafraichirDemandes,
     }),
-    [chargement, session, deconnexion],
+    [chargement, session, deconnexion, demandesEnAttente, rafraichirDemandes],
   );
   return <Contexte.Provider value={valeur}>{children}</Contexte.Provider>;
 }

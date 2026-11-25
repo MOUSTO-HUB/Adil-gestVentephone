@@ -39,6 +39,13 @@ export const LIMITES = {
     fenetreS: 60,
     message: 'Trop de consultations. Réessayez dans une minute.',
   },
+  /** Demandes « Mot de passe oublié » d'une même adresse IP. */
+  motDePasseOublie: {
+    nom: 'mdp-oublie-ip',
+    max: 5,
+    fenetreS: 60 * 60,
+    message: 'Trop de demandes. Réessayez dans une heure ou contactez le concepteur.',
+  },
   pinUtilisateur: {
     nom: 'pin-utilisateur',
     max: 5,

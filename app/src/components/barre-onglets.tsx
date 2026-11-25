@@ -141,7 +141,7 @@ export function BarreCommercant() {
 
 /** Espace concepteur : Commerçants, Tableau, Nouveau (au centre), Comptes, Quitter. */
 export function BarreConcepteur() {
-  const { deconnexion } = usePlateforme();
+  const { deconnexion, demandesEnAttente } = usePlateforme();
   return (
     <BarreOnglets
       onglets={[
@@ -150,7 +150,9 @@ export function BarreConcepteur() {
           titre: 'Commerçants',
           icone: 'storefront-outline',
           iconeActive: 'storefront',
-          prefixes: ['/plateforme/commerce'],
+          prefixes: ['/plateforme/commerce', '/plateforme/demandes'],
+          // Demandes « Mot de passe oublié » des commerçants en attente.
+          pastille: demandesEnAttente,
         },
         {
           chemin: '/plateforme/tableau',

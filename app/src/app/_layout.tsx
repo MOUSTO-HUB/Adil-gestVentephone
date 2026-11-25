@@ -22,6 +22,7 @@ function Navigation() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={statut === 'deconnecte'}>
         <Stack.Screen name="connexion" />
+        <Stack.Screen name="mot-de-passe-oublie" />
       </Stack.Protected>
       <Stack.Protected guard={pinRequis}>
         <Stack.Screen name="pin" />

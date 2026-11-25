@@ -30,6 +30,14 @@ boutique et nouveau mot de passe du propriétaire se font depuis la fiche du com
   provisoire ; « téléphone perdu » retire aussi sa double authentification), le désactiver
   ou supprimer son compte. Supprimer un compte ne supprime rien de ce qu'il a créé
   (commerces, abonnements…). Il reste toujours au moins un concepteur actif.
+- **Mots de passe oubliés** : quand un commerçant touche « Mot de passe oublié ? », une
+  pastille rouge apparaît sur l'onglet **Commerçants** et un bandeau sur l'accueil (relu
+  chaque minute). Ouvrez **Voir les demandes** : nom, identifiant, commerce et numéro laissé.
+  **Donner un nouveau mot de passe** affiche un mot de passe provisoire **une seule fois** :
+  transmettez-le par **WhatsApp** ou **appel** (boutons prêts), jamais dans un groupe.
+  **Ignorer** classe une demande sans suite.
+- **Contact affiché aux commerçants** (même écran) : nom, téléphone, WhatsApp et e-mail
+  montrés sur l'écran « Mot de passe oublié » pour vous joindre directement.
 - **Mon compte** : changer son mot de passe (10 caractères, lettres et chiffres) et activer la
   **double authentification** : installez Google Authenticator, scannez le code QR, saisissez
   le code à 6 chiffres. Ensuite, chaque connexion demande ce code après le mot de passe.
@@ -68,6 +76,13 @@ boutique et nouveau mot de passe du propriétaire se font depuis la fiche du com
 **Se connecter.** Le propriétaire vous donne un identifiant et un mot de passe
 provisoire. À la première connexion sur un appareil, vous choisissez un **code PIN** de
 4 à 6 chiffres : il sert ensuite à déverrouiller l'application, même sans Internet.
+
+**Mot de passe oublié ?** Touchez ce bouton sous « Se connecter », saisissez votre
+identifiant (et, si vous voulez, un numéro pour être rappelé), puis **Envoyer la demande au
+concepteur**. Le concepteur reçoit la demande et vous donne un nouveau mot de passe. Sur le
+même écran, ses coordonnées (**Appeler**, **WhatsApp**, e-mail) permettent de le joindre
+directement. Employé : votre propriétaire peut aussi vous donner un nouveau mot de passe
+(Menu → Équipe).
 
 | Connexion                                   | Code PIN                    |
 | ------------------------------------------- | --------------------------- |

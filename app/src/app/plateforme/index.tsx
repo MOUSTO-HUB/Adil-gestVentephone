@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   Bouton,
+  Carte,
   Champ,
   Ecran,
   GrandeTuile,
@@ -129,7 +130,7 @@ const FILTRES = [
 
 function Commerces() {
   const c = useCouleurs();
-  const { session, requete } = usePlateforme();
+  const { session, requete, demandesEnAttente } = usePlateforme();
   const [recherche, setRecherche] = useState('');
   const [statut, setStatut] = useState<string>('');
   const [liste, setListe] = useState<ResumeCommerce[] | null>(null);
@@ -191,6 +192,17 @@ function Commerces() {
         />
       </Grille>
 
+      {demandesEnAttente > 0 ? (
+        <Carte titre="Mot de passe oublié" icone="notifications">
+          <Texte gras>{demandesEnAttente} commerçant(s) demande(nt) un nouveau mot de passe.</Texte>
+          <Bouton
+            titre="Voir les demandes"
+            icone="key"
+            onPress={() => router.push('/plateforme/demandes')}
+          />
+        </Carte>
+      ) : null}
+
       <Section titre="Que voulez-vous faire ?" icone="hand-left" />
       <Grille>
         <GrandeTuile
@@ -205,6 +217,13 @@ function Commerces() {
           icone="stats-chart"
           couleur={c.primaire}
           onPress={() => router.push('/plateforme/tableau')}
+        />
+        <GrandeTuile
+          titre="Mots de passe oubliés"
+          icone="key"
+          couleur={c.alerte}
+          badge={demandesEnAttente}
+          onPress={() => router.push('/plateforme/demandes')}
         />
       </Grille>
 

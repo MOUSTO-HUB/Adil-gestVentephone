@@ -268,7 +268,8 @@ export const LIBELLES_ACTIONS_AUDIT: Record<string, string> = {
   PLATEFORME_PAIEMENT: 'Abonnement payé',
   PLATEFORME_BOUTIQUE: 'Boutique modifiée par GestVente',
   PLATEFORME_CATALOGUE: 'Catalogue de base installé',
-  PLATEFORME_MOT_DE_PASSE: 'Mot de passe du propriétaire réinitialisé par GestVente',
+  PLATEFORME_MOT_DE_PASSE: 'Mot de passe réinitialisé par le concepteur',
+  MOT_DE_PASSE_DEMANDE: 'Mot de passe oublié : demande envoyée au concepteur',
 };
 
 /** Familles d'actions proposées comme filtre dans l'écran du journal. */
@@ -279,6 +280,8 @@ export const FAMILLES_AUDIT: Record<string, string[]> = {
     'EMPLOYE_CREE',
     'EMPLOYE_MODIFIE',
     'MOT_DE_PASSE_REINITIALISE',
+    'MOT_DE_PASSE_DEMANDE',
+    'PLATEFORME_MOT_DE_PASSE',
   ],
   Connexions: [
     'CONNEXION',

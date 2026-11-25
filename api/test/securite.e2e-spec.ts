@@ -15,6 +15,9 @@ const ROUTES_PUBLIQUES: Record<string, string> = {
   'POST /api/auth/rafraichir': 'renouvellement par jeton de rafraichissement',
   'GET /api/photos/{nom}': 'photos du catalogue (sans donnée personnelle), nom aléatoire',
   'POST /api/plateforme/connexion': 'connexion du concepteur (limitée par identifiant)',
+  'GET /api/aide/contact': 'contact du concepteur montré sur l’écran de connexion',
+  'POST /api/aide/mot-de-passe-oublie':
+    'demande de mot de passe oublié (limitée par IP, même réponse si le compte est inconnu)',
   'GET /api/f/{code}':
     'facture envoyée au client par SMS ou WhatsApp, code aléatoire de 10 caractères',
 };

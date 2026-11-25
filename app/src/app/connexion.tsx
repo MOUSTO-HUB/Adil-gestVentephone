@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Bouton, Champ, Ecran, Message } from '@/components/ui';
 import { messageErreur } from '@/lib/api';
@@ -49,6 +50,17 @@ export default function Connexion() {
       />
       <Message texte={erreur} />
       <Bouton titre="Se connecter" onPress={valider} chargement={envoi} />
+      <Bouton
+        titre="Mot de passe oublié ?"
+        icone="help-circle"
+        variante="secondaire"
+        onPress={() =>
+          router.push({
+            pathname: '/mot-de-passe-oublie',
+            params: identifiant.trim() ? { identifiant: identifiant.trim() } : {},
+          })
+        }
+      />
     </Ecran>
   );
 }

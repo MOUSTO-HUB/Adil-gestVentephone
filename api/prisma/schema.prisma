@@ -1381,3 +1381,37 @@ model PaiementAbonnement {
   @@index([commerceId, creeLe])
   @@index([creeLe])
 }
+
+// ─── Mot de passe oublié ─────────────────────────────────────────────────────
+
+enum StatutDemandeMotDePasse {
+  EN_ATTENTE
+  TRAITEE
+  IGNOREE
+}
+
+/// Demande « Mot de passe oublié » d'un commerçant, traitée dans l'espace concepteur.
+model DemandeMotDePasse {
+  id            String                  @id @default(uuid())
+  utilisateurId String
+  commerceId    String
+  /// Numéro laissé par le commerçant pour être rappelé (facultatif).
+  contact       String?
+  message       String?
+  statut        StatutDemandeMotDePasse @default(EN_ATTENTE)
+  ip            String?
+  creeLe        DateTime                @default(now())
+  traiteLe      DateTime?
+  /// Concepteur qui a donné le nouveau mot de passe (ou ignoré la demande).
+  traiteParId   String?
+
+  @@index([statut, creeLe])
+  @@index([utilisateurId])
+}
+
+/// Réglages de la plateforme (contact du concepteur affiché aux commerçants…).
+model ReglagePlateforme {
+  cle       String   @id
+  valeur    String
+  modifieLe DateTime @updatedAt
+}
