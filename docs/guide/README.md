@@ -77,6 +77,13 @@ boutique et nouveau mot de passe du propriétaire se font depuis la fiche du com
 provisoire. À la première connexion sur un appareil, vous choisissez un **code PIN** de
 4 à 6 chiffres : il sert ensuite à déverrouiller l'application, même sans Internet.
 
+**Nouvelle version.** Après une mise à jour du site, un bandeau **« Nouvelle version
+disponible »** apparaît en haut de l'écran (navigateur, ou application installée sur le
+téléphone ou l'ordinateur). Touchez **Mettre à jour** : l'application se recharge sur la
+nouvelle version, sans rien perdre (les ventes pas encore envoyées restent sur l'appareil).
+**Plus tard** cache le bandeau 30 minutes. La version installée est indiquée en bas du
+**Menu**.
+
 **Mot de passe oublié ?** Touchez ce bouton sous « Se connecter », saisissez votre
 identifiant (et, si vous voulez, un numéro pour être rappelé), puis **Envoyer la demande au
 concepteur**. Le concepteur reçoit la demande et vous donne un nouveau mot de passe. Sur le

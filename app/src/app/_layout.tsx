@@ -2,6 +2,7 @@ import { Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BandeauMiseAJour } from '@/components/mise-a-jour';
 import { FournisseurApparence } from '@/lib/apparence';
 import { FournisseurSession, useSession } from '@/lib/session';
 import { FournisseurSync } from '@/lib/sync/contexte';
@@ -57,11 +58,15 @@ function Contenu() {
     <ThemeProvider value={mode === 'sombre' ? THEME_SOMBRE : THEME_CLAIR}>
       {/* En-têtes vert sarcelle dans les deux modes : icônes de la barre d'état en clair. */}
       <StatusBar style="light" />
-      <FournisseurSession>
-        <FournisseurSync>
-          <Navigation />
-        </FournisseurSync>
-      </FournisseurSession>
+      <View style={{ flex: 1 }}>
+        {/* Nouvelle version publiée : proposée sur tous les écrans (commerçant et concepteur). */}
+        <BandeauMiseAJour />
+        <FournisseurSession>
+          <FournisseurSync>
+            <Navigation />
+          </FournisseurSync>
+        </FournisseurSession>
+      </View>
     </ThemeProvider>
   );
 }

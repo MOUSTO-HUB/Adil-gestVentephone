@@ -1,11 +1,12 @@
 import { LIBELLES_ROLES } from '@gestvente/commun';
 import { router } from 'expo-router';
-import { Bouton, Ecran, GrandeTuile, Grille, Section } from '@/components/ui';
+import { Bouton, Ecran, GrandeTuile, Grille, Section, Texte } from '@/components/ui';
 import { useCompteurs } from '@/lib/compteurs';
 import { confirmer } from '@/lib/confirmer';
 import { useSession } from '@/lib/session';
 import { useSync } from '@/lib/sync/contexte';
 import { useCouleurs } from '@/lib/theme';
+import { VERSION_SITE, versionCourte } from '@/lib/version';
 
 /** Menu : toutes les options de l'espace commerçant, rangées par thème avec un pictogramme. */
 export default function Menu() {
@@ -244,6 +245,8 @@ export default function Menu() {
         variante="danger"
         onPress={() => void seDeconnecter()}
       />
+      {/* Version installée : utile au concepteur pour vérifier une mise à jour. */}
+      <Texte discret>Version de l’application : {versionCourte(VERSION_SITE)}</Texte>
     </Ecran>
   );
 }

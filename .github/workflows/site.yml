@@ -49,6 +49,9 @@ jobs:
         working-directory: app
         env:
           EXPO_PUBLIC_API_URL: ${{ vars.SITE_API_URL }}
+          # Version du site intégrée à l'application : comparée à version.json pour
+          # proposer « Mettre à jour » aux utilisateurs dès qu'une nouvelle version est en ligne.
+          EXPO_PUBLIC_VERSION_SITE: ${{ github.sha }}
           CI: 1
         run: npx expo export --platform web --output-dir dist-web
       - name: Sans dossiers à point (refusés par o2switch)
@@ -58,6 +61,7 @@ jobs:
         working-directory: app/dist-web
         run: |
           echo "${GITHUB_SHA}" > version-source.txt
+          printf '{"version":"%s","publieeLe":"%s"}\n' "${GITHUB_SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > version.json
           git init -q -b site-en-ligne
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
