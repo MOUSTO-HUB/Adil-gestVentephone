@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { generateKeyPairSync, type KeyObject, randomUUID, sign } from 'node:crypto';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { hash } from '@node-rs/argon2';
@@ -10,6 +10,31 @@ import { Role } from '../src/generated/prisma/enums.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 
 export const MOT_DE_PASSE = 'Mot-De-Passe-Test-1';
+
+/** Clé d'un appareil de test (ECDSA P-256), comme celle que garde chaque appareil. */
+export interface CleAppareil {
+  privee: KeyObject;
+  publique: { kty: string; crv: string; x: string; y: string };
+}
+
+export function nouvelleCleAppareil(): CleAppareil {
+  const { publicKey, privateKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
+  const jwk = publicKey.export({ format: 'jwk' });
+  return { privee: privateKey, publique: { kty: jwk.kty!, crv: jwk.crv!, x: jwk.x!, y: jwk.y! } };
+}
+
+/** Appareil des tests : le même pour tous les comptes (autorisé d'office comme premier appareil). */
+export const CLE_APPAREIL_TEST = nouvelleCleAppareil();
+
+/** Preuve de l'appareil : défi du serveur signé par sa clé. */
+export async function preuveAppareil(app: INestApplication<App>, cle = CLE_APPAREIL_TEST) {
+  const { body } = await request(app.getHttpServer()).post('/api/auth/defi').expect(200);
+  const signature = sign('sha256', Buffer.from(body.defi as string), {
+    key: cle.privee,
+    dsaEncoding: 'ieee-p1363',
+  }).toString('base64url');
+  return { cle: cle.publique, defi: body.defi as string, signature };
+}
 
 export async function demarrerApplication(): Promise<INestApplication<App>> {
   const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -58,6 +83,8 @@ export async function creerCommerce(prisma: PrismaService) {
 /** Supprime un commerce de test et tout ce qui en dépend. */
 export async function supprimerCommerce(prisma: PrismaService, commerceId: string) {
   await prisma.journalAudit.deleteMany({ where: { commerceId } });
+  await prisma.certificatAppareil.deleteMany({ where: { commerceId } });
+  await prisma.codeAppareil.deleteMany({ where: { commerceId } });
   await prisma.demandeMotDePasse.deleteMany({ where: { commerceId } });
   await prisma.message.deleteMany({ where: { commerceId } });
   await prisma.modeleMessage.deleteMany({ where: { commerceId } });
@@ -114,12 +141,15 @@ export async function connecter(
   identifiant: string,
   motDePasse = MOT_DE_PASSE,
 ): Promise<SessionTest> {
+  // Preuve d'abord : deux requêtes supertest ne s'ouvrent pas en même temps sur le serveur.
+  const preuve = await preuveAppareil(app);
   const reponse = await request(app.getHttpServer())
     .post('/api/auth/connexion')
     .send({
       identifiant,
       motDePasse,
       appareil: { nom: 'Téléphone de test', plateforme: 'android' },
+      preuve,
     })
     .expect(200);
   return reponse.body as SessionTest;

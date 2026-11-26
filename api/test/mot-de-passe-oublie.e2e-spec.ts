@@ -8,6 +8,7 @@ import {
   connecter,
   creerCommerce,
   demarrerApplication,
+  preuveAppareil,
   prismaDe,
   supprimerCommerce,
 } from './outils.js';
@@ -47,10 +48,15 @@ describe('Mot de passe oublié des commerçants (e2e)', () => {
         motDePasseHash: await hash(MOT_DE_PASSE_CONCEPTEUR),
       },
     });
+    const preuve = await preuveAppareil(app);
     jeton = (
       await http()
         .post('/api/plateforme/connexion')
-        .send({ identifiant: `concepteur-${suffixe}`, motDePasse: MOT_DE_PASSE_CONCEPTEUR })
+        .send({
+          identifiant: `concepteur-${suffixe}`,
+          motDePasse: MOT_DE_PASSE_CONCEPTEUR,
+          preuve,
+        })
         .expect(200)
     ).body.jeton;
   });

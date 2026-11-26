@@ -57,6 +57,8 @@ export class ErreurApi extends Error {
   constructor(
     readonly statut: number,
     message: string,
+    /** Code précis renvoyé par l'API (ex. APPAREIL_NON_AUTORISE). */
+    readonly code?: string,
   ) {
     super(message);
   }
@@ -124,10 +126,12 @@ export async function appeler<T>(chemin: string, options: Options, jeton?: strin
   if (options.fichier && reponse.ok) return (await reponse.blob()) as T;
   const donnees: unknown = await reponse.json().catch(() => null);
   if (!reponse.ok) {
-    const message = (donnees as { message?: string | string[] } | null)?.message;
+    const { message, code } =
+      (donnees as { message?: string | string[]; code?: string } | null) ?? {};
     throw new ErreurApi(
       reponse.status,
       Array.isArray(message) ? message.join('\n') : (message ?? messageStatut(reponse.status)),
+      typeof code === 'string' ? code : undefined,
     );
   }
   return donnees as T;

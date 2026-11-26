@@ -2,6 +2,8 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { CertificatsController } from '../certificats/certificats.controller.js';
+import { CertificatsService } from '../certificats/certificats.service.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { BoutiqueGuard } from './guards/boutique.guard.js';
@@ -25,15 +27,16 @@ import { DUREE_ACCES } from './jetons.js';
       },
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, CertificatsController],
   providers: [
     AuthService,
+    CertificatsService,
     BoutiqueGuard,
     // Ordre d'exécution : débit par IP, authentification, puis rôles.
     { provide: APP_GUARD, useClass: DebitGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
-  exports: [AuthService, BoutiqueGuard],
+  exports: [AuthService, CertificatsService, BoutiqueGuard],
 })
 export class AuthModule {}

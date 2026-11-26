@@ -13,6 +13,7 @@ const ROUTES_PUBLIQUES: Record<string, string> = {
   'GET /api/sante': 'supervision et test de connexion de l’application',
   'POST /api/auth/connexion': 'connexion (limitée par IP et par identifiant)',
   'POST /api/auth/rafraichir': 'renouvellement par jeton de rafraichissement',
+  'POST /api/auth/defi': 'défi à signer par la clé de l’appareil avant la connexion (sans donnée)',
   'GET /api/photos/{nom}': 'photos du catalogue (sans donnée personnelle), nom aléatoire',
   'POST /api/plateforme/connexion': 'connexion du concepteur (limitée par identifiant)',
   'GET /api/aide/contact': 'contact du concepteur montré sur l’écran de connexion',

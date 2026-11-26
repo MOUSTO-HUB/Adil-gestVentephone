@@ -80,6 +80,12 @@ export default function Concepteurs() {
         variante="secondaire"
         onPress={() => router.push('/plateforme/compte')}
       />
+      <Bouton
+        titre="Appareils autorisés des concepteurs"
+        icone="shield-checkmark"
+        variante="secondaire"
+        onPress={() => router.push('/plateforme/appareils')}
+      />
       {provisoire ? (
         <Carte titre="Mot de passe provisoire" icone="key">
           <Texte>

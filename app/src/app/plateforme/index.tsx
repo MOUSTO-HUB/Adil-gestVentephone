@@ -14,7 +14,9 @@ import {
   Section,
   Texte,
 } from '@/components/ui';
-import { messageErreur } from '@/lib/api';
+import { AutorisationAppareil } from '@/components/autorisation-appareil';
+import { ErreurApi, messageErreur } from '@/lib/api';
+import { codeAppareilDemande } from '@/lib/cle-appareil';
 import { BadgeAbonnement, BadgeStatut, dateCourte } from '@/components/plateforme';
 import { type ResumeCommerce, usePlateforme } from '@/lib/plateforme';
 import { ombre, useCouleurs } from '@/lib/theme';
@@ -33,6 +35,9 @@ function ConnexionConcepteur() {
   const [code, setCode] = useState('');
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  // Nouvel appareil : code d'autorisation donné par un autre concepteur.
+  const [codeDemande, setCodeDemande] = useState(false);
+  const [codeAppareil, setCodeAppareil] = useState('');
 
   const valider = async () => {
     if (!identifiant.trim() || !motDePasse.trim()) {
@@ -50,12 +55,17 @@ function ConnexionConcepteur() {
         identifiant.trim(),
         motDePasse.trim(),
         etape === 'code' ? code.trim() : undefined,
+        codeDemande && etape === 'mot-de-passe' ? codeAppareil : undefined,
       );
       if (resultat === 'code') {
         setEtape('code');
         setEnvoi(false);
       }
     } catch (e) {
+      if (e instanceof ErreurApi && codeAppareilDemande(e.code)) {
+        setCodeDemande(true);
+        setEtape('mot-de-passe');
+      }
       setErreur(messageErreur(e));
       setCode('');
       setEnvoi(false);
@@ -116,8 +126,19 @@ function ConnexionConcepteur() {
         autoComplete="current-password"
         onSubmitEditing={valider}
       />
+      {codeDemande ? (
+        <AutorisationAppareil
+          code={codeAppareil}
+          surCode={setCodeAppareil}
+          qui="un autre concepteur (Comptes › Appareils autorisés)"
+        />
+      ) : null}
       <Message texte={erreur} />
-      <Bouton titre="Se connecter" onPress={valider} chargement={envoi} />
+      <Bouton
+        titre={codeDemande ? 'Autoriser cet appareil et se connecter' : 'Se connecter'}
+        onPress={valider}
+        chargement={envoi}
+      />
     </Ecran>
   );
 }

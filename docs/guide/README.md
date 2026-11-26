@@ -38,6 +38,11 @@ boutique et nouveau mot de passe du propriétaire se font depuis la fiche du com
   **Ignorer** classe une demande sans suite.
 - **Contact affiché aux commerçants** (même écran) : nom, téléphone, WhatsApp et e-mail
   montrés sur l'écran « Mot de passe oublié » pour vous joindre directement.
+- **Appareils autorisés** : chaque ordinateur, téléphone ou tablette doit être autorisé.
+  Fiche du commerce → **Appareils autorisés** (code pour le nouvel appareil d'un commerçant
+  ou d'un employé, retrait de l'ancien) ; **Comptes** → **Appareils autorisés des
+  concepteurs** (code pour un autre concepteur). Voir
+  [le guide pas à pas](appareils-autorises.md).
 - **Mon compte** : changer son mot de passe (10 caractères, lettres et chiffres) et activer la
   **double authentification** : installez Google Authenticator, scannez le code QR, saisissez
   le code à 6 chiffres. Ensuite, chaque connexion demande ce code après le mot de passe.
@@ -65,6 +70,7 @@ boutique et nouveau mot de passe du propriétaire se font depuis la fiche du com
 3. [Fixer les prix](proprietaire/03-prix.md)
 4. [Lire les rapports et le tableau de bord](proprietaire/04-rapports.md)
 5. [Appareil perdu ou volé](proprietaire/05-appareil-perdu.md)
+6. [Appareils autorisés : nouvel appareil, retirer un appareil](appareils-autorises.md)
 
 ## Formation
 

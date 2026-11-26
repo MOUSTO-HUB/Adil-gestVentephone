@@ -5,7 +5,13 @@ import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { ACCESSOIRES_REFERENCE, TELEPHONES_REFERENCE } from '../src/catalogue/reference.js';
 import type { PrismaService } from '../src/prisma/prisma.service.js';
-import { connecter, demarrerApplication, prismaDe, supprimerCommerce } from './outils.js';
+import {
+  connecter,
+  demarrerApplication,
+  preuveAppareil,
+  prismaDe,
+  supprimerCommerce,
+} from './outils.js';
 
 const MOT_DE_PASSE_CONCEPTEUR = 'Concepteur-Test-2026';
 const PRODUITS_REFERENCE =
@@ -55,9 +61,10 @@ describe('Espace concepteur (e2e)', () => {
       .post('/api/plateforme/connexion')
       .send({ identifiant: `concepteur-${suffixe}`, motDePasse: 'faux' })
       .expect(401);
+    const preuve = await preuveAppareil(app);
     const { body } = await http()
       .post('/api/plateforme/connexion')
-      .send({ identifiant: `CONCEPTEUR-${suffixe}`, motDePasse: MOT_DE_PASSE_CONCEPTEUR })
+      .send({ identifiant: `CONCEPTEUR-${suffixe}`, motDePasse: MOT_DE_PASSE_CONCEPTEUR, preuve })
       .expect(200);
     jeton = body.jeton;
     expect(body.concepteur.nom).toBe('Concepteur de test');

@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { erreurNouveauPin, etatAbonnement, ordreFacture } from '@gestvente/commun';
 import { hash, verify } from '@node-rs/argon2';
 import { ACTIONS_AUDIT, AuditService } from '../audit/audit.service.js';
+import { CertificatsService, type PreuveAppareil } from '../certificats/certificats.service.js';
 import { Role } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { LIMITES, LimiteurService } from '../securite/limiteur.service.js';
@@ -46,6 +47,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly audit: AuditService,
     private readonly limiteur: LimiteurService,
+    private readonly certificats: CertificatsService,
   ) {}
 
   /** Connexion par identifiant et mot de passe : ouvre une session liée à un nouvel appareil. */
@@ -53,6 +55,8 @@ export class AuthService {
     identifiantSaisi: string,
     motDePasse: string,
     appareil: AppareilDto,
+    preuve?: PreuveAppareil,
+    codeAppareil?: string,
   ): Promise<SessionDto> {
     const identifiant = normaliserIdentifiant(identifiantSaisi);
     await this.limiteur.verifier(LIMITES.connexionIdentifiant, identifiant);
@@ -78,6 +82,13 @@ export class AuthService {
     });
     const refus = refusCommerce(commerce);
     if (refus) throw new ForbiddenException(refus);
+    // Appareil reconnu (clé enregistrée), sinon code d'autorisation ou premier appareil.
+    const certificat = await this.certificats.controlerConnexion(
+      { type: 'UTILISATEUR', id: compte.id, commerceId: compte.commerceId },
+      preuve,
+      codeAppareil,
+      appareil,
+    );
 
     const nouvelAppareil = await this.prisma.appareil.create({
       data: {
@@ -85,6 +96,7 @@ export class AuthService {
         utilisateurId: compte.id,
         nom: appareil.nom,
         plateforme: appareil.plateforme,
+        certificatId: certificat.id,
       },
     });
     const session = await this.emettreJetons(compte, nouvelAppareil.id);

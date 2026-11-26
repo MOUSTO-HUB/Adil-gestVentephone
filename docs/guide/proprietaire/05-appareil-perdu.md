@@ -11,12 +11,18 @@ recevoir ; il faudrait l'identifiant **et** le mot de passe pour s'y reconnecter
 
 ![Appareils connectés](../images/appareils.png)
 
+Puis Menu → **Appareils autorisés** : touchez **Retirer** à côté de l'appareil perdu. Il ne
+pourra plus jamais se connecter, même avec le bon mot de passe (voir
+[Appareils autorisés](../appareils-autorises.md)).
+
 Si le mot de passe a pu être vu : **Équipe** → l'employé → **Nouveau mot de passe**.
 
 ## Reprendre sur un nouvel appareil
 
 1. Installez l'application (ou ouvrez le site) sur le nouvel appareil.
-2. Connectez-vous avec l'identifiant et le mot de passe, puis choisissez le code PIN.
+2. Connectez-vous avec l'identifiant et le mot de passe : l'application demande un **code
+   d'autorisation** pour ce nouvel appareil (Menu → **Appareils autorisés** → **Nouvel
+   appareil**, ou le service GestVente pour le propriétaire). Saisissez-le, puis le code PIN.
 3. Les données de vos boutiques arrivent du serveur : catalogue, stock, clients, ventes
    récentes, crédits, trocs, transferts, caisses.
 

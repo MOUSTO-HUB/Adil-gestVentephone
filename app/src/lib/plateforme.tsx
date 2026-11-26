@@ -9,6 +9,8 @@ import {
 } from 'react';
 import type { EtatAbonnement, FormuleAbonnement } from '@gestvente/commun';
 import { appeler, ErreurApi, type Options } from './api';
+import { preuveAppareil } from './cle-appareil';
+import { nomAppareil, plateforme } from './session';
 import { effacer, ecrire, lire } from './stockage';
 
 /**
@@ -42,6 +44,8 @@ interface ValeurPlateforme {
     identifiant: string,
     motDePasse: string,
     code?: string,
+    /** Code d'autorisation d'un nouvel appareil (donné par un autre concepteur). */
+    codeAppareil?: string,
   ) => Promise<'connecte' | 'code'>;
   /** Met à jour la session (mot de passe changé, double authentification activée…). */
   majSession: (changement: Partial<Omit<SessionConcepteur, 'jeton'>>) => Promise<void>;
@@ -92,10 +96,19 @@ export function FournisseurPlateforme({ children }: { children: ReactNode }) {
     () => ({
       chargement,
       session,
-      async connexion(identifiant, motDePasse, code) {
+      async connexion(identifiant, motDePasse, code, codeAppareil) {
+        // L'appareil prouve son identité (défi signé par sa clé), comme pour les commerçants.
+        const preuve = await preuveAppareil();
         const r = await appeler<ReponseConnexion>('/plateforme/connexion', {
           methode: 'POST',
-          corps: { identifiant, motDePasse, ...(code ? { code } : {}) },
+          corps: {
+            identifiant,
+            motDePasse,
+            ...(code ? { code } : {}),
+            appareil: { nom: nomAppareil(), plateforme: plateforme() },
+            preuve,
+            ...(codeAppareil?.trim() ? { codeAppareil: codeAppareil.trim() } : {}),
+          },
         });
         if ('doubleAuth' in r) return 'code';
         const nouvelle: SessionConcepteur = {

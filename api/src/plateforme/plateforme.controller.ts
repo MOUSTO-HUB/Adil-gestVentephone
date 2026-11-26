@@ -32,8 +32,12 @@ import {
   Length,
   Matches,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { AppareilDto } from '../auth/auth.dto.js';
 import { Public } from '../auth/decorateurs.js';
+import { PreuveAppareilDto } from '../certificats/certificats.dto.js';
 import { LIMITES, LimiteurService } from '../securite/limiteur.service.js';
 import type { MoyenPaiement, StatutCommerce } from '../generated/prisma/enums.js';
 import { ConcepteurCourant, type ConcepteurConnecte, ConcepteurGuard } from './concepteur.guard.js';
@@ -51,6 +55,27 @@ class ConnexionConcepteurDto {
   @IsString()
   @Length(0, 10)
   code?: string;
+
+  @ApiPropertyOptional({ type: AppareilDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AppareilDto)
+  appareil?: AppareilDto;
+
+  @ApiPropertyOptional({ type: PreuveAppareilDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PreuveAppareilDto)
+  preuve?: PreuveAppareilDto;
+
+  @ApiPropertyOptional({
+    example: 'ABCD-EFGH',
+    description: 'Code d’autorisation du nouvel appareil.',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(0, 20)
+  codeAppareil?: string;
 }
 
 class NouveauCommerceDto {
@@ -160,7 +185,11 @@ export class PlateformeController {
     // Comme pour les commerçants : les échecs depuis une même IP sont limités.
     await this.limiteur.controler(LIMITES.connexionIp, ip);
     try {
-      return await this.plateforme.connexion(dto.identifiant, dto.motDePasse, dto.code);
+      return await this.plateforme.connexion(dto.identifiant, dto.motDePasse, dto.code, {
+        appareil: dto.appareil ?? { nom: 'Appareil du concepteur', plateforme: 'autre' },
+        preuve: dto.preuve,
+        codeAppareil: dto.codeAppareil,
+      });
     } catch (erreur) {
       if (erreur instanceof UnauthorizedException) {
         await this.limiteur.verifier(LIMITES.connexionIp, ip);

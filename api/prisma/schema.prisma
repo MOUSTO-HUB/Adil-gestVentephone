@@ -404,6 +404,8 @@ model Appareil {
   curseurSync   BigInt?
   revoqueLe     DateTime?
   revoqueParId  String?
+  /// Appareil certifié qui a ouvert cette session (sa révocation la ferme).
+  certificatId  String?
   creeLe        DateTime  @default(now())
   modifieLe     DateTime  @updatedAt
 
@@ -1414,4 +1416,61 @@ model ReglagePlateforme {
   cle       String   @id
   valeur    String
   modifieLe DateTime @updatedAt
+}
+
+// ─── Certification des appareils ─────────────────────────────────────────────
+
+enum TitulaireCertificat {
+  UTILISATEUR
+  CONCEPTEUR
+}
+
+/// Appareil autorisé (ordinateur, téléphone, tablette) : sa clé publique ECDSA P-256 ;
+/// la clé privée ne quitte jamais l'appareil, qui signe un défi à chaque connexion.
+model CertificatAppareil {
+  id            String              @id @default(uuid())
+  titulaire     TitulaireCertificat
+  utilisateurId String?
+  concepteurId  String?
+  commerceId    String?
+  /// SHA-256 de la clé publique (identifiant de l'appareil).
+  empreinte     String
+  clePublique   Json
+  nom           String
+  plateforme    String
+  /// PREMIER_APPAREIL (premier appareil du compte), SESSION_EXISTANTE (déjà connecté
+  /// avant la certification) ou CODE (code d'autorisation donné par un administrateur).
+  origine       String
+  creeLe        DateTime            @default(now())
+  dernierUsage  DateTime?
+  revoqueLe     DateTime?
+  revoquePar    String?
+
+  @@unique([empreinte, utilisateurId])
+  @@unique([empreinte, concepteurId])
+  @@index([utilisateurId])
+  @@index([concepteurId])
+  @@index([commerceId])
+}
+
+/// Code d'autorisation d'un nouvel appareil : à usage unique, valable 24 heures.
+model CodeAppareil {
+  id            String              @id @default(uuid())
+  titulaire     TitulaireCertificat
+  utilisateurId String?
+  concepteurId  String?
+  commerceId    String?
+  /// SHA-256 du code (le code n'est affiché qu'une fois à l'administrateur).
+  codeHash      String              @unique
+  /// Le nouvel appareil remplace les anciens (révoqués dès qu'il est enregistré).
+  remplacer     Boolean             @default(true)
+  expireLe      DateTime
+  utiliseLe     DateTime?
+  annuleLe      DateTime?
+  creePar       String
+  creeLe        DateTime            @default(now())
+
+  @@index([utilisateurId])
+  @@index([concepteurId])
+  @@index([commerceId])
 }

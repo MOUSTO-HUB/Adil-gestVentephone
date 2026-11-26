@@ -5,7 +5,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { codeTotp, pasDe } from '../src/plateforme/totp.js';
 import type { PrismaService } from '../src/prisma/prisma.service.js';
-import { demarrerApplication, prismaDe } from './outils.js';
+import { demarrerApplication, preuveAppareil, prismaDe } from './outils.js';
 
 const MOT_DE_PASSE_A = 'Concepteur-A-2026';
 
@@ -22,8 +22,15 @@ describe('Comptes des concepteurs et double authentification (e2e)', () => {
   const identifiantB = `aide-${suffixe}`;
   const http = () => request(app.getHttpServer());
   const bearer = { type: 'bearer' as const };
-  const connexion = (identifiant: string, motDePasse: string, code?: string) =>
-    http().post('/api/plateforme/connexion').send({ identifiant, motDePasse, code });
+  // Preuve de l'appareil (défi signé) obtenue d'abord : la requête est rendue dans un objet.
+  const connexion = async (identifiant: string, motDePasse: string, code?: string) => {
+    const preuve = await preuveAppareil(app);
+    return {
+      requete: http()
+        .post('/api/plateforme/connexion')
+        .send({ identifiant, motDePasse, code, preuve }),
+    };
+  };
 
   beforeAll(async () => {
     app = await demarrerApplication();
@@ -36,7 +43,8 @@ describe('Comptes des concepteurs et double authentification (e2e)', () => {
         motDePasseHash: await hash(MOT_DE_PASSE_A),
       },
     });
-    jetonA = (await connexion(`principal-${suffixe}`, MOT_DE_PASSE_A).expect(200)).body.jeton;
+    jetonA = (await (await connexion(`principal-${suffixe}`, MOT_DE_PASSE_A)).requete.expect(200))
+      .body.jeton;
   });
 
   afterAll(async () => {
@@ -63,7 +71,7 @@ describe('Comptes des concepteurs et double authentification (e2e)', () => {
       .send({ nom: 'Doublon', identifiant: identifiantB })
       .expect(409);
 
-    const session = await connexion(identifiantB, provisoireB).expect(200);
+    const session = await (await connexion(identifiantB, provisoireB)).requete.expect(200);
     jetonB = session.body.jeton;
     expect(session.body.concepteur).toMatchObject({
       nom: 'Aïssata Camara',
@@ -120,18 +128,22 @@ describe('Comptes des concepteurs et double authentification (e2e)', () => {
       .send({ code: codeTotp(secretB, pasDe()) })
       .expect(204);
 
-    const sansCode = await connexion(identifiantB, 'Aissata-2026-ok').expect(200);
+    const sansCode = await (await connexion(identifiantB, 'Aissata-2026-ok')).requete.expect(200);
     expect(sansCode.body).toEqual({ doubleAuth: true });
-    await connexion(identifiantB, 'Aissata-2026-ok', '123456').expect(401);
+    await (await connexion(identifiantB, 'Aissata-2026-ok', '123456')).requete.expect(401);
     // Le code déjà utilisé à l'activation est refusé ; le suivant est accepté.
     const utilise = (await prisma.concepteur.findUniqueOrThrow({ where: { id: idB } }))
       .totpDernierPas!;
-    await connexion(identifiantB, 'Aissata-2026-ok', codeTotp(secretB, utilise)).expect(401);
-    const avecCode = await connexion(
-      identifiantB,
-      'Aissata-2026-ok',
-      codeTotp(secretB, Math.max(utilise + 1, pasDe())),
-    ).expect(200);
+    await (
+      await connexion(identifiantB, 'Aissata-2026-ok', codeTotp(secretB, utilise))
+    ).requete.expect(401);
+    const avecCode = await (
+      await connexion(
+        identifiantB,
+        'Aissata-2026-ok',
+        codeTotp(secretB, Math.max(utilise + 1, pasDe())),
+      )
+    ).requete.expect(200);
     expect(avecCode.body.concepteur).toMatchObject({ doubleAuth: true });
   });
 
@@ -146,8 +158,10 @@ describe('Comptes des concepteurs et double authentification (e2e)', () => {
       .auth(jetonA, bearer)
       .send({ retirerDoubleAuth: true })
       .expect(200);
-    await connexion(identifiantB, 'Aissata-2026-ok').expect(401);
-    const session = await connexion(identifiantB, body.motDePasseProvisoire).expect(200);
+    await (await connexion(identifiantB, 'Aissata-2026-ok')).requete.expect(401);
+    const session = await (
+      await connexion(identifiantB, body.motDePasseProvisoire)
+    ).requete.expect(200);
     expect(session.body.concepteur).toMatchObject({
       doitChangerMotDePasse: true,
       doubleAuth: false,
@@ -167,7 +181,7 @@ describe('Comptes des concepteurs et double authentification (e2e)', () => {
         .send({ retirerDoubleAuth: false })
         .expect(200)
     ).body.motDePasseProvisoire;
-    await connexion(identifiantB, provisoire).expect(401);
+    await (await connexion(identifiantB, provisoire)).requete.expect(401);
 
     await http().delete(`/api/plateforme/concepteurs/${idA}`).auth(jetonA, bearer).expect(400);
     await http().delete(`/api/plateforme/concepteurs/${idB}`).auth(jetonA, bearer).expect(204);

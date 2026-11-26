@@ -20,6 +20,7 @@ import {
   type Profil,
   type Session,
 } from './api';
+import { preuveAppareil } from './cle-appareil';
 import { creerPinLocal, pinCorrect, type PinLocal } from './pin-local';
 import { CLES, effacer, ecrire, lire } from './stockage';
 
@@ -41,7 +42,8 @@ interface ValeurSession {
   boutique: Boutique | null;
   etatPin: EtatPin;
   api: ClientApi;
-  connexion: (identifiant: string, motDePasse: string) => Promise<void>;
+  /** `codeAppareil` : code d'autorisation d'un nouvel appareil (donné par un administrateur). */
+  connexion: (identifiant: string, motDePasse: string, codeAppareil?: string) => Promise<void>;
   /** Crée le code PIN du compte (premier appareil). */
   creerPin: (pin: string) => Promise<void>;
   /** Confirme le code PIN existant du compte sur un nouvel appareil. */
@@ -76,7 +78,7 @@ function memoriserPin(pin: PinLocal | null): PinLocal | null {
 
 const Contexte = createContext<ValeurSession | null>(null);
 
-function plateforme(): string {
+export function plateforme(): string {
   if (Platform.OS === 'android' || Platform.OS === 'ios' || Platform.OS === 'web')
     return Platform.OS;
   if (Platform.OS === 'windows') return 'windows';
@@ -84,7 +86,8 @@ function plateforme(): string {
   return 'autre';
 }
 
-function nomAppareil(): string {
+/** Nom lisible de l’appareil (liste des appareils autorisés). */
+export function nomAppareil(): string {
   const nom =
     Device.deviceName ?? [Device.manufacturer, Device.modelName].filter(Boolean).join(' ');
   return (nom || (Platform.OS === 'web' ? 'Navigateur' : 'Appareil')).slice(0, 80);
@@ -159,6 +162,24 @@ export function FournisseurSession({ children }: { children: ReactNode }) {
     })();
   }, []);
 
+  // Session ouverte avant la certification des appareils : cet appareil s'enregistre
+  // une fois (sa clé est liée à la session), sans nouvelle connexion.
+  useEffect(() => {
+    if (statut !== 'pret' || !profil) return;
+    void (async () => {
+      if ((await lire<string>(CLES.appareilCertifie)) === profil.appareilId) return;
+      try {
+        await api.requete('/auth/appareil/certificat', {
+          methode: 'POST',
+          corps: await preuveAppareil(),
+        });
+        await ecrire(CLES.appareilCertifie, profil.appareilId);
+      } catch {
+        // Hors ligne : nouvel essai au prochain démarrage ; appareil retiré : la session se ferme.
+      }
+    })();
+  }, [statut, profil, api]);
+
   // Verrouillage après un passage prolongé en arrière-plan.
   useEffect(() => {
     let depart: number | null = null;
@@ -189,15 +210,20 @@ export function FournisseurSession({ children }: { children: ReactNode }) {
       api,
       rafraichirProfil,
 
-      async connexion(identifiant, motDePasse) {
+      async connexion(identifiant, motDePasse, codeAppareil) {
+        // L'appareil prouve son identité : défi du serveur signé par sa clé.
+        const preuve = await preuveAppareil();
         const session = await api.publique<Session>('/auth/connexion', {
           methode: 'POST',
           corps: {
             identifiant,
             motDePasse,
             appareil: { nom: nomAppareil(), plateforme: plateforme() },
+            preuve,
+            ...(codeAppareil?.trim() ? { codeAppareil: codeAppareil.trim() } : {}),
           },
         });
+        await ecrire(CLES.appareilCertifie, session.appareilId);
         await ecrire(CLES.jetons, memoriserJetons(session));
         await appliquerProfil(await api.requete<Profil>('/auth/moi'));
         setStatut('pin-a-definir');

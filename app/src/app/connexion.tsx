@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { AutorisationAppareil } from '@/components/autorisation-appareil';
 import { Bouton, Champ, Ecran, Message } from '@/components/ui';
-import { messageErreur } from '@/lib/api';
+import { ErreurApi, messageErreur } from '@/lib/api';
+import { codeAppareilDemande } from '@/lib/cle-appareil';
 import { useSession } from '@/lib/session';
 
 export default function Connexion() {
@@ -10,6 +12,9 @@ export default function Connexion() {
   const [motDePasse, setMotDePasse] = useState('');
   const [erreur, setErreur] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
+  // Appareil pas encore autorisé pour ce compte : le code d'autorisation est demandé.
+  const [codeDemande, setCodeDemande] = useState(false);
+  const [codeAppareil, setCodeAppareil] = useState('');
 
   const valider = async () => {
     if (!identifiant.trim() || !motDePasse.trim()) {
@@ -18,9 +23,19 @@ export default function Connexion() {
     }
     setEnvoi(true);
     setErreur(null);
+    if (codeDemande && !codeAppareil.trim()) {
+      setErreur('Saisissez le code d’autorisation de cet appareil.');
+      setEnvoi(false);
+      return;
+    }
     try {
-      await connexion(identifiant.trim(), motDePasse.trim());
+      await connexion(
+        identifiant.trim(),
+        motDePasse.trim(),
+        codeDemande ? codeAppareil : undefined,
+      );
     } catch (e) {
+      if (e instanceof ErreurApi && codeAppareilDemande(e.code)) setCodeDemande(true);
       setErreur(messageErreur(e));
       setEnvoi(false);
     }
@@ -48,8 +63,19 @@ export default function Connexion() {
         returnKeyType="go"
         onSubmitEditing={valider}
       />
+      {codeDemande ? (
+        <AutorisationAppareil
+          code={codeAppareil}
+          surCode={setCodeAppareil}
+          qui="votre propriétaire (Menu › Appareils autorisés) ou au service GestVente"
+        />
+      ) : null}
       <Message texte={erreur} />
-      <Bouton titre="Se connecter" onPress={valider} chargement={envoi} />
+      <Bouton
+        titre={codeDemande ? 'Autoriser cet appareil et se connecter' : 'Se connecter'}
+        onPress={valider}
+        chargement={envoi}
+      />
       <Bouton
         titre="Mot de passe oublié ?"
         icone="help-circle"

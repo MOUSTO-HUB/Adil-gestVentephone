@@ -15,6 +15,7 @@
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@gestvente/commun": "workspace:*",
+    "@noble/curves": "^2.4.0",
     "@noble/hashes": "^2.4.0",
     "expo": "~57.0.30",
     "expo-camera": "~57.0.6",

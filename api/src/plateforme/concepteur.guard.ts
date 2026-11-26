@@ -8,12 +8,15 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
+import { CertificatsService } from '../certificats/certificats.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 /** Jeton du concepteur : distinct de ceux des commerçants (type « concepteur », sans appareil). */
 export interface ChargeConcepteur {
   type: 'concepteur';
   sub: string;
+  /** Appareil autorisé qui a ouvert la session : sa révocation la ferme aussitôt. */
+  cert?: string;
 }
 
 export interface ConcepteurConnecte {
@@ -34,6 +37,7 @@ export class ConcepteurGuard implements CanActivate {
   constructor(
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
+    private readonly certificats: CertificatsService,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -52,6 +56,8 @@ export class ConcepteurGuard implements CanActivate {
     const concepteur = await this.prisma.concepteur.findUnique({ where: { id: charge.sub } });
     if (!concepteur?.actif || concepteur.supprimeLe)
       throw new UnauthorizedException('Compte de concepteur désactivé.');
+    if (!(await this.certificats.actif(charge.cert, concepteur.id)))
+      throw new UnauthorizedException('Appareil retiré de votre compte. Reconnectez-vous.');
     // Mot de passe provisoire : seul « Mon compte » reste ouvert jusqu'au changement.
     if (concepteur.doitChangerMotDePasse && !/\/plateforme\/moi(\/|$)/.test(requete.path))
       throw new ForbiddenException('Choisissez d’abord votre nouveau mot de passe (Mon compte).');

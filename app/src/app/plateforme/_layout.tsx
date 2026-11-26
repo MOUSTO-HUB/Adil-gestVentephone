@@ -24,6 +24,7 @@ function Navigation() {
           <Stack.Screen name="compte" />
           <Stack.Screen name="concepteurs" />
           <Stack.Screen name="demandes" />
+          <Stack.Screen name="appareils" />
         </Stack.Protected>
       </Stack>
       {/* Barre d'onglets une fois connecté (Commerçants, Nouveau, Tableau de bord, Quitter). */}

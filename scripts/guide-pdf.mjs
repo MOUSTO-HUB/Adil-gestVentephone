@@ -39,7 +39,13 @@ const DOCUMENTS = [
       'proprietaire/03-prix.md',
       'proprietaire/04-rapports.md',
       'proprietaire/05-appareil-perdu.md',
+      'appareils-autorises.md',
     ],
+  },
+  {
+    nom: 'Guide-appareils-autorises.pdf',
+    titre: 'Appareils autorisés : guide pas à pas',
+    fichiers: ['appareils-autorises.md'],
   },
   {
     nom: 'Formation-vendeurs.pdf',

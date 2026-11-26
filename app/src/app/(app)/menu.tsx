@@ -206,6 +206,13 @@ export default function Menu() {
               icone="phone-portrait"
               onPress={aller('/appareils')}
             />
+            <GrandeTuile
+              petite
+              titre="Appareils autorisés"
+              icone="shield-checkmark"
+              couleur={c.primaire}
+              onPress={aller('/appareils-autorises')}
+            />
             <GrandeTuile petite titre="Journal" icone="document-text" onPress={aller('/journal')} />
           </Grille>
         </>

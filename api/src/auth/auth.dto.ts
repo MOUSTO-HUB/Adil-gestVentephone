@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsIn, IsOptional, IsString, Length, Matches, ValidateNested } from 'class-validator';
 import type { EtatAbonnement, ParametresRappels } from '@gestvente/commun';
+import { PreuveAppareilDto } from '../certificats/certificats.dto.js';
 import { Role } from '../generated/prisma/enums.js';
 
 export const PLATEFORMES = ['android', 'ios', 'web', 'windows', 'macos', 'autre'] as const;
@@ -32,6 +33,24 @@ export class ConnexionDto {
   @ValidateNested()
   @Type(() => AppareilDto)
   appareil: AppareilDto;
+
+  @ApiPropertyOptional({
+    type: PreuveAppareilDto,
+    description: 'Défi signé par la clé de l’appareil (obligatoire pour ouvrir une session).',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PreuveAppareilDto)
+  preuve?: PreuveAppareilDto;
+
+  @ApiPropertyOptional({
+    example: 'ABCD-EFGH',
+    description: 'Code d’autorisation d’un nouvel appareil, donné par un administrateur.',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(0, 20)
+  codeAppareil?: string;
 }
 
 export class RafraichissementDto {

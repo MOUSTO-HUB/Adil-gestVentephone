@@ -38,4 +38,6 @@ export const CLES = {
   etatPin: 'gestvente.etat-pin',
   boutique: 'gestvente.boutique',
   cleBase: 'gestvente.cle-base',
+  /** Session dont l'appareil est déjà certifié (identifiant de session). */
+  appareilCertifie: 'gestvente.appareil-certifie',
 } as const;

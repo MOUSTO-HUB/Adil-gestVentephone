@@ -270,6 +270,10 @@ export const LIBELLES_ACTIONS_AUDIT: Record<string, string> = {
   PLATEFORME_CATALOGUE: 'Catalogue de base installé',
   PLATEFORME_MOT_DE_PASSE: 'Mot de passe réinitialisé par le concepteur',
   MOT_DE_PASSE_DEMANDE: 'Mot de passe oublié : demande envoyée au concepteur',
+  APPAREIL_AUTORISE: 'Appareil autorisé',
+  APPAREIL_REFUSE: 'Connexion refusée : appareil non autorisé',
+  APPAREIL_REVOQUE: 'Appareil retiré',
+  CODE_APPAREIL_CREE: 'Code d’autorisation d’appareil créé',
 };
 
 /** Familles d'actions proposées comme filtre dans l'écran du journal. */
@@ -289,6 +293,10 @@ export const FAMILLES_AUDIT: Record<string, string[]> = {
     'DECONNEXION',
     'DECONNEXION_A_DISTANCE',
     'JETON_REUTILISE',
+    'APPAREIL_AUTORISE',
+    'APPAREIL_REFUSE',
+    'APPAREIL_REVOQUE',
+    'CODE_APPAREIL_CREE',
   ],
   Remises: ['REMISE_AUTORISEE', 'REMISE_ACCORDEE', 'ECART_PRIX'],
   Prix: ['PRIX_MODIFIE', 'PRODUIT_CREE', 'IMPORT_CATALOGUE'],

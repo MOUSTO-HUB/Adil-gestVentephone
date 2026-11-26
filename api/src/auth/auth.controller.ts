@@ -50,7 +50,13 @@ export class AuthController {
     // Plusieurs appareils d'une boutique partagent souvent une IP : seuls les échecs comptent.
     await this.limiteur.controler(LIMITES.connexionIp, ip);
     try {
-      return await this.auth.connexion(dto.identifiant, dto.motDePasse, dto.appareil);
+      return await this.auth.connexion(
+        dto.identifiant,
+        dto.motDePasse,
+        dto.appareil,
+        dto.preuve,
+        dto.codeAppareil,
+      );
     } catch (erreur) {
       if (erreur instanceof UnauthorizedException) {
         await this.limiteur.verifier(LIMITES.connexionIp, ip);

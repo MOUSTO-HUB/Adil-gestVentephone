@@ -9,7 +9,7 @@ import {
   LIBELLES_ROLES,
   type Role,
 } from '@gestvente/commun';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Choix } from '@/components/choix';
@@ -457,6 +457,17 @@ export default function FicheCommercant() {
           variante="secondaire"
           onPress={() => void reinitialiser()}
           chargement={enCours === 'mdp'}
+        />
+        <Bouton
+          titre="Appareils autorisés (nouvel appareil, retirer)"
+          icone="shield-checkmark"
+          variante="secondaire"
+          onPress={() =>
+            router.push({
+              pathname: '/plateforme/appareils',
+              params: { commerceId: commerce.id, nom: commerce.nom },
+            })
+          }
         />
       </Carte>
 

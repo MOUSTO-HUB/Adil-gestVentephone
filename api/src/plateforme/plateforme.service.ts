@@ -24,6 +24,11 @@ import { Role } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { LIMITES, LimiteurService } from '../securite/limiteur.service.js';
 import { JournalService } from '../sync/journal.service.js';
+import {
+  CertificatsService,
+  type InfosAppareil,
+  type PreuveAppareil,
+} from '../certificats/certificats.service.js';
 import { ComptesConcepteurService } from './comptes.service.js';
 import type { ChargeConcepteur, ConcepteurConnecte } from './concepteur.guard.js';
 
@@ -66,13 +71,19 @@ export class PlateformeService {
     private readonly audit: AuditService,
     private readonly journal: JournalService,
     private readonly comptes: ComptesConcepteurService,
+    private readonly certificats: CertificatsService,
   ) {}
 
   /**
    * Connexion : mot de passe, puis code de l'application d'authentification si la double
    * authentification est active (réponse `{ doubleAuth: true }` tant que le code manque).
    */
-  async connexion(identifiantSaisi: string, motDePasse: string, code?: string) {
+  async connexion(
+    identifiantSaisi: string,
+    motDePasse: string,
+    code: string | undefined,
+    appareil: { appareil: InfosAppareil; preuve?: PreuveAppareil; codeAppareil?: string },
+  ) {
     const identifiant = identifiantSaisi.trim().toLowerCase();
     await this.limiteur.verifier(LIMITES.connexionIdentifiant, `concepteur:${identifiant}`);
     const concepteur = await this.prisma.concepteur.findUnique({ where: { identifiant } });
@@ -80,6 +91,13 @@ export class PlateformeService {
     if (!concepteur || !valide || !concepteur.actif || concepteur.supprimeLe) {
       throw new UnauthorizedException('Identifiant ou mot de passe incorrect.');
     }
+    // Appareil autorisé pour ce concepteur (sinon code donné par un autre concepteur).
+    const certificat = await this.certificats.controlerConnexion(
+      { type: 'CONCEPTEUR', id: concepteur.id },
+      appareil.preuve,
+      appareil.codeAppareil,
+      appareil.appareil,
+    );
     if (concepteur.totpActif) {
       if (!code?.trim()) return { doubleAuth: true as const };
       if (!(await this.comptes.verifierCode(concepteur.id, code))) {
@@ -93,7 +111,11 @@ export class PlateformeService {
       where: { id: concepteur.id },
       data: { derniereConnexion: new Date() },
     });
-    const charge: ChargeConcepteur = { type: 'concepteur', sub: concepteur.id };
+    const charge: ChargeConcepteur = {
+      type: 'concepteur',
+      sub: concepteur.id,
+      cert: certificat.id,
+    };
     return {
       jeton: await this.jwt.signAsync(charge, { expiresIn: DUREE_SESSION }),
       concepteur: {
