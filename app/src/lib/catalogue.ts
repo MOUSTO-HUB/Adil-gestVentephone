@@ -5,6 +5,7 @@ export interface ProduitTrouve {
   id: string;
   nom: string;
   type: 'TELEPHONE' | 'ACCESSOIRE';
+  categorieId: string;
   photo: string | null;
   prixDetail: number;
   prixGros: number;
@@ -33,6 +34,8 @@ export async function rechercherProduits(
     modeleId?: string | null;
     /** Produits en stock d'abord. */
     enStockDabord?: boolean;
+    /** Vente : les produits de cette catégorie en tête de liste (les autres suivent). */
+    categoriePrioritaire?: string | null;
   } = {},
 ): Promise<ProduitTrouve[]> {
   const mots = motsRecherche(terme);
@@ -74,7 +77,7 @@ export async function rechercherProduits(
     paramsFiltres.push(options.marqueId, options.marqueId);
   }
   return base.tous<ProduitTrouve>(
-    `SELECT p.id, p.nom, p.type, p.photo, p.archive,
+    `SELECT p.id, p.nom, p.type, p.categorieId, p.photo, p.archive,
             COALESCE(pb.prixDetail, p.prixDetail) AS prixDetail,
             COALESCE(pb.prixGros, p.prixGros) AS prixGros,
             COALESCE(s.quantite, 0) AS quantite, COALESCE(s.seuilMinimum, 0) AS seuilMinimum
@@ -84,9 +87,21 @@ export async function rechercherProduits(
       WHERE 1 = 1 ${filtreArchives}
         ${conditions.length ? `AND (${conditions.join(' OR ')})` : ''}
         ${filtres.map((f) => `AND ${f}`).join(' ')}
-      ORDER BY ${options.enStockDabord ? '(COALESCE(s.quantite, 0) > 0) DESC,' : ''} p.recherche, p.nom
+      ORDER BY ${options.categoriePrioritaire ? '(p.categorieId = ?) DESC,' : ''}
+               ${options.enStockDabord ? '(COALESCE(s.quantite, 0) > 0) DESC,' : ''} p.recherche, p.nom
       LIMIT ${options.limite ?? LIMITE_RESULTATS}`,
-    [...params, ...paramsFiltres],
+    [
+      ...params,
+      ...paramsFiltres,
+      ...(options.categoriePrioritaire ? [options.categoriePrioritaire] : []),
+    ],
+  );
+}
+
+/** Catégories qui ont des produits en vente (boutons de la vente). */
+export function categoriesVente(base: BaseSql) {
+  return base.tous<{ id: string; nom: string }>(
+    'SELECT id, nom FROM categorie WHERE id IN (SELECT categorieId FROM produit WHERE archive = 0) ORDER BY nom',
   );
 }
 

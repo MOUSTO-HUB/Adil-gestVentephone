@@ -20,7 +20,7 @@ const VENDEUR: Fiche[] = [
   ],
   [
     'Vendre à crédit',
-    'Client (fiche complète, plafond) → Vendre à crédit → apport, tranches → Encaisser l’apport → imprimer le contrat.',
+    'Client (fiche complète, plafond) → À crédit → apport, tranches → Encaisser l’apport → imprimer le contrat.',
   ],
   ['Encaisser une tranche', 'Crédits → client → montant → moyen → Encaisser → reçu.'],
   ['Réimprimer un reçu', 'Ventes → la vente → Reçu, facture, WhatsApp…'],

@@ -30,7 +30,7 @@ tranche. Remettez-le au client.
 
 - Le client reçoit des rappels par SMS avant chaque échéance et en cas de retard.
 - Le dernier versement **solde** le crédit automatiquement.
-- Une vente à crédit se fait depuis l'écran de vente : bouton **Vendre à crédit**
+- Une vente à crédit se fait depuis l'écran de vente : bouton d'option **À crédit**
   (apport, nombre de tranches, chaque semaine ou chaque mois). Il faut la fiche complète
   du client (pièce d'identité, adresse) et un plafond fixé par le propriétaire.
 

@@ -48,16 +48,35 @@ export interface BaseOuverte {
 }
 
 /**
+ * Ouvre la base. Sur le site, juste après un rechargement ou une mise à jour, l'ancienne
+ * page peut encore tenir le fichier de la base quelques instants : on réessaie (6 fois,
+ * pendant une quinzaine de secondes) avant d'afficher une erreur.
+ */
+async function ouvrirAvecReprise(essais = 6): Promise<SQLite.SQLiteDatabase> {
+  for (let essai = 1; ; essai++) {
+    let db: SQLite.SQLiteDatabase | null = null;
+    try {
+      db = await SQLite.openDatabaseAsync(NOM_BASE);
+      if (Platform.OS !== 'web') {
+        await db.execAsync(`PRAGMA key = '${await cleBase()}'`);
+      }
+      await db.execAsync('PRAGMA foreign_keys = OFF');
+      return db;
+    } catch (e) {
+      await db?.closeAsync().catch(() => undefined);
+      if (essai >= essais) throw e;
+      await new Promise((ok) => setTimeout(ok, 1000 * essai));
+    }
+  }
+}
+
+/**
  * Ouvre la base locale et applique les migrations. Sur téléphone, elle est
  * chiffrée (SQLCipher, version de développement ou de production : pas Expo Go).
  */
 export async function ouvrirBase(): Promise<BaseOuverte> {
   await effacementEnCours;
-  const db = await SQLite.openDatabaseAsync(NOM_BASE);
-  if (Platform.OS !== 'web') {
-    await db.execAsync(`PRAGMA key = '${await cleBase()}'`);
-  }
-  await db.execAsync('PRAGMA foreign_keys = OFF');
+  const db = await ouvrirAvecReprise();
   const base = adapter(db);
   await migrer(base);
   await completerRecherche(base);

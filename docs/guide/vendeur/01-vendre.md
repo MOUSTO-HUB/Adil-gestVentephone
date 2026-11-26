@@ -10,36 +10,61 @@ Touchez le gros bouton jaune **Vendre** : au centre de la barre du bas (toujours
 
 ![Accueil du vendeur](../images/accueil-vendeur.png)
 
-## 2. Trouver le produit
+## 2. Choisir les articles
 
-Tapez dans la recherche : un nom (« A15 »), un détail (« 128 Go noir »), un code-barres ou
-un IMEI. Les résultats apparaissent pendant que vous tapez. Pour aller plus vite, touchez
-les pastilles : **Téléphones** ou **Accessoires**, puis la **marque**, puis le **modèle**.
-Le choix d'un modèle affiche aussi ses accessoires (coques, verres trempés).
+Tous les articles sont dans **une seule liste déroulante**, en haut de la carte
+**Articles** :
 
-![Recherche avec filtres](../images/vente-filtres.png)
+1. Touchez la liste (ou la flèche) pour la dérouler, ou **tapez** pour chercher : un nom
+   (« A15 »), un détail (« 128 Go noir »), un code-barres ou un IMEI. Chaque ligne indique
+   le prix et le stock : « 3 en stock » ou **Rupture**.
+2. **Boutons de catégorie** (Coques, Chargeurs, Smartphones…) : touchez-en un, la liste se
+   déroule avec les articles de cette catégorie **en tête** (les autres restent en dessous,
+   après un trait). Touchez **Toutes** pour revenir à l'ordre normal.
 
-Chaque résultat indique le stock : « 3 en stock » ou **Rupture**.
+   ![Liste des articles, catégorie « Batteries externes » en tête](../images/vente-liste.jpg)
 
-- **Téléphone :** choisissez son **IMEI** dans la liste (ou scannez-le). L'IMEI est
-  facultatif pour les téléphones reçus sans IMEI : touchez **Vendre sans IMEI**. Quand il ne
-  reste que des téléphones enregistrés avec leur IMEI, il faut choisir lequel part.
-- **Accessoire :** il s'ajoute au panier ; ajustez la quantité avec **−** et **+**.
+3. Touchez l'article. Sous la liste apparaît :
+   - **Accessoire** : la **quantité** (déjà sélectionnée : tapez simplement le nombre), puis
+     **Ajouter au tableau** (ou la touche Entrée) ;
+   - **Téléphone** : ses **IMEI** disponibles ; touchez celui du téléphone vendu. Pour les
+     téléphones reçus sans IMEI, une quantité « Sans IMEI » est proposée.
 
-![Le panier](../images/vente-panier.png)
+   La croix ✕ annule le choix.
 
-> Avec un lecteur de codes-barres sur ordinateur : scannez simplement, le produit
-> s'ajoute tout seul.
+Les articles s'ajoutent au **tableau** sous la liste : article, prix unitaire, quantité,
+total, et le total général en bas.
 
-## 3. Client, remise
+![Tableau des articles de la vente](../images/vente-tableau.jpg)
 
-- **Client (facultatif)** : tapez son nom ou son téléphone. Un client grossiste reçoit
-  automatiquement le prix de gros. Avec un client, la facture peut lui être envoyée par
-  SMS ou WhatsApp.
-- **Nom, contact et adresse du client** : trois champs facultatifs, remplis tout seuls
-  quand vous choisissez un client enregistré. Ils sont imprimés sur la facture.
-- **Remise** : vous pouvez accorder jusqu'au pourcentage indiqué. Au-delà, un gérant
-  valide avec son identifiant et son code PIN.
+- **Changer une quantité** : touchez **−** ou **+**, ou tapez directement le nombre dans la
+  case. La quantité ne peut pas dépasser le stock (un message l'indique).
+- **Retirer un article** : la corbeille 🗑 au bout de la ligne (ou la quantité à 0).
+- Un téléphone choisi par son IMEI compte toujours pour 1.
+- Le prix de gros s'applique tout seul à partir du seuil du produit (« (gros) »).
+- Après un téléphone, ses **accessoires compatibles** sont proposés sous le tableau.
+
+> Avec un lecteur de codes-barres (ordinateur) ou le bouton **code-barres** à droite de la
+> liste (téléphone) : scannez, l'article s'ajoute directement au tableau.
+
+## 3. Client, options
+
+- **Client (facultatif)** : un seul champ, **Nom ou téléphone du client**. Un client
+  enregistré apparaît pendant que vous tapez : touchez-le (un client grossiste reçoit
+  automatiquement le prix de gros ; sa facture peut lui être envoyée par SMS ou WhatsApp).
+  Un client de passage : ce que vous tapez sert de nom (ou de contact si c'est un numéro).
+- **Coordonnées pour la facture (nom, contact, adresse)** : touchez cette ligne pour
+  dérouler les trois champs et les compléter. Ils sont remplis tout seuls pour un client
+  enregistré ; un ✓ indique qu'ils contiennent déjà quelque chose.
+
+  ![Client : un champ, coordonnées dépliées](../images/vente-client.jpg)
+
+- Trois boutons d'**options** sous le client, à toucher seulement si besoin :
+  - **Remise** : vous pouvez accorder jusqu'au pourcentage indiqué. Au-delà, un gérant
+    valide avec son identifiant et son code PIN. Retouchez le bouton pour l'enlever.
+  - **Troc (reprise)** : voir [Faire un troc](02-troc.md).
+  - **À crédit** : apport et tranches, voir
+    [Encaisser une tranche](03-encaisser-une-tranche.md).
 
 ## 4. Encaisser
 

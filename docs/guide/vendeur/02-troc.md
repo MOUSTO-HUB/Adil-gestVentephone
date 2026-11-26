@@ -13,8 +13,8 @@ paie la différence (comptant, ou à crédit).
 
 ## Pas à pas
 
-1. Dans la vente, ajoutez le téléphone neuf au panier et choisissez le **client**.
-2. Touchez **Troc : reprendre l'ancien téléphone du client**.
+1. Dans la vente, ajoutez le téléphone neuf au tableau et choisissez le **client**.
+2. Touchez le bouton d'option **Troc (reprise)** (retouchez-le pour annuler le troc).
 3. **Modèle** : tapez-le (ex. « iPhone 11 128 ») et choisissez-le dans la liste.
 4. **IMEI** : tapez les 15 chiffres. Un IMEI **signalé volé ou bloqué** est refusé
    (message rouge) : ne reprenez pas l'appareil.

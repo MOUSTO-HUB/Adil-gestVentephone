@@ -57,6 +57,9 @@ jobs:
       - name: Sans dossiers à point (refusés par o2switch)
         working-directory: app
         run: node scripts/sans-dossiers-caches.cjs dist-web
+      - name: Fichiers gardés pour le hors ligne (service worker)
+        working-directory: app
+        run: node scripts/hors-ligne.cjs dist-web
       - name: Publier dans la branche site-en-ligne
         working-directory: app/dist-web
         run: |

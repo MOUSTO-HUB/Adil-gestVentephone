@@ -7,7 +7,7 @@
 | Prix de gros          | Choisir le **client grossiste**, ou atteindre la quantité de gros                                                                                    |
 | Remise trop forte     | Le **gérant** valide avec son identifiant et son code PIN                                                                                            |
 | Faire un troc         | Choisir le **client** (pièce d'identité) → **Troc** → modèle, IMEI, état → valeur → à revendre ou à réparer → encaisser la différence                |
-| Vendre à crédit       | Client (fiche complète, plafond) → **Vendre à crédit** → apport, tranches → **Encaisser** l'apport → imprimer le **contrat**                         |
+| Vendre à crédit       | Client (fiche complète, plafond) → **À crédit** → apport, tranches → **Encaisser** l'apport → imprimer le **contrat**                                |
 | Encaisser une tranche | **Crédits** → client → montant → moyen → **Encaisser** → reçu                                                                                        |
 | Envoyer la facture    | Client choisi → **Par SMS** ou **Par WhatsApp** (part même plus tard)                                                                                |
 | Réimprimer un reçu    | **Ventes** → la vente → **Reçu, facture, WhatsApp…**                                                                                                 |

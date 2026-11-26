@@ -13,6 +13,24 @@
 
 Tout est gardé sur l'appareil et part au serveur **automatiquement** au retour du réseau.
 
+## L'application installée (ordinateur ou téléphone)
+
+- Dès la **première ouverture** avec Internet, l'application garde sur l'appareil une copie
+  complète d'elle-même : elle s'ouvre ensuite **sans Internet**, même après avoir éteint
+  l'ordinateur ou le téléphone. Si la connexion est très lente, elle s'ouvre depuis cette
+  copie au bout de 5 secondes.
+- Les **données** (catalogue, stock, clients, ventes, caisse) sont celles de la **dernière
+  synchronisation** : vous travaillez dessus hors ligne, et vos nouvelles opérations
+  attendent sur l'appareil.
+- Au retour du réseau : l'envoi part tout seul (en moins d'une minute), puis l'appareil
+  reçoit ce que les autres ont fait. Si une **nouvelle version** de l'application a été
+  publiée, le bandeau **« Nouvelle version disponible »** apparaît : touchez **Mettre à
+  jour**. Les opérations en attente ne sont pas perdues.
+- Une seule condition : s'être **connecté au moins une fois avec Internet** sur cet
+  appareil (identifiant, mot de passe, puis code PIN). Ensuite, le code PIN suffit.
+- **Ne videz pas les données du site** du navigateur, et n'utilisez pas la navigation
+  privée : la copie et les opérations en attente seraient effacées.
+
 ## Ce qui attend le réseau
 
 - l'envoi des factures par SMS ou WhatsApp (il part plus tard, tout seul) ;

@@ -14,7 +14,9 @@ COPY app app
 # Même origine que le site : l'API est servie sous /api par Caddy.
 ENV EXPO_PUBLIC_API_URL=/api
 RUN pnpm --filter @gestvente/commun build \
-  && cd app && CI=1 npx expo export --platform web --output-dir dist-web
+  && cd app && CI=1 npx expo export --platform web --output-dir dist-web \
+  && node scripts/sans-dossiers-caches.cjs dist-web \
+  && node scripts/hors-ligne.cjs dist-web
 
 FROM caddy:2-alpine
 COPY deploy/Caddyfile /etc/caddy/Caddyfile

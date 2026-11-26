@@ -80,7 +80,12 @@ export default function Vente() {
   const [nomClient, setNomClient] = useState('');
   const [contactClient, setContactClient] = useState('');
   const [adresseClient, setAdresseClient] = useState('');
+  /** Nom, contact et adresse du client : repliés sous le champ « Nom ou téléphone ». */
+  const [detailsClient, setDetailsClient] = useState(false);
+  /** Champ rapide d'un client de passage : il remplit soit le nom, soit le contact. */
+  const [saisieRapide, setSaisieRapide] = useState<'nom' | 'contact' | null>(null);
   const [remise, setRemise] = useState('');
+  const [avecRemise, setAvecRemise] = useState(false);
   const [autorisation, setAutorisation] = useState<Autorisation | null>(null);
   const [gerantId, setGerantId] = useState('');
   const [gerantPin, setGerantPin] = useState('');
@@ -298,7 +303,11 @@ export default function Vente() {
       setNomClient('');
       setContactClient('');
       setAdresseClient('');
+      setRechercheClient('');
+      setSaisieRapide(null);
+      setDetailsClient(false);
       setRemise('');
+      setAvecRemise(false);
       setAutorisation(null);
       setPaiements(PAIEMENTS_VIDES);
       setModes(['ESPECES']);
@@ -434,6 +443,7 @@ export default function Vente() {
         </Texte>
         {client ? (
           <>
+            <Texte discret>{client.telephone}</Texte>
             <Choix
               libelle="Envoyer la facture au client"
               options={[
@@ -459,144 +469,204 @@ export default function Vente() {
           <>
             <TextInput
               value={rechercheClient}
-              onChangeText={setRechercheClient}
-              placeholder="Nom ou téléphone"
-              placeholderTextColor="#8a8a8a"
-              accessibilityLabel="Rechercher un client"
+              onChangeText={(t) => {
+                setRechercheClient(t);
+                // Client de passage : la saisie sert de nom ou de contact (chiffres) sur
+                // la facture ; ce qu'elle avait rempli dans l'autre champ est effacé.
+                if (/^\+?\d[\d\s().-]*$/.test(t.trim())) {
+                  setContactClient(t);
+                  if (saisieRapide === 'nom') setNomClient('');
+                  setSaisieRapide('contact');
+                } else {
+                  setNomClient(t);
+                  if (saisieRapide === 'contact') setContactClient('');
+                  setSaisieRapide('nom');
+                }
+              }}
+              placeholder="Nom ou téléphone du client"
+              placeholderTextColor={c.texteDiscret}
+              accessibilityLabel="Client : nom ou téléphone"
               style={saisie}
             />
-            {clients?.map((c) => (
+            {clients?.map((k) => (
               <Pressable
-                key={c.id}
+                key={k.id}
                 accessibilityRole="button"
                 onPress={() => {
-                  setClient(c);
+                  setClient(k);
                   setRechercheClient('');
-                  setNomClient(c.nom);
-                  setContactClient(c.telephone);
-                  setAdresseClient(c.adresse ?? '');
+                  setSaisieRapide(null);
+                  setNomClient(k.nom);
+                  setContactClient(k.telephone);
+                  setAdresseClient(k.adresse ?? '');
                 }}
+                style={[styles.suggestion, { borderColor: c.bordure }]}
               >
+                <Ionicons name="person-circle-outline" size={20} color={c.primaire} />
                 <Texte>
-                  {c.nom} · {c.telephone}
+                  {k.nom} · {k.telephone}
                 </Texte>
               </Pressable>
             ))}
           </>
         )}
-        <Champ
-          libelle="Nom du client (facultatif)"
-          value={nomClient}
-          onChangeText={setNomClient}
-          placeholder="Ex. Mamadou Diallo"
-          autoCapitalize="words"
-        />
-        <Champ
-          libelle="Contact (facultatif)"
-          value={contactClient}
-          onChangeText={setContactClient}
-          keyboardType="phone-pad"
-          placeholder="620 11 22 33"
-        />
-        <Champ
-          libelle="Adresse (facultatif)"
-          value={adresseClient}
-          onChangeText={setAdresseClient}
-          placeholder="Quartier, ville"
-        />
-      </Carte>
-
-      {troc ? (
-        <>
-          <SaisieTroc
-            formulaire={troc}
-            surChange={setTroc}
-            client={client}
-            boutiqueId={boutiqueId}
-            monnaie={monnaie}
-            role={profil.role}
-            repriseMaxVendeur={profil.commerce.repriseMaxVendeur}
-            api={api}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: detailsClient }}
+          onPress={() => setDetailsClient((d) => !d)}
+          style={styles.deplier}
+        >
+          <Ionicons
+            name={detailsClient ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={c.primaire}
           />
-          <Bouton titre="Retirer le troc" variante="secondaire" onPress={() => setTroc(null)} />
-        </>
-      ) : (
-        <Bouton
-          titre="Troc : reprendre l’ancien téléphone du client"
-          icone="swap-horizontal"
-          variante="secondaire"
-          onPress={() => setTroc(formulaireTrocVide(Crypto.randomUUID(), Crypto.randomUUID()))}
-        />
-      )}
-
-      {credit ? (
-        <>
-          <SaisieCredit
-            formulaire={credit}
-            surChange={setCredit}
-            client={client}
-            total={totalNet}
-            aujourdhui={aujourdhui}
-            monnaie={monnaie}
-          />
-          <Bouton titre="Vente au comptant" variante="secondaire" onPress={() => setCredit(null)} />
-        </>
-      ) : (
-        <Bouton
-          titre="Vendre à crédit (paiement par tranches)"
-          icone="calendar-outline"
-          variante="secondaire"
-          onPress={() => setCredit(formulaireCreditVide(aujourdhui))}
-        />
-      )}
-
-      <Carte>
-        <Texte gras>Remise (vous accordez jusqu’à {plafond} %)</Texte>
-        <TextInput
-          value={remise}
-          onChangeText={(t) => setRemise(t)}
-          keyboardType="number-pad"
-          placeholder="Montant de la remise"
-          placeholderTextColor="#8a8a8a"
-          accessibilityLabel="Montant de la remise"
-          style={saisie}
-        />
-        {calcul.remise > 0 ? <Texte discret>Soit {pourcentage} % du sous-total.</Texte> : null}
-        {autorisation && !autorisationNecessaire && pourcentage > plafond ? (
-          <Texte discret>
-            Validée par {autorisation.gerant} (jusqu’à {autorisation.plafond} %).
-          </Texte>
-        ) : null}
-        {autorisationNecessaire ? (
+          <Text style={{ color: c.primaire, fontWeight: '600', flexShrink: 1 }}>
+            {detailsClient
+              ? 'Masquer les coordonnées'
+              : `Coordonnées pour la facture (nom, contact, adresse)${
+                  nomClient.trim() || contactClient.trim() || adresseClient.trim() ? ' ✓' : ''
+                }`}
+          </Text>
+        </Pressable>
+        {detailsClient ? (
           <>
-            <Texte>
-              Au-delà de {plafond} % : un gérant valide avec son code PIN (connexion nécessaire).
-            </Texte>
-            <TextInput
-              value={gerantId}
-              onChangeText={setGerantId}
-              placeholder="Identifiant du gérant"
-              placeholderTextColor="#8a8a8a"
-              autoCapitalize="none"
-              style={saisie}
+            <Champ
+              libelle="Nom du client"
+              value={nomClient}
+              onChangeText={setNomClient}
+              placeholder="Ex. Mamadou Diallo"
+              autoCapitalize="words"
             />
-            <TextInput
-              value={gerantPin}
-              onChangeText={setGerantPin}
-              placeholder="Code PIN du gérant"
-              placeholderTextColor="#8a8a8a"
-              keyboardType="number-pad"
-              secureTextEntry
-              style={saisie}
+            <Champ
+              libelle="Contact"
+              value={contactClient}
+              onChangeText={setContactClient}
+              keyboardType="phone-pad"
+              placeholder="620 11 22 33"
             />
-            <Bouton
-              titre="Faire valider la remise"
-              variante="secondaire"
-              onPress={() => void demanderAutorisation()}
+            <Champ
+              libelle="Adresse"
+              value={adresseClient}
+              onChangeText={setAdresseClient}
+              placeholder="Quartier, ville"
             />
           </>
         ) : null}
       </Carte>
+
+      <View style={styles.options}>
+        {(
+          [
+            ['remise', 'Remise', 'pricetag-outline', avecRemise || !!remise.trim()],
+            ['troc', 'Troc (reprise)', 'swap-horizontal', !!troc],
+            ['credit', 'À crédit', 'calendar-outline', !!credit],
+          ] as const
+        ).map(([cle, libelle, icone, actif]) => (
+          <Pressable
+            key={cle}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: actif }}
+            onPress={() => {
+              if (cle === 'remise') {
+                if (actif) {
+                  setRemise('');
+                  setAutorisation(null);
+                }
+                setAvecRemise(!actif);
+              } else if (cle === 'troc')
+                setTroc(
+                  actif ? null : formulaireTrocVide(Crypto.randomUUID(), Crypto.randomUUID()),
+                );
+              else setCredit(actif ? null : formulaireCreditVide(aujourdhui));
+            }}
+            style={[
+              styles.optionVente,
+              {
+                backgroundColor: actif ? c.bouton : c.carte,
+                borderColor: actif ? c.bouton : c.bordure,
+              },
+            ]}
+          >
+            <Ionicons name={icone} size={18} color={actif ? '#ffffff' : c.primaire} />
+            <Text style={{ color: actif ? '#ffffff' : c.texte, fontWeight: '600' }}>{libelle}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {avecRemise || remise.trim() ? (
+        <Carte>
+          <Texte gras>Remise (vous accordez jusqu’à {plafond} %)</Texte>
+          <TextInput
+            value={remise}
+            onChangeText={(t) => setRemise(t)}
+            keyboardType="number-pad"
+            placeholder="Montant de la remise"
+            placeholderTextColor="#8a8a8a"
+            accessibilityLabel="Montant de la remise"
+            style={saisie}
+          />
+          {calcul.remise > 0 ? <Texte discret>Soit {pourcentage} % du sous-total.</Texte> : null}
+          {autorisation && !autorisationNecessaire && pourcentage > plafond ? (
+            <Texte discret>
+              Validée par {autorisation.gerant} (jusqu’à {autorisation.plafond} %).
+            </Texte>
+          ) : null}
+          {autorisationNecessaire ? (
+            <>
+              <Texte>
+                Au-delà de {plafond} % : un gérant valide avec son code PIN (connexion nécessaire).
+              </Texte>
+              <TextInput
+                value={gerantId}
+                onChangeText={setGerantId}
+                placeholder="Identifiant du gérant"
+                placeholderTextColor="#8a8a8a"
+                autoCapitalize="none"
+                style={saisie}
+              />
+              <TextInput
+                value={gerantPin}
+                onChangeText={setGerantPin}
+                placeholder="Code PIN du gérant"
+                placeholderTextColor="#8a8a8a"
+                keyboardType="number-pad"
+                secureTextEntry
+                style={saisie}
+              />
+              <Bouton
+                titre="Faire valider la remise"
+                variante="secondaire"
+                onPress={() => void demanderAutorisation()}
+              />
+            </>
+          ) : null}
+        </Carte>
+      ) : null}
+
+      {troc ? (
+        <SaisieTroc
+          formulaire={troc}
+          surChange={setTroc}
+          client={client}
+          boutiqueId={boutiqueId}
+          monnaie={monnaie}
+          role={profil.role}
+          repriseMaxVendeur={profil.commerce.repriseMaxVendeur}
+          api={api}
+        />
+      ) : null}
+
+      {credit ? (
+        <SaisieCredit
+          formulaire={credit}
+          surChange={setCredit}
+          client={client}
+          total={totalNet}
+          aujourdhui={aujourdhui}
+          monnaie={monnaie}
+        />
+      ) : null}
 
       <Carte>
         <Texte gras>Paiement</Texte>
@@ -740,4 +810,23 @@ const styles = StyleSheet.create({
   total: { fontSize: 24, fontWeight: '800' },
   question: { borderWidth: 2, borderRadius: 12, padding: 12, gap: 8 },
   reponses: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  suggestion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 8,
+  },
+  deplier: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 },
+  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  optionVente: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
 });

@@ -93,6 +93,20 @@ describe('recherche locale', () => {
     expect(await noms('câble', true)).toEqual(['Câble ancien modèle', 'Câble USB-C 1 m']);
   });
 
+  it('met en tête les produits de la catégorie choisie, sans cacher les autres', async () => {
+    const telephones = produit({ nom: 'Tecno Spark 20', categorieId: 'cat-tel' });
+    const b = await nouvelleBase();
+    for (const p of [cable, galaxy, telephones]) await ecrireEntite(b, 'produit', p.id, p);
+    const liste = async (categoriePrioritaire: string | null) =>
+      (await rechercherProduits(b, BOUTIQUE, '', { categoriePrioritaire })).map((p) => p.nom);
+    expect(await liste(null)).toEqual(['Câble USB-C 1 m', 'Samsung Galaxy A15', 'Tecno Spark 20']);
+    expect(await liste('cat-tel')).toEqual([
+      'Tecno Spark 20',
+      'Câble USB-C 1 m',
+      'Samsung Galaxy A15',
+    ]);
+  });
+
   it('applique les prix de la boutique', async () => {
     const [p] = await rechercherProduits(base, BOUTIQUE, 'cable usb');
     expect(p.prixDetail).toBe(250);
