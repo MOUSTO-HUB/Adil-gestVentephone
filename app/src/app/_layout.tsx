@@ -1,16 +1,18 @@
 import { Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BandeauMiseAJour } from '@/components/mise-a-jour';
 import { FournisseurApparence } from '@/lib/apparence';
 import { FournisseurSession, useSession } from '@/lib/session';
 import { FournisseurSync } from '@/lib/sync/contexte';
-import { THEME_CLAIR, THEME_SOMBRE, useMode } from '@/lib/theme';
+import { THEME_CLAIR, THEME_SOMBRE, useCouleurs, useMode } from '@/lib/theme';
+import Pin from './pin';
 
 /** Chaque écran n'est accessible qu'à la bonne étape de la session. */
 function Navigation() {
-  const { statut, boutique } = useSession();
+  const { statut, boutique, signalerActivite } = useSession();
+  const c = useCouleurs();
   if (statut === 'chargement') {
     return (
       <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -18,26 +20,54 @@ function Navigation() {
       </View>
     );
   }
-  const pinRequis = statut === 'pin-a-definir' || statut === 'verrouille';
+  // Verrouillée pendant le travail : les écrans restent ouverts (saisie gardée) sous le
+  // code PIN, posé par-dessus ; on reprend là où on était.
+  const verrouSurEcran = statut === 'verrouille' && !!boutique;
+  const pinRequis = statut === 'pin-a-definir' || (statut === 'verrouille' && !boutique);
+  const travail = statut === 'pret' || verrouSurEcran;
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={statut === 'deconnecte'}>
-        <Stack.Screen name="connexion" />
-        <Stack.Screen name="mot-de-passe-oublie" />
-      </Stack.Protected>
-      <Stack.Protected guard={pinRequis}>
-        <Stack.Screen name="pin" />
-      </Stack.Protected>
-      <Stack.Protected guard={statut === 'pret' && !boutique}>
-        <Stack.Screen name="boutique" />
-      </Stack.Protected>
-      <Stack.Protected guard={statut === 'pret' && !!boutique}>
-        <Stack.Screen name="(app)" />
-      </Stack.Protected>
-      {/* Espace concepteur : session propre, aucune donnée de commerce sur l'appareil ; en dernier
+    <View
+      style={{ flex: 1 }}
+      onStartShouldSetResponderCapture={() => {
+        signalerActivite();
+        return false;
+      }}
+      onMoveShouldSetResponderCapture={() => {
+        signalerActivite();
+        return false;
+      }}
+    >
+      <View
+        style={{ flex: 1 }}
+        pointerEvents={verrouSurEcran ? 'none' : 'auto'}
+        aria-hidden={verrouSurEcran}
+        importantForAccessibility={verrouSurEcran ? 'no-hide-descendants' : 'auto'}
+      >
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Protected guard={statut === 'deconnecte'}>
+            <Stack.Screen name="connexion" />
+            <Stack.Screen name="mot-de-passe-oublie" />
+          </Stack.Protected>
+          <Stack.Protected guard={pinRequis}>
+            <Stack.Screen name="pin" />
+          </Stack.Protected>
+          <Stack.Protected guard={statut === 'pret' && !boutique}>
+            <Stack.Screen name="boutique" />
+          </Stack.Protected>
+          <Stack.Protected guard={travail && !!boutique}>
+            <Stack.Screen name="(app)" />
+          </Stack.Protected>
+          {/* Espace concepteur : session propre, aucune donnée de commerce sur l'appareil ; en dernier
           pour que la redirection par défaut reste sur les écrans du commerçant. */}
-      <Stack.Screen name="plateforme" />
-    </Stack>
+          <Stack.Screen name="plateforme" />
+        </Stack>
+      </View>
+      {verrouSurEcran ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: c.fond }]}>
+          <Pin />
+        </View>
+      ) : null}
+    </View>
   );
 }
 

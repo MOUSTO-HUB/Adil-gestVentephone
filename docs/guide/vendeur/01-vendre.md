@@ -25,6 +25,8 @@ Tous les articles sont dans **une seule liste déroulante**, en haut de la carte
    ![Liste des articles, catégorie « Batteries externes » en tête](../images/vente-liste.jpg)
 
 3. Touchez l'article. Sous la liste apparaît :
+   - le **Prix de vente**, rempli avec le prix du catalogue : changez-le si vous vendez à un
+     autre prix (prix négocié, prix arrondi) ;
    - **Accessoire** : la **quantité** (déjà sélectionnée : tapez simplement le nombre), puis
      **Ajouter au tableau** (ou la touche Entrée) ;
    - **Téléphone** : ses **IMEI** disponibles ; touchez celui du téléphone vendu. Pour les
@@ -32,22 +34,40 @@ Tous les articles sont dans **une seule liste déroulante**, en haut de la carte
 
    La croix ✕ annule le choix.
 
-Les articles s'ajoutent au **tableau** sous la liste : article, prix unitaire, quantité,
-total, et le total général en bas.
+   ![Article choisi : prix de vente et quantité](../images/vente-choix-prix.jpg)
+
+Les articles s'ajoutent au **tableau** sous la liste, en quatre colonnes : **Article**,
+**Quantité**, **Prix unitaire**, **Total**, et le total général en bas.
 
 ![Tableau des articles de la vente](../images/vente-tableau.jpg)
 
 - **Changer une quantité** : touchez **−** ou **+**, ou tapez directement le nombre dans la
   case. La quantité ne peut pas dépasser le stock (un message l'indique).
+- **Changer un prix** : tapez le nouveau prix dans la case **Prix unitaire** (vide : retour
+  au prix du catalogue). La ligne indique « prix changé (catalogue …) ».
 - **Retirer un article** : la corbeille 🗑 au bout de la ligne (ou la quantité à 0).
 - Un téléphone choisi par son IMEI compte toujours pour 1.
-- Le prix de gros s'applique tout seul à partir du seuil du produit (« (gros) »).
+- Le prix de gros s'applique tout seul à partir du seuil du produit (« prix de gros »).
+- **Prix plus bas** : un vendeur ou un gérant peut baisser un prix jusqu'à son plafond de
+  remise (par exemple 10 %). Plus bas, l'application refuse : passez par une **Remise**
+  validée par le gérant. Chaque prix changé est noté au **Journal** (« Vente à un prix
+  différent »).
 - Après un téléphone, ses **accessoires compatibles** sont proposés sous le tableau.
 
 > Avec un lecteur de codes-barres (ordinateur) ou le bouton **code-barres** à droite de la
 > liste (téléphone) : scannez, l'article s'ajoute directement au tableau.
 
-## 3. Client, options
+## 3. Paiement
+
+Juste sous les articles : le **total** et le **paiement**. Le montant en **Espèces** est
+rempli **tout seul** avec le total, et suit chaque article ajouté, chaque prix ou remise.
+Changez-le si besoin : le client donne plus (la monnaie à rendre s'affiche), ou paie
+autrement. Choisissez un autre **mode** dans la liste (Orange Money, MTN MoMo,
+virement…), ou **Ajouter un autre mode de paiement** pour un paiement en deux fois. Pour
+Orange Money, MTN MoMo et virement, notez la **référence** de la transaction. **Tout en
+espèces** remet le total en espèces.
+
+## 4. Client, options
 
 - **Client (facultatif)** : un seul champ, **Nom ou téléphone du client**. Un client
   enregistré apparaît pendant que vous tapez : touchez-le (un client grossiste reçoit
@@ -59,23 +79,19 @@ total, et le total général en bas.
 
   ![Client : un champ, coordonnées dépliées](../images/vente-client.jpg)
 
-- Trois boutons d'**options** sous le client, à toucher seulement si besoin :
+- Trois boutons d'**options** sous le client, à toucher seulement si besoin (le montant du
+  paiement se recalcule tout seul) :
   - **Remise** : vous pouvez accorder jusqu'au pourcentage indiqué. Au-delà, un gérant
     valide avec son identifiant et son code PIN. Retouchez le bouton pour l'enlever.
   - **Troc (reprise)** : voir [Faire un troc](02-troc.md).
   - **À crédit** : apport et tranches, voir
     [Encaisser une tranche](03-encaisser-une-tranche.md).
 
-## 4. Encaisser
+## 5. Encaisser
 
-Choisissez le **mode de paiement** dans la liste déroulante (espèces par défaut, Orange
-Money, MTN MoMo, virement) et saisissez le montant. Le client paie de deux façons ? Touchez
-**Ajouter un autre mode de paiement**. Pour Orange Money, MTN MoMo et virement, notez la
-**référence** de la transaction. **Tout en espèces** remplit le total.
+![Total et paiement rempli d'office](../images/vente-paiement.jpg)
 
-![Paiement et total](../images/vente-paiement.png)
-
-Touchez **Encaisser**. L'écran affiche la monnaie à rendre et le numéro de facture, puis
+Touchez **Encaisser**, en bas de l'écran. L'écran affiche la monnaie à rendre et le numéro de facture, puis
 demande : **« Imprimer une facture pour le client ? »**
 
 - **Non** : la vente est terminée (le reçu reste disponible).
@@ -87,7 +103,7 @@ demande : **« Imprimer une facture pour le client ? »**
 
 Touchez **Reçu, facture, WhatsApp…** pour imprimer le ticket ou envoyer la facture.
 
-## 5. Retrouver ses factures
+## 6. Retrouver ses factures
 
 Menu → **Factures** : toutes les factures émises de la boutique, avec une recherche par
 numéro, nom ou contact du client. Chaque facture a deux boutons :

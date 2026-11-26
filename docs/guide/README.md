@@ -83,6 +83,13 @@ boutique et nouveau mot de passe du propriétaire se font depuis la fiche du com
 provisoire. À la première connexion sur un appareil, vous choisissez un **code PIN** de
 4 à 6 chiffres : il sert ensuite à déverrouiller l'application, même sans Internet.
 
+**Verrouillage.** L'application se verrouille toute seule après **1 minute sans y toucher**,
+dès que l'**écran s'éteint** (téléphone) et quand la **session de l'ordinateur est
+verrouillée** ou la fenêtre réduite. Pour la verrouiller vous-même (vous quittez le
+comptoir), touchez le **cadenas 🔒** en haut à droite, à côté de ☀️/🌙. L'écran du code PIN
+se pose **par-dessus** votre travail : après le code PIN, vous retrouvez **le même écran,
+avec tout ce qui était saisi** (vente en cours, client, paiement).
+
 **Nouvelle version.** Après une mise à jour du site, un bandeau **« Nouvelle version
 disponible »** apparaît en haut de l'écran (navigateur, ou application installée sur le
 téléphone ou l'ordinateur). Touchez **Mettre à jour** : l'application se recharge sur la
@@ -107,8 +114,9 @@ directement. Employé : votre propriétaire peut aussi vous donner un nouveau mo
 - **Hors ligne** : vous pouvez continuer à travailler, rien n'est perdu ;
 - un nombre d'**opérations en attente** : elles partiront au retour du réseau.
 
-**Qui voit quoi.** Le vendeur vend, fait les trocs et encaisse ; il ne modifie jamais
-les prix. Le gérant gère le stock, les retours, les transferts et les crédits de sa ou
+**Qui voit quoi.** Le vendeur vend, fait les trocs et encaisse ; il ne modifie pas les
+prix du catalogue (à la vente, il peut changer le prix d'un article dans la limite de la
+remise qu'il accorde seul). Le gérant gère le stock, les retours, les transferts et les crédits de sa ou
 ses boutiques. Le propriétaire voit tout : boutiques, employés, prix, rapports.
 
 > Données de démonstration : boutique « Adil Phone Madina », comptes `vendeur1`,

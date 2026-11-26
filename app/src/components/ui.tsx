@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, useSegments } from 'expo-router';
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useBasculerApparence } from '@/lib/apparence';
 import { texteClair } from '@/lib/erreurs';
+import { useSession } from '@/lib/session';
 import { ombre, useCouleurs, useMode } from '@/lib/theme';
 
 export type NomIcone = ComponentProps<typeof Ionicons>['name'];
@@ -39,6 +40,32 @@ export function BoutonApparence({ couleur }: { couleur?: string }) {
       ]}
     >
       <Ionicons name={mode === 'sombre' ? 'sunny' : 'moon'} size={20} color={teinte} />
+    </Pressable>
+  );
+}
+
+/**
+ * Bouton 🔒 à côté de ☀️/🌙 (écrans du commerce) : verrouille tout de suite. L'écran
+ * ouvert et ce qui est saisi restent là, sous le code PIN.
+ */
+export function BoutonVerrou({ couleur }: { couleur?: string }) {
+  const c = useCouleurs();
+  const { statut, verrouiller } = useSession();
+  const segments = useSegments();
+  if (statut !== 'pret' || segments[0] !== '(app)') return null;
+  const teinte = couleur ?? c.texte;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Verrouiller l’application"
+      hitSlop={8}
+      onPress={verrouiller}
+      style={({ pressed }) => [
+        styles.boutonApparence,
+        { borderColor: teinte, opacity: pressed ? 0.6 : 1 },
+      ]}
+    >
+      <Ionicons name="lock-closed" size={18} color={teinte} />
     </Pressable>
   );
 }
@@ -123,7 +150,10 @@ export function Ecran({
                     </Text>
                   ) : null}
                 </View>
-                <BoutonApparence couleur={c.texteEnTete} />
+                <View style={styles.boutonsEnTete}>
+                  <BoutonVerrou couleur={c.texteEnTete} />
+                  <BoutonApparence couleur={c.texteEnTete} />
+                </View>
               </View>
             </View>
           ) : null}
@@ -667,6 +697,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   apparenceCentre: { alignItems: 'flex-end', marginBottom: -8 },
+  boutonsEnTete: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   defilement: { flexGrow: 1, justifyContent: 'center', paddingBottom: 28 },
   defilementHaut: { justifyContent: 'flex-start' },
   colonne: { width: '100%', maxWidth: 720, alignSelf: 'center' },

@@ -4,7 +4,7 @@ import { ecrireEntite } from './base/depot';
 import { migrer } from './base/migrations';
 import type { BaseSql } from './base/sql';
 import { baseEnMemoire } from './base/sql-node.test-utils';
-import { type ArticlePanier, prixDuPanier, prochainNumeroFacture } from './panier';
+import { type ArticlePanier, prixDuPanier, prixMinimum, prochainNumeroFacture } from './panier';
 import { enregistrerOperation, ErreurOperation } from './sync/operations-locales';
 
 const BOUTIQUE = '11111111-1111-4111-8111-111111111111';
@@ -43,6 +43,24 @@ describe('panier', () => {
       remise: 5_000,
       total: 20_000,
     });
+  });
+
+  it('prix changé à la main : il remplace le catalogue, même au-delà du seuil de gros', () => {
+    const panier = prixDuPanier([{ ...coque(12), prixManuel: 28_000 }], false, 0);
+    expect(panier.lignes[0]).toMatchObject({
+      tarif: 'GROS',
+      prixUnitaire: 28_000,
+      prixCatalogue: 25_000,
+      total: 336_000,
+    });
+    expect(panier.sousTotal).toBe(336_000);
+  });
+
+  it('prix minimum : catalogue moins le plafond de remise du rôle', () => {
+    expect(prixMinimum(30_000, 10)).toBe(27_000);
+    expect(prixMinimum(33_333, 10)).toBe(30_000);
+    expect(prixMinimum(30_000, 100)).toBe(0);
+    expect(prixMinimum(30_000, 0)).toBe(30_000);
   });
 
   it('numéros de facture successifs propres à l’appareil', async () => {

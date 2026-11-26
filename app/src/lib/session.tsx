@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { AppState, Platform } from 'react-native';
@@ -33,8 +34,14 @@ import { CLES, effacer, ecrire, lire } from './stockage';
  */
 export type Statut = 'chargement' | 'deconnecte' | 'pin-a-definir' | 'verrouille' | 'pret';
 
-/** Verrouillage après ce temps passé en arrière-plan. */
-const VERROUILLAGE_APRES_MS = 2 * 60 * 1000;
+/** Verrouillage après ce temps sans toucher l'écran, la souris ni le clavier. */
+export const VERROUILLAGE_INACTIVITE_MS = 60 * 1000;
+/**
+ * Site : verrouillé au retour après cette absence (écran éteint, session de l'ordinateur
+ * verrouillée, fenêtre réduite) ; un simple coup d'œil à un autre onglet ne verrouille pas.
+ * Application installée sur téléphone : verrouillée dès qu'elle passe en arrière-plan.
+ */
+const ABSENCE_WEB_MS = 5 * 1000;
 
 interface ValeurSession {
   statut: Statut;
@@ -51,6 +58,8 @@ interface ValeurSession {
   /** Déverrouille hors ligne ; trop d'erreurs ramènent à la connexion. */
   deverrouiller: (pin: string) => Promise<boolean>;
   verrouiller: () => void;
+  /** Toucher, clic ou touche : repousse le verrouillage pour inactivité. */
+  signalerActivite: () => void;
   /** null : revenir au choix de la boutique. */
   choisirBoutique: (boutique: Boutique | null) => Promise<void>;
   /** Relit le profil sur le serveur ; faux si le serveur est injoignable (profil en cache gardé). */
@@ -180,20 +189,47 @@ export function FournisseurSession({ children }: { children: ReactNode }) {
     })();
   }, [statut, profil, api]);
 
-  // Verrouillage après un passage prolongé en arrière-plan.
+  // Verrouillage : l'écran ouvert et ce qui est saisi restent derrière l'écran du code PIN.
+  const derniereActivite = useRef(0);
+  const signalerActivite = useCallback(() => {
+    derniereActivite.current = Date.now();
+  }, []);
+  const verrouiller = useCallback(() => setStatut((s) => (s === 'pret' ? 'verrouille' : s)), []);
+
+  // Écran éteint, téléphone ou session de l'ordinateur verrouillés : on verrouille aussi.
   useEffect(() => {
     let depart: number | null = null;
     const abonnement = AppState.addEventListener('change', (etat) => {
-      if (etat === 'background') depart = Date.now();
-      if (etat === 'active' && depart !== null) {
-        if (Date.now() - depart > VERROUILLAGE_APRES_MS) {
-          setStatut((s) => (s === 'pret' ? 'verrouille' : s));
-        }
+      if (etat === 'background') {
+        if (Platform.OS !== 'web') verrouiller();
+        else depart = Date.now();
+      }
+      if (etat === 'active') {
+        if (depart !== null && Date.now() - depart >= ABSENCE_WEB_MS) verrouiller();
         depart = null;
+        derniereActivite.current = Date.now();
       }
     });
     return () => abonnement.remove();
-  }, []);
+  }, [verrouiller]);
+
+  // Une minute sans activité : verrouillé.
+  useEffect(() => {
+    if (statut !== 'pret') return;
+    derniereActivite.current = Date.now();
+    const minuterie = setInterval(() => {
+      if (Date.now() - derniereActivite.current >= VERROUILLAGE_INACTIVITE_MS) verrouiller();
+    }, 5000);
+    const evenements = ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'scroll'];
+    const cible = Platform.OS === 'web' && typeof window !== 'undefined' ? window : null;
+    for (const e of evenements)
+      cible?.addEventListener(e, signalerActivite, { passive: true, capture: true });
+    return () => {
+      clearInterval(minuterie);
+      for (const e of evenements)
+        cible?.removeEventListener(e, signalerActivite, { capture: true });
+    };
+  }, [statut, verrouiller, signalerActivite]);
 
   const enregistrerPinLocal = useCallback(async (pin: string) => {
     await ecrire(CLES.pin, memoriserPin(creerPinLocal(pin, Crypto.getRandomBytes(16))));
@@ -266,7 +302,8 @@ export function FournisseurSession({ children }: { children: ReactNode }) {
         return correct;
       },
 
-      verrouiller: () => setStatut((s) => (s === 'pret' ? 'verrouille' : s)),
+      verrouiller,
+      signalerActivite,
 
       async choisirBoutique(choisie) {
         setBoutique(choisie);
@@ -290,6 +327,8 @@ export function FournisseurSession({ children }: { children: ReactNode }) {
       appliquerProfil,
       enregistrerPinLocal,
       oublier,
+      verrouiller,
+      signalerActivite,
     ],
   );
 

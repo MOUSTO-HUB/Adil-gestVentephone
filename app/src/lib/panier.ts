@@ -23,11 +23,15 @@ export interface ArticlePanier {
   seuilGros: number | null;
   /** Téléphone revendu d'occasion (prix propre). */
   occasion?: boolean;
+  /** Prix de vente changé par le vendeur (sinon : prix du catalogue, détail ou gros). */
+  prixManuel?: number | null;
 }
 
 export interface LignePrix extends ArticlePanier {
   tarif: 'DETAIL' | 'GROS';
   prixUnitaire: number;
+  /** Prix du catalogue (détail ou gros) : référence d'un prix changé à la main. */
+  prixCatalogue: number;
   total: number;
 }
 
@@ -42,9 +46,26 @@ export function prixDuPanier(articles: ArticlePanier[], clientGrossiste: boolean
     parProduit.set(a.produitId, (parProduit.get(a.produitId) ?? 0) + a.quantite);
   const lignes: LignePrix[] = articles.map((a) => {
     const prix = tarifApplicable(a, parProduit.get(a.produitId) ?? 0, clientGrossiste);
-    return { ...a, ...prix, total: prix.prixUnitaire * a.quantite };
+    const prixUnitaire = a.prixManuel ?? prix.prixUnitaire;
+    return {
+      ...a,
+      tarif: prix.tarif,
+      prixUnitaire,
+      prixCatalogue: prix.prixUnitaire,
+      total: prixUnitaire * a.quantite,
+    };
   });
   return { lignes, ...totauxVente(lignes, remise) };
+}
+
+/**
+ * Prix le plus bas qu'un vendeur peut saisir lui-même : le prix du catalogue moins son
+ * plafond de remise (en %). Au-delà, il passe par une remise validée par le gérant. Un
+ * prix plus haut que le catalogue est toujours possible. Chaque prix changé est noté au
+ * journal par le serveur (« Vente à un prix différent »).
+ */
+export function prixMinimum(prixCatalogue: number, plafondPourcent: number): number {
+  return Math.ceil((prixCatalogue * (100 - Math.min(100, Math.max(0, plafondPourcent)))) / 100);
 }
 
 /**

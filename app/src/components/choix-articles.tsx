@@ -28,7 +28,7 @@ import {
   rechercherProduits,
   trouverParCode,
 } from '@/lib/catalogue';
-import type { ArticlePanier, LignePrix } from '@/lib/panier';
+import { type ArticlePanier, type LignePrix, prixMinimum } from '@/lib/panier';
 import { useLecture, useSync } from '@/lib/sync/contexte';
 import { useCouleurs } from '@/lib/theme';
 
@@ -103,6 +103,7 @@ export function ChoixArticles({
   setArticles,
   lignes,
   titre = 'Articles',
+  plafondPrix,
 }: {
   boutiqueId: string;
   monnaie?: string;
@@ -111,6 +112,11 @@ export function ChoixArticles({
   /** Articles avec leur prix (détail ou gros) calculé par le parent. */
   lignes: LignePrix[];
   titre?: string;
+  /**
+   * Prix de vente modifiable (vente) : baisse maximale en % accordée au rôle, sans
+   * validation du gérant. Absent : prix du catalogue imposé (échange).
+   */
+  plafondPrix?: number;
 }) {
   const c = useCouleurs();
   const { base } = useSync();
@@ -122,7 +128,11 @@ export function ChoixArticles({
   const [categorieId, setCategorieId] = useState('');
   const [selection, setSelection] = useState<Selection | null>(null);
   const [quantite, setQuantite] = useState('1');
-  /** Quantités en cours de saisie dans le tableau (validées en quittant le champ). */
+  /** Prix de vente de l'article choisi ; « touché » : changé par le vendeur. */
+  const [prix, setPrix] = useState('');
+  const [prixTouche, setPrixTouche] = useState(false);
+  const prixModifiable = plafondPrix !== undefined;
+  /** Quantités et prix en cours de saisie dans le tableau (validés en quittant le champ). */
   const [saisies, setSaisies] = useState<Record<string, string>>({});
   const [scanner, setScanner] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -170,8 +180,34 @@ export function ChoixArticles({
       .filter((a) => a.produitId === produitId && !a.articleId)
       .reduce((t, a) => t + a.quantite, 0);
 
+  /**
+   * Prix saisi pour l'article choisi : nul s'il n'a pas été changé (prix du catalogue),
+   * `false` (avec un message) s'il est invalide ou trop bas pour ce rôle.
+   */
+  const prixSaisi = (reference: number): number | null | false => {
+    if (!prixModifiable || !prixTouche) return null;
+    const n = entierPositif(prix);
+    if (Number.isNaN(n)) {
+      setMessage('Prix de vente : nombre entier attendu.');
+      return false;
+    }
+    return controlerPrix(n, reference);
+  };
+
+  /** Prix changé : refusé sous le minimum du rôle ; égal au catalogue : plus de prix propre. */
+  const controlerPrix = (n: number, reference: number): number | null | false => {
+    const minimum = prixMinimum(reference, plafondPrix ?? 0);
+    if (n < minimum) {
+      setMessage(
+        `Prix trop bas : au plus bas ${formaterMontant(minimum, monnaie)} (${plafondPrix ?? 0} % de baisse). Au-delà, faites valider une remise par le gérant.`,
+      );
+      return false;
+    }
+    return n === reference ? null : n;
+  };
+
   /** Ajoute `n` unités sans IMEI (une seule ligne par produit), dans la limite du stock. */
-  const ajouterQuantite = async (p: Produit, n: number) => {
+  const ajouterQuantite = async (p: Produit, n: number, prixManuel: number | null = null) => {
     const reste = (await maximumSansImei(p)) - quantiteAuPanier(p.id);
     if (reste <= 0) {
       setMessage(
@@ -186,15 +222,27 @@ export function ChoixArticles({
     setArticles((as) => {
       const deja = as.find((a) => a.produitId === p.id && !a.articleId);
       if (deja)
-        return as.map((a) => (a.cle === deja.cle ? { ...a, quantite: a.quantite + ajout } : a));
-      return [...as, { ...versPanier(p, Crypto.randomUUID(), null), quantite: ajout }];
+        return as.map((a) =>
+          a.cle === deja.cle
+            ? { ...a, quantite: a.quantite + ajout, prixManuel: prixManuel ?? a.prixManuel }
+            : a,
+        );
+      return [...as, { ...versPanier(p, Crypto.randomUUID(), null), quantite: ajout, prixManuel }];
     });
     return true;
   };
 
-  const ajouterImei = (p: Produit, article: ArticleChoisi) => {
+  const ajouterImei = (p: Produit, article: ArticleChoisi, prixManuel: number | null = null) => {
     if (articles.some((a) => a.articleId === article.id)) return;
-    setArticles((as) => [...as, versPanier(p, Crypto.randomUUID(), article)]);
+    setArticles((as) => [...as, { ...versPanier(p, Crypto.randomUUID(), article), prixManuel }]);
+  };
+
+  /** IMEI touché dans le choix : avec le prix saisi s'il a été changé. */
+  const choisirImei = (p: Produit, article: ArticleChoisi) => {
+    const manuel = prixSaisi(article.prixRevente ?? p.prixDetail);
+    if (manuel === false) return;
+    setMessage(null);
+    ajouterImei(p, article, manuel);
   };
 
   /** Produit choisi dans la liste : on attend sa quantité, ou son IMEI pour un téléphone. */
@@ -205,6 +253,8 @@ export function ChoixArticles({
     setOuverte(false);
     setRecherche('');
     setQuantite('1');
+    setPrix(String(p.prixDetail));
+    setPrixTouche(false);
     if (p.type === 'TELEPHONE') {
       const sansImei = (await telephonesSansImei(base, boutiqueId, p.id)) - quantiteAuPanier(p.id);
       const avecImei = (await imeisDisponibles(base, boutiqueId, p.id, dejaChoisis)).length;
@@ -228,8 +278,10 @@ export function ChoixArticles({
     if (!selection) return;
     const n = entierPositif(quantite);
     if (!Number.isInteger(n) || n < 1) return setMessage('Quantité : nombre entier attendu.');
+    const manuel = prixSaisi(selection.produit.prixDetail);
+    if (manuel === false) return;
     setMessage(null);
-    if (await ajouterQuantite(selection.produit, n)) setSelection(null);
+    if (await ajouterQuantite(selection.produit, n, manuel)) setSelection(null);
   };
 
   /** Lecteur USB (code puis Entrée) ou caméra : code-barres ou IMEI exact, ajout direct. */
@@ -283,6 +335,20 @@ export function ChoixArticles({
       } else setMessage(null);
     } else setMessage(null);
     setArticles((as) => as.map((a) => (a.cle === cle ? { ...a, quantite: nouvelle } : a)));
+  };
+
+  /** Prix unitaire changé dans le tableau (vide ou prix du catalogue : on y revient). */
+  const validerPrix = (l: LignePrix) => {
+    const cle = `prix:${l.cle}`;
+    const texte = saisies[cle];
+    if (texte === undefined) return;
+    oublierSaisie(cle);
+    const n = texte.trim() === '' ? l.prixCatalogue : entierPositif(texte);
+    if (Number.isNaN(n)) return setMessage('Prix de vente : nombre entier attendu.');
+    const manuel = controlerPrix(n, l.prixCatalogue);
+    if (manuel === false) return;
+    setMessage(null);
+    setArticles((as) => as.map((a) => (a.cle === l.cle ? { ...a, prixManuel: manuel } : a)));
   };
 
   const validerSaisie = (cle: string) => {
@@ -438,7 +504,7 @@ export function ChoixArticles({
             <View style={{ flex: 1 }}>
               <Text style={{ color: c.texte, fontWeight: '700' }}>{selection.produit.nom}</Text>
               <Text style={{ color: c.texteDiscret }}>
-                {formaterMontant(selection.produit.prixDetail, monnaie)} l’unité
+                Prix du catalogue : {formaterMontant(selection.produit.prixDetail, monnaie)}
               </Text>
             </View>
             <Pressable
@@ -450,6 +516,30 @@ export function ChoixArticles({
               <Ionicons name="close" size={22} color={c.texteDiscret} />
             </Pressable>
           </View>
+          {prixModifiable ? (
+            <View style={styles.ligneSelection}>
+              <Text style={[styles.libelleSelection, { color: c.texte }]}>Prix de vente</Text>
+              <TextInput
+                value={prix}
+                onChangeText={(t) => {
+                  setPrix(t);
+                  setPrixTouche(true);
+                }}
+                keyboardType="number-pad"
+                selectTextOnFocus
+                onSubmitEditing={() => void validerSelection()}
+                accessibilityLabel={`Prix de vente de ${selection.produit.nom}`}
+                style={[styleSaisie(c), styles.prixSelection]}
+              />
+              <Text style={{ color: c.texteDiscret, flexShrink: 1 }}>
+                {prixTouche
+                  ? 'prix changé pour cette vente'
+                  : selection.produit.type === 'TELEPHONE'
+                    ? 'occasion : son propre prix'
+                    : 'modifiable'}
+              </Text>
+            </View>
+          ) : null}
           {selection.produit.type === 'TELEPHONE' && imeis?.length ? (
             <>
               <Texte discret>Touchez l’IMEI du téléphone vendu :</Texte>
@@ -459,7 +549,7 @@ export function ChoixArticles({
                     key={a.id}
                     accessibilityRole="button"
                     onPress={() => {
-                      ajouterImei(selection.produit, a);
+                      choisirImei(selection.produit, a);
                       if (selection.sansImei <= 0 && imeis.length <= 1) setSelection(null);
                     }}
                     style={[styles.pastille, { borderColor: c.primaire, backgroundColor: c.carte }]}
@@ -477,7 +567,7 @@ export function ChoixArticles({
           ) : null}
           {selection.produit.type === 'ACCESSOIRE' || selection.sansImei > 0 ? (
             <View style={styles.ligneSelection}>
-              <Text style={{ color: c.texte }}>
+              <Text style={[styles.libelleSelection, { color: c.texte }]}>
                 {selection.produit.type === 'TELEPHONE' ? 'Sans IMEI, quantité' : 'Quantité'}
               </Text>
               <TextInput
@@ -504,17 +594,50 @@ export function ChoixArticles({
       <Message texte={message} />
 
       <View style={[styles.tableau, { borderColor: c.bordure }]}>
-        <View style={[styles.rang, styles.rangEntete, { backgroundColor: c.fondPrimaire }]}>
-          <Text style={[styles.colArticle, styles.titreCol, { color: c.texte }]}>
-            {etroit ? 'Article · quantité · total' : 'Article'}
+        <View
+          style={[
+            styles.rang,
+            styles.rangEntete,
+            etroit && styles.rangEtroit,
+            { backgroundColor: c.fondPrimaire },
+          ]}
+        >
+          <Text
+            style={[
+              styles.colArticle,
+              etroit && styles.pleineLargeur,
+              styles.titreCol,
+              { color: c.texte },
+            ]}
+          >
+            Article
           </Text>
-          {etroit ? null : (
-            <>
-              <Text style={[styles.colQte, styles.titreCol, { color: c.texte }]}>Qté</Text>
-              <Text style={[styles.colTotal, styles.titreCol, { color: c.texte }]}>Total</Text>
-              <View style={styles.colRetirer} />
-            </>
-          )}
+          <Text
+            style={[
+              styles.colQte,
+              etroit && styles.colQteEtroit,
+              styles.titreCol,
+              { color: c.texte },
+            ]}
+          >
+            Quantité
+          </Text>
+          <Text
+            style={[
+              styles.colPrix,
+              etroit && styles.colPrixEtroit,
+              styles.titreCol,
+              { color: c.texte },
+            ]}
+          >
+            Prix unitaire
+          </Text>
+          <Text
+            style={[styles.colTotal, etroit && styles.souple, styles.titreCol, { color: c.texte }]}
+          >
+            Total
+          </Text>
+          {etroit ? null : <View style={styles.colRetirer} />}
         </View>
         {lignes.length === 0 ? (
           <Text style={[styles.vide, { color: c.texteDiscret }]}>
@@ -523,23 +646,47 @@ export function ChoixArticles({
         ) : null}
         {lignes.map((l) => {
           const modifiable = l.type === 'ACCESSOIRE' || !l.articleId;
+          const corbeille = (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Retirer ${l.nom}`}
+              hitSlop={6}
+              onPress={() => retirer(l.cle)}
+              style={styles.colRetirer}
+            >
+              <Ionicons name="trash-outline" size={20} color={c.danger} />
+            </Pressable>
+          );
           return (
             <View
               key={l.cle}
               style={[styles.rang, etroit && styles.rangEtroit, { borderTopColor: c.bordure }]}
             >
-              <View style={[styles.colArticle, etroit && styles.pleineLargeur]}>
-                <Text style={{ color: c.texte, fontWeight: '600' }}>
-                  {l.nom}
-                  {l.occasion ? ' (occasion)' : ''}
-                </Text>
-                <Text style={{ color: c.texteDiscret, fontSize: 13 }}>
-                  {l.imei ? `IMEI ${l.imei} · ` : ''}
-                  {formaterMontant(l.prixUnitaire, monnaie)}
-                  {l.tarif === 'GROS' ? ' (gros)' : ''}
-                </Text>
+              <View
+                style={[styles.colArticle, etroit && [styles.pleineLargeur, styles.articleEtroit]]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: c.texte, fontWeight: '600' }}>
+                    {l.nom}
+                    {l.occasion ? ' (occasion)' : ''}
+                  </Text>
+                  {l.imei || l.tarif === 'GROS' || l.prixManuel != null ? (
+                    <Text style={{ color: c.texteDiscret, fontSize: 13 }}>
+                      {[
+                        l.imei ? `IMEI ${l.imei}` : null,
+                        l.tarif === 'GROS' ? 'prix de gros' : null,
+                        l.prixManuel != null
+                          ? `prix changé (catalogue ${formaterMontant(l.prixCatalogue, monnaie)})`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Text>
+                  ) : null}
+                </View>
+                {etroit ? corbeille : null}
               </View>
-              <View style={[styles.colQte, styles.quantite]}>
+              <View style={[styles.colQte, etroit && styles.colQteEtroit, styles.quantite]}>
                 {modifiable ? (
                   <>
                     <Pressable
@@ -576,6 +723,32 @@ export function ChoixArticles({
                   <Text style={{ color: c.texte, fontWeight: '700' }}>1</Text>
                 )}
               </View>
+              <View style={[styles.colPrix, etroit && styles.colPrixEtroit]}>
+                {prixModifiable ? (
+                  <TextInput
+                    value={saisies[`prix:${l.cle}`] ?? String(l.prixUnitaire)}
+                    onChangeText={(t) => setSaisies((s) => ({ ...s, [`prix:${l.cle}`]: t }))}
+                    onBlur={() => validerPrix(l)}
+                    onSubmitEditing={() => validerPrix(l)}
+                    keyboardType="number-pad"
+                    selectTextOnFocus
+                    accessibilityLabel={`Prix unitaire de ${l.nom}`}
+                    style={[
+                      styles.saisiePrix,
+                      etroit && styles.saisiePrixEtroite,
+                      {
+                        color: c.texte,
+                        borderColor: l.prixManuel != null ? c.primaire : c.bordureSaisie,
+                        backgroundColor: c.saisie,
+                      },
+                    ]}
+                  />
+                ) : (
+                  <Text style={{ color: c.texte, textAlign: 'right' }}>
+                    {formaterMontant(l.prixUnitaire, monnaie)}
+                  </Text>
+                )}
+              </View>
               <Text
                 style={[
                   styles.colTotal,
@@ -585,15 +758,7 @@ export function ChoixArticles({
               >
                 {formaterMontant(l.total, monnaie)}
               </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Retirer ${l.nom}`}
-                hitSlop={6}
-                onPress={() => retirer(l.cle)}
-                style={styles.colRetirer}
-              >
-                <Ionicons name="trash-outline" size={20} color={c.danger} />
-              </Pressable>
+              {etroit ? null : corbeille}
             </View>
           );
         })}
@@ -611,7 +776,7 @@ export function ChoixArticles({
             >
               {formaterMontant(total, monnaie)}
             </Text>
-            <View style={styles.colRetirer} />
+            {etroit ? null : <View style={styles.colRetirer} />}
           </View>
         ) : null}
       </View>
@@ -691,12 +856,28 @@ const styles = StyleSheet.create({
   titreCol: { fontWeight: '700', fontSize: 13 },
   colArticle: { flex: 1, minWidth: 80 },
   colQte: { width: 112, justifyContent: 'center', textAlign: 'center' },
-  colTotal: { width: 96, textAlign: 'right' },
+  colTotal: { width: 104, textAlign: 'right' },
+  colPrix: { width: 112, alignItems: 'flex-end', textAlign: 'right' },
+  saisiePrix: {
+    borderWidth: 1,
+    borderRadius: 6,
+    width: 108,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    textAlign: 'right',
+    fontSize: 15,
+  },
+  colQteEtroit: { width: 100 },
+  colPrixEtroit: { width: 92 },
+  saisiePrixEtroite: { width: 88 },
+  articleEtroit: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  prixSelection: { width: 140, textAlign: 'right' },
+  libelleSelection: { minWidth: 110 },
   colRetirer: { width: 26, alignItems: 'center' },
   rangEtroit: { flexWrap: 'wrap', rowGap: 4 },
   pleineLargeur: { flexBasis: '100%' },
   souple: { flex: 1, width: 'auto' },
-  totalGeneral: { width: 214 },
+  totalGeneral: { width: 340 },
   quantite: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   plusMoins: { fontSize: 22, fontWeight: '700', paddingHorizontal: 4 },
   saisieQte: {

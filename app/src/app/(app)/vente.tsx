@@ -92,6 +92,8 @@ export default function Vente() {
   const [paiements, setPaiements] = useState<Paiements>(PAIEMENTS_VIDES);
   // Modes de paiement affichés (liste déroulante par ligne) ; espèces par défaut.
   const [modes, setModes] = useState<MoyenPaiement[]>(['ESPECES']);
+  /** Montant du paiement rempli d'office avec le total, jusqu'à ce que le vendeur le change. */
+  const [paiementAuto, setPaiementAuto] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [troc, setTroc] = useState<FormulaireTroc | null>(null);
@@ -147,10 +149,20 @@ export default function Vente() {
     pourcentage > plafond && (!autorisation || pourcentage > autorisation.plafond);
   // L'avoir n'est proposé qu'à un client qui en a un.
   const moyens = MOYENS_PAIEMENT.filter((m) => m !== 'AVOIR' || (client?.soldeAvoir ?? 0) > 0);
+  const premierMode = modes.find((m) => moyens.includes(m)) ?? 'ESPECES';
+  const paiementsVus: Paiements = paiementAuto
+    ? {
+        ...paiements,
+        [premierMode]: {
+          ...paiements[premierMode],
+          montant: aPayer > 0 ? String(aPayer) : '',
+        },
+      }
+    : paiements;
   const listePaiements = moyens.flatMap((moyen) => {
-    const montant = entier(paiements[moyen].montant);
+    const montant = entier(paiementsVus[moyen].montant);
     return montant > 0
-      ? [{ moyen, montant, reference: paiements[moyen].reference.trim() || null }]
+      ? [{ moyen, montant, reference: paiementsVus[moyen].reference.trim() || null }]
       : [];
   });
   const paye = listePaiements.reduce((t, p) => t + p.montant, 0);
@@ -311,6 +323,7 @@ export default function Vente() {
       setAutorisation(null);
       setPaiements(PAIEMENTS_VIDES);
       setModes(['ESPECES']);
+      setPaiementAuto(true);
     } catch (e) {
       setMessage(messageErreur(e));
     } finally {
@@ -432,7 +445,135 @@ export default function Vente() {
         articles={articles}
         setArticles={setArticles}
         lignes={calcul.lignes}
+        plafondPrix={plafond}
       />
+
+      <Carte>
+        {calcul.remise > 0 || reprise > 0 ? (
+          <Texte discret>Sous-total : {formaterMontant(calcul.sousTotal, monnaie)}</Texte>
+        ) : null}
+        {calcul.remise > 0 ? (
+          <Texte discret>Remise : − {formaterMontant(calcul.remise, monnaie)}</Texte>
+        ) : null}
+        {reprise > 0 ? (
+          <Texte discret>Reprise (troc) : − {formaterMontant(reprise, monnaie)}</Texte>
+        ) : null}
+        <Text style={[styles.total, { color: colors.text }]}>
+          {reprise > 0 ? 'À payer' : 'Total'} : {formaterMontant(totalNet, monnaie)}
+        </Text>
+        {credit ? (
+          <Texte gras>
+            Apport à encaisser : {formaterMontant(aPayer, monnaie)} · à crédit :{' '}
+            {formaterMontant(Math.max(0, totalNet - aPayer), monnaie)}
+          </Texte>
+        ) : null}
+        {paye > 0 && paye !== aPayer ? (
+          <Texte>
+            Payé : {formaterMontant(paye, monnaie)}
+            {paye < aPayer ? ` · reste ${formaterMontant(aPayer - paye, monnaie)}` : ''}
+            {paye > aPayer ? ` · monnaie ${formaterMontant(paye - aPayer, monnaie)}` : ''}
+          </Texte>
+        ) : null}
+      </Carte>
+
+      <Carte>
+        <Texte gras>Paiement</Texte>
+        {modes
+          .filter((m) => moyens.includes(m))
+          .map((moyen) => (
+            <View key={moyen} style={styles.paiement}>
+              <View style={{ flex: 1, minWidth: 160 }}>
+                <ListeDeroulante
+                  libelle=""
+                  options={moyens
+                    .filter((m) => m === moyen || !modes.includes(m))
+                    .map((m) => ({
+                      valeur: m,
+                      libelle:
+                        m === 'AVOIR' && client
+                          ? `${LIBELLES_MOYENS[m]} (solde ${formaterMontant(client.soldeAvoir, monnaie)})`
+                          : LIBELLES_MOYENS[m],
+                    }))}
+                  valeur={moyen}
+                  surChoix={(v) => {
+                    const nouveau = v as MoyenPaiement;
+                    if (nouveau === moyen) return;
+                    // Le montant saisi suit le mode choisi.
+                    setPaiements((p) => ({
+                      ...p,
+                      [nouveau]: p[moyen],
+                      [moyen]: { montant: '', reference: '' },
+                    }));
+                    setModes((ms) => ms.map((m) => (m === moyen ? nouveau : m)));
+                  }}
+                />
+              </View>
+              <TextInput
+                value={paiementsVus[moyen].montant}
+                onChangeText={(montant) => {
+                  // Montant changé à la main (le client donne plus, paiement partagé…).
+                  setPaiements({ ...paiementsVus, [moyen]: { ...paiementsVus[moyen], montant } });
+                  setPaiementAuto(false);
+                }}
+                selectTextOnFocus
+                keyboardType="number-pad"
+                placeholder="Montant"
+                placeholderTextColor={c.texteDiscret}
+                accessibilityLabel={`Montant en ${LIBELLES_MOYENS[moyen]}`}
+                style={[saisie, { flex: 1, minWidth: 110 }]}
+              />
+              {moyenAvecReference(moyen) && entier(paiementsVus[moyen].montant) > 0 ? (
+                <TextInput
+                  value={paiementsVus[moyen].reference}
+                  onChangeText={(reference) =>
+                    setPaiements((p) => ({ ...p, [moyen]: { ...p[moyen], reference } }))
+                  }
+                  placeholder="Référence (facultatif)"
+                  placeholderTextColor={c.texteDiscret}
+                  accessibilityLabel={`Référence ${LIBELLES_MOYENS[moyen]}`}
+                  style={[saisie, { flex: 1, minWidth: 140 }]}
+                />
+              ) : null}
+              {modes.length > 1 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Retirer le paiement en ${LIBELLES_MOYENS[moyen]}`}
+                  onPress={() => {
+                    setPaiements((p) => ({ ...p, [moyen]: { montant: '', reference: '' } }));
+                    setModes((ms) => ms.filter((m) => m !== moyen));
+                  }}
+                >
+                  <Ionicons name="close-circle" size={24} color={c.danger} />
+                </Pressable>
+              ) : null}
+            </View>
+          ))}
+        {moyens.some((m) => !modes.includes(m)) ? (
+          <Bouton
+            titre="Ajouter un autre mode de paiement"
+            icone="add-circle"
+            variante="secondaire"
+            onPress={() => {
+              const libre = moyens.find((m) => !modes.includes(m));
+              if (!libre) return;
+              setPaiements(paiementsVus);
+              setPaiementAuto(false);
+              setModes((ms) => [...ms, libre]);
+            }}
+          />
+        ) : null}
+        {paiementAuto && modes.length === 1 && premierMode === 'ESPECES' ? null : (
+          <Bouton
+            titre="Tout en espèces"
+            variante="secondaire"
+            onPress={() => {
+              setModes(['ESPECES']);
+              setPaiements(PAIEMENTS_VIDES);
+              setPaiementAuto(true);
+            }}
+          />
+        )}
+      </Carte>
 
       <Carte>
         <Texte gras>
@@ -668,126 +809,6 @@ export default function Vente() {
         />
       ) : null}
 
-      <Carte>
-        <Texte gras>Paiement</Texte>
-        {modes
-          .filter((m) => moyens.includes(m))
-          .map((moyen) => (
-            <View key={moyen} style={styles.paiement}>
-              <View style={{ flex: 1, minWidth: 160 }}>
-                <ListeDeroulante
-                  libelle=""
-                  options={moyens
-                    .filter((m) => m === moyen || !modes.includes(m))
-                    .map((m) => ({
-                      valeur: m,
-                      libelle:
-                        m === 'AVOIR' && client
-                          ? `${LIBELLES_MOYENS[m]} (solde ${formaterMontant(client.soldeAvoir, monnaie)})`
-                          : LIBELLES_MOYENS[m],
-                    }))}
-                  valeur={moyen}
-                  surChoix={(v) => {
-                    const nouveau = v as MoyenPaiement;
-                    if (nouveau === moyen) return;
-                    // Le montant saisi suit le mode choisi.
-                    setPaiements((p) => ({
-                      ...p,
-                      [nouveau]: p[moyen],
-                      [moyen]: { montant: '', reference: '' },
-                    }));
-                    setModes((ms) => ms.map((m) => (m === moyen ? nouveau : m)));
-                  }}
-                />
-              </View>
-              <TextInput
-                value={paiements[moyen].montant}
-                onChangeText={(montant) =>
-                  setPaiements((p) => ({ ...p, [moyen]: { ...p[moyen], montant } }))
-                }
-                keyboardType="number-pad"
-                placeholder="Montant"
-                placeholderTextColor={c.texteDiscret}
-                accessibilityLabel={`Montant en ${LIBELLES_MOYENS[moyen]}`}
-                style={[saisie, { flex: 1, minWidth: 110 }]}
-              />
-              {moyenAvecReference(moyen) && entier(paiements[moyen].montant) > 0 ? (
-                <TextInput
-                  value={paiements[moyen].reference}
-                  onChangeText={(reference) =>
-                    setPaiements((p) => ({ ...p, [moyen]: { ...p[moyen], reference } }))
-                  }
-                  placeholder="Référence (facultatif)"
-                  placeholderTextColor={c.texteDiscret}
-                  accessibilityLabel={`Référence ${LIBELLES_MOYENS[moyen]}`}
-                  style={[saisie, { flex: 1, minWidth: 140 }]}
-                />
-              ) : null}
-              {modes.length > 1 ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Retirer le paiement en ${LIBELLES_MOYENS[moyen]}`}
-                  onPress={() => {
-                    setPaiements((p) => ({ ...p, [moyen]: { montant: '', reference: '' } }));
-                    setModes((ms) => ms.filter((m) => m !== moyen));
-                  }}
-                >
-                  <Ionicons name="close-circle" size={24} color={c.danger} />
-                </Pressable>
-              ) : null}
-            </View>
-          ))}
-        {moyens.some((m) => !modes.includes(m)) ? (
-          <Bouton
-            titre="Ajouter un autre mode de paiement"
-            icone="add-circle"
-            variante="secondaire"
-            onPress={() => {
-              const libre = moyens.find((m) => !modes.includes(m));
-              if (libre) setModes((ms) => [...ms, libre]);
-            }}
-          />
-        ) : null}
-        <Bouton
-          titre="Tout en espèces"
-          variante="secondaire"
-          onPress={() => {
-            setModes(['ESPECES']);
-            setPaiements({
-              ...PAIEMENTS_VIDES,
-              ESPECES: { montant: String(Math.max(0, aPayer)), reference: '' },
-            });
-          }}
-        />
-      </Carte>
-
-      <Carte>
-        {calcul.remise > 0 || reprise > 0 ? (
-          <Texte discret>Sous-total : {formaterMontant(calcul.sousTotal, monnaie)}</Texte>
-        ) : null}
-        {calcul.remise > 0 ? (
-          <Texte discret>Remise : − {formaterMontant(calcul.remise, monnaie)}</Texte>
-        ) : null}
-        {reprise > 0 ? (
-          <Texte discret>Reprise (troc) : − {formaterMontant(reprise, monnaie)}</Texte>
-        ) : null}
-        <Text style={[styles.total, { color: colors.text }]}>
-          {reprise > 0 ? 'À payer' : 'Total'} : {formaterMontant(totalNet, monnaie)}
-        </Text>
-        {credit ? (
-          <Texte gras>
-            Apport à encaisser : {formaterMontant(aPayer, monnaie)} · à crédit :{' '}
-            {formaterMontant(Math.max(0, totalNet - aPayer), monnaie)}
-          </Texte>
-        ) : null}
-        {paye > 0 ? (
-          <Texte>
-            Payé : {formaterMontant(paye, monnaie)}
-            {paye < aPayer ? ` · reste ${formaterMontant(aPayer - paye, monnaie)}` : ''}
-            {paye > aPayer ? ` · monnaie ${formaterMontant(paye - aPayer, monnaie)}` : ''}
-          </Texte>
-        ) : null}
-      </Carte>
       <Bouton
         titre="Encaisser"
         onPress={() => void encaisser()}
